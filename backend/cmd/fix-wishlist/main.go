@@ -5,13 +5,19 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"os"
 
 	_ "github.com/lib/pq"
 )
 
 func main() {
-	// Database connection
-	db, err := sql.Open("postgres", "postgres://postgres:postgres@localhost:5432/etreasure_db?sslmode=disable")
+	// Database connection from environment variable
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		log.Fatal("DATABASE_URL environment variable is not set")
+	}
+
+	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		log.Fatal(err)
 	}

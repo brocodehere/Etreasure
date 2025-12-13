@@ -648,7 +648,7 @@ func registerMigrations(m *Migrator) {
 	m.AddMigration("014", "Add image_id to categories table",
 		func(ctx context.Context, tx pgx.Tx) error {
 			// Add image_id column to categories table
-			if _, err := tx.Exec(ctx, `ALTER TABLE categories ADD COLUMN IF NOT EXISTS image_id UUID REFERENCES media(uuid_id) ON DELETE SET NULL`); err != nil {
+			if _, err := tx.Exec(ctx, `ALTER TABLE categories ADD COLUMN IF NOT EXISTS image_id INTEGER REFERENCES media(id) ON DELETE SET NULL`); err != nil {
 				return err
 			}
 
