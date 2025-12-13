@@ -63,7 +63,7 @@ func main() {
 		log.Println("SMTP connection test successful")
 	}
 
-	port := os.Getenv("BACKEND_PORT")
+	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
