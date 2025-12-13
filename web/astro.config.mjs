@@ -1,27 +1,23 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
-
 import tailwind from '@astrojs/tailwind';
 import react from '@astrojs/react';
+import node from '@astrojs/node';
 
-// https://astro.build/config
 export default defineConfig({
+  output: 'server', // ✅ REQUIRED for Render
+
+  adapter: node({
+    mode: 'standalone', // ✅ REQUIRED
+  }),
+
   integrations: [tailwind(), react()],
+
   vite: {
     resolve: {
       alias: {
         '@lib': '/src/lib',
         '@components': '/src/components',
-      },
-    },
-    server: {
-      // Proxy /api requests to the backend during local development
-      proxy: {
-        '/api': {
-          target: 'http://localhost:8080',
-          changeOrigin: true,
-          secure: false,
-        },
       },
     },
     build: {
@@ -34,10 +30,7 @@ export default defineConfig({
       },
     },
   },
-  output: 'static',
-  build: {
-    format: 'directory',
-  },
+
   image: {
     service: {
       entrypoint: 'astro/assets/services/sharp',
@@ -46,5 +39,6 @@ export default defineConfig({
       },
     },
   },
+
   compressHTML: true,
 });
