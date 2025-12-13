@@ -1,0 +1,221 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { fetchContent } from '../lib/api';
+
+// Fetch about page content from API
+let aboutContent = {
+  title: "About Ethnic Treasures",
+  hero_title: "Crafting Tradition, Weaving Stories",
+  hero_description: "Discover the rich heritage of Indian craftsmanship through our curated collection of handcrafted treasures",
+  our_story: "Founded in 2024, Ethnic Treasures began as a passion project to bridge traditional Indian craftsmanship with contemporary global fashion. We work directly with over 200 artisan communities across 15 states, ensuring fair wages, sustainable practices, and global recognition for their incredible work.",
+  our_mission: "To preserve and promote India's rich textile heritage while providing sustainable livelihood opportunities to artisan communities. We believe in ethical fashion, fair trade practices, and creating beautiful pieces that tell stories of tradition and craftsmanship.",
+  our_values: [
+    {
+      title: "Authentic Craftsmanship",
+      description: "Every piece is handcrafted using traditional techniques passed down through generations"
+    },
+    {
+      title: "Ethical Sourcing",
+      description: "We work directly with artisans, ensuring fair wages and sustainable working conditions"
+    },
+    {
+      title: "Cultural Preservation",
+      description: "Supporting the preservation of traditional Indian art forms and textile techniques"
+    },
+    {
+      title: "Quality Assurance",
+      description: "Each product is carefully inspected to ensure the highest quality standards"
+    }
+  ],
+  stats: [
+    { number: "200+", label: "Artisan Communities" },
+    { number: "15", label: "Indian States" },
+    { number: "5000+", label: "Handcrafted Products" },
+    { number: "10+", label: "Years of Heritage" }
+  ]
+};
+
+try {
+  const contentData = await fetchContent('about');
+  if (contentData) {
+    aboutContent = { ...aboutContent, ...contentData };
+  }
+} catch (error) {
+  console.error('Failed to fetch about content:', error);
+}
+---
+
+<Layout title={aboutContent.title} description="Learn about Ethnic Treasures - our story, mission, and commitment to preserving Indian craftsmanship through handcrafted treasures.">
+  <Header />
+  
+  <!-- Hero Section -->
+  <section class="relative py-20 bg-gradient-to-br from-maroon via-maroon/80 to-maroon overflow-hidden">
+    <!-- Background Effects -->
+    <div class="absolute inset-0">
+      <div class="absolute top-10 left-20 w-64 h-64 bg-gold/20 rounded-full blur-3xl animate-pulse"></div>
+      <div class="absolute bottom-10 right-20 w-80 h-80 bg-white/10 rounded-full blur-3xl animate-pulse" style="animation-delay: 2s;"></div>
+    </div>
+    
+    <div class="container mx-auto px-4 relative z-10">
+      <div class="text-center text-white">
+        <h1 class="font-playfair text-4xl md:text-6xl font-bold mb-6 animate-fade-in">
+          {aboutContent.hero_title}
+        </h1>
+        <div class="w-32 h-1 bg-gold mx-auto mb-8 animate-gold-shine"></div>
+        <p class="text-xl md:text-2xl max-w-4xl mx-auto leading-relaxed animate-fade-up" style="animation-delay: 0.3s">
+          {aboutContent.hero_description}
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Our Story Section -->
+  <section class="py-20 bg-gradient-to-br from-cream via-white to-cream relative overflow-hidden">
+    <div class="absolute top-10 left-10 w-32 h-32 bg-gold/10 rounded-full blur-3xl animate-pulse"></div>
+    <div class="absolute bottom-10 right-10 w-40 h-40 bg-maroon/10 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s"></div>
+    
+    <div class="container mx-auto px-4 relative z-10">
+      <div class="max-w-4xl mx-auto">
+        <div class="text-center mb-16">
+          <h2 class="font-playfair text-4xl md:text-5xl font-bold text-maroon mb-6 relative inline-block">
+            Our Story
+            <span class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-32 h-1 bg-gradient-to-r from-transparent via-gold to-transparent animate-gold-shine"></span>
+          </h2>
+          <div class="w-32 h-1 bg-gold mx-auto mb-8 shadow-gold"></div>
+        </div>
+        
+        <div class="bg-white/60 backdrop-blur-sm p-8 md:p-12 rounded-2xl border border-gold/20 shadow-xl">
+          <p class="text-lg md:text-xl text-dark/90 leading-relaxed text-center">
+            {aboutContent.our_story}
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats Section -->
+  <section class="py-20 bg-gradient-to-r from-maroon to-maroon/80 relative overflow-hidden">
+    <div class="absolute inset-0">
+      <div class="absolute top-10 left-20 w-64 h-64 bg-gold/20 rounded-full blur-3xl animate-pulse"></div>
+      <div class="absolute bottom-10 right-20 w-80 h-80 bg-white/10 rounded-full blur-3xl animate-pulse" style="animation-delay: 2s;"></div>
+    </div>
+    
+    <div class="container mx-auto px-4 relative z-10">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+        {aboutContent.stats.map((stat, index) => (
+          <div class="text-center text-white animate-fade-up" style={`animation-delay: ${index * 0.15}s`}>
+            <div class="font-playfair text-3xl md:text-4xl lg:text-5xl font-bold text-gold mb-2">
+              {stat.number}
+            </div>
+            <div class="text-sm md:text-base font-medium">
+              {stat.label}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Our Mission Section -->
+  <section class="py-20 bg-gradient-to-br from-cream via-white to-cream relative overflow-hidden">
+    <div class="absolute top-10 left-10 w-32 h-32 bg-gold/10 rounded-full blur-3xl animate-pulse"></div>
+    <div class="absolute bottom-10 right-10 w-40 h-40 bg-maroon/10 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s"></div>
+    
+    <div class="container mx-auto px-4 relative z-10">
+      <div class="max-w-4xl mx-auto">
+        <div class="text-center mb-16">
+          <h2 class="font-playfair text-4xl md:text-5xl font-bold text-maroon mb-6 relative inline-block">
+            Our Mission
+            <span class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-32 h-1 bg-gradient-to-r from-transparent via-gold to-transparent animate-gold-shine"></span>
+          </h2>
+          <div class="w-32 h-1 bg-gold mx-auto mb-8 shadow-gold"></div>
+        </div>
+        
+        <div class="bg-gradient-to-r from-maroon/5 to-gold/5 p-8 md:p-12 rounded-2xl border border-gold/20 shadow-xl">
+          <p class="text-lg md:text-xl text-dark/90 leading-relaxed text-center">
+            {aboutContent.our_mission}
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Our Values Section -->
+  <section class="py-20 bg-gradient-to-br from-cream via-white to-cream relative overflow-hidden">
+    <div class="absolute top-10 left-10 w-32 h-32 bg-gold/10 rounded-full blur-3xl animate-pulse"></div>
+    <div class="absolute bottom-10 right-10 w-40 h-40 bg-maroon/10 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s"></div>
+    
+    <div class="container mx-auto px-4 relative z-10">
+      <div class="text-center mb-16">
+        <h2 class="font-playfair text-4xl md:text-5xl font-bold text-maroon mb-6 relative inline-block">
+          Our Values
+          <span class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-32 h-1 bg-gradient-to-r from-transparent via-gold to-transparent animate-gold-shine"></span>
+        </h2>
+        <div class="w-32 h-1 bg-gold mx-auto mb-8 shadow-gold"></div>
+      </div>
+      
+      <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+        {aboutContent.our_values.map((value, index) => (
+          <div class="bg-white/60 backdrop-blur-sm p-6 rounded-2xl border border-gold/20 shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105 animate-fade-up" style={`animation-delay: ${index * 0.15}s`}>
+            <div class="text-center">
+              <div class="w-16 h-16 bg-gradient-to-br from-gold/30 to-gold/10 rounded-full flex items-center justify-center mx-auto mb-4 transform group-hover:scale-110 transition-transform duration-300 shadow-sm">
+                <svg class="w-8 h-8 text-gold" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                </svg>
+              </div>
+              <h3 class="font-playfair text-xl font-bold text-maroon mb-3">
+                {value.title}
+              </h3>
+              <p class="text-dark/80 leading-relaxed">
+                {value.description}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Call to Action Section -->
+  <section class="py-20 bg-gradient-to-r from-maroon to-maroon/80 relative overflow-hidden">
+    <div class="absolute inset-0">
+      <div class="absolute top-10 left-20 w-64 h-64 bg-gold/20 rounded-full blur-3xl animate-pulse"></div>
+      <div class="absolute bottom-10 right-20 w-80 h-80 bg-white/10 rounded-full blur-3xl animate-pulse" style="animation-delay: 2s;"></div>
+    </div>
+    
+    <div class="container mx-auto px-4 relative z-10">
+      <div class="text-center text-white">
+        <h2 class="font-playfair text-3xl md:text-4xl font-bold mb-6">
+          Join Our Journey
+        </h2>
+        <p class="text-xl mb-8 max-w-2xl mx-auto">
+          Explore our collection and be part of the story that celebrates India's rich craftsmanship
+        </p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+          <a 
+            href="/shop" 
+            class="inline-flex items-center gap-3 bg-gold text-maroon px-8 py-4 rounded-full font-semibold text-lg hover:bg-white hover:text-maroon transition-all duration-500 transform hover:scale-105 shadow-lg hover:shadow-gold"
+          >
+            Shop Our Collection
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
+            </svg>
+          </a>
+          <a 
+            href="/contact" 
+            class="inline-flex items-center gap-3 bg-transparent text-white border-2 border-white px-8 py-4 rounded-full font-semibold text-lg hover:bg-white hover:text-maroon transition-all duration-500 transform hover:scale-105"
+          >
+            Contact Us
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+            </svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <Footer />
+</Layout>

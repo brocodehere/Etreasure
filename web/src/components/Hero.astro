@@ -1,0 +1,201 @@
+---
+// Hero section with dynamic banner carousel
+import { fetchBanners, type Banner } from '../lib/apiBanner';
+
+// Fallback images for when no banners are available
+const fallbackImages = [
+  'https://pub-1a3924a6c6994107be6fe9f3ed794c0a.r2.dev/banner/fallback1.jpg',
+  'https://pub-1a3924a6c6994107be6fe9f3ed794c0a.r2.dev/banner/fallback2.jpg', 
+  'https://pub-1a3924a6c6994107be6fe9f3ed794c0a.r2.dev/banner/fallback3.jpg'
+];
+
+let banners: Banner[] = [];
+let slides: string[] = [];
+let slideTitles: string[] = [];
+let slideLinks: (string | undefined)[] = [];
+let currentSlide = 0;
+
+// Initialize banners on component load
+await initBanners();
+
+async function initBanners() {
+  try {
+    const response = await fetchBanners();
+    banners = response.items || [];
+    
+    // Prepare slides: use DB banners first, then fallback images to ensure exactly 3 slides
+    slides = [];
+    slideTitles = [];
+    slideLinks = [];
+    
+    // Add dynamic banners - use image_url from API response
+    for (const banner of banners) {
+      if (slides.length < 3 && banner.image_url) {
+        slides.push(banner.image_url);
+        slideTitles.push(banner.title);
+        slideLinks.push(banner.link_url);
+      }
+    }
+    
+    // Add fallback images to reach exactly 3 slides
+    while (slides.length < 3) {
+      const fallbackIndex = slides.length - banners.length;
+      if (fallbackIndex < fallbackImages.length) {
+        slides.push(fallbackImages[fallbackIndex]);
+        slideTitles.push('Ethnic Treasure Collection');
+        slideLinks.push(undefined);
+      } else {
+        // If we run out of fallback images, repeat the first one
+        slides.push(fallbackImages[0]);
+        slideTitles.push('Ethnic Treasure Collection');
+        slideLinks.push(undefined);
+      }
+    }
+  } catch (error) {
+    console.error('Error initializing banners:', error);
+    // Use only fallback images if there's an error
+    slides = fallbackImages;
+    slideTitles = ['Ethnic Treasure Collection', 'Ethnic Treasure Collection', 'Ethnic Treasure Collection'];
+    slideLinks = [undefined, undefined, undefined];
+  }
+}
+---
+
+<script define:vars={{ slides, slideTitles, slideLinks }}>
+  document.addEventListener('DOMContentLoaded', () => {
+    const scrollIndicator = document.querySelector('[data-scroll-indicator]');
+    if (scrollIndicator) {
+      scrollIndicator.addEventListener('click', () => {
+        const nextSection = document.querySelector('section:nth-child(2)');
+        if (nextSection) {
+          nextSection.scrollIntoView({ behavior: 'smooth' });
+        } else {
+          // Fallback: scroll down by window height
+          window.scrollBy({ top: window.innerHeight, behavior: 'smooth' });
+        }
+      });
+    }
+
+    // Dynamic banner slideshow functionality
+    const heroImage = document.querySelector('[data-hero-image]');
+    const heroTitle = document.querySelector('[data-hero-title]');
+    const heroButton = document.querySelector('[data-hero-button]');
+    
+    // Initialize slides from server-side data
+    const slidesData = { slides, slideTitles, slideLinks };
+    let currentSlideIndex = 0;
+    
+    function updateSlideContent() {
+      if (heroImage && slidesData.slides.length > 0) {
+        // Fade out
+        heroImage.style.opacity = '0';
+        
+        setTimeout(() => {
+          // Update content
+          heroImage.src = slidesData.slides[currentSlideIndex];
+          heroImage.alt = slidesData.slideTitles[currentSlideIndex] || 'Premium ethnic fashion';
+          
+          // Update title if element exists
+          if (heroTitle) {
+            heroTitle.textContent = slidesData.slideTitles[currentSlideIndex] || 'Discover Premium Ethnic Fashion';
+          }
+          
+          // Update button if link exists
+          if (heroButton && slidesData.slideLinks[currentSlideIndex]) {
+            heroButton.href = slidesData.slideLinks[currentSlideIndex];
+            heroButton.style.display = 'inline-block';
+          } else if (heroButton) {
+            heroButton.style.display = 'none';
+          }
+          
+          // Fade in
+          heroImage.style.opacity = '1';
+        }, 500); // Fade transition time
+      }
+    }
+    
+    function changeSlide() {
+      if (slidesData.slides.length > 0) {
+        currentSlideIndex = (currentSlideIndex + 1) % slidesData.slides.length;
+        updateSlideContent();
+      }
+    }
+    
+    // Initialize first slide
+    updateSlideContent();
+    
+    // Change slide every 3 seconds
+    setInterval(changeSlide, 3000);
+  });
+</script>
+
+<section class="relative h-[30vh] sm:h-[40vh] md:h-[50vh] lg:h-[60vh] min-h-[250px] sm:min-h-[300px] md:min-h-[400px] max-h-[400px] sm:max-h-[500px] md:max-h-[700px] overflow-hidden">
+	<!-- Hero Image Slideshow -->
+	<div class="relative w-full h-full">
+		<img 
+			data-hero-image
+			src={slides[0] || '/images/banner1.png'} 
+			alt={slideTitles[0] || 'Premium ethnic fashion model wearing traditional Indian attire'}
+			class="w-full h-full object-cover transition-opacity duration-500 ease-in-out"
+			loading="eager"
+		/>
+	</div>
+
+	<!-- Slide Indicators -->
+	<div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex space-x-2 z-20">
+		<div class="w-2 h-2 bg-white rounded-full opacity-70 animate-pulse"></div>
+		<div class="w-2 h-2 bg-white/50 rounded-full"></div>
+		<div class="w-2 h-2 bg-white/50 rounded-full"></div>
+		<div class="w-2 h-2 bg-white/50 rounded-full"></div>
+	</div>
+
+	<!-- Overlay Gradient -->
+	<div class="absolute inset-0 bg-gradient-to-r from-maroon/70 via-maroon/30 to-transparent z-5"></div>
+
+	<!-- Hero Content -->
+	<div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+		<div class="container mx-auto px-4 text-center text-white animate-fade-in">
+			<h1 
+				data-hero-title
+				class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 drop-shadow-lg relative z-10"
+			>
+				{slideTitles[0] || 'Discover Premium Ethnic Fashion'}
+			</h1>
+			
+			{slideLinks[0] && (
+				<a 
+					data-hero-button
+					href={slideLinks[0]}
+					class="absolute bottom-6 left-6 bg-maroon text-cream px-6 py-3 rounded-md hover:bg-maroon/90 transition-colors duration-300 font-semibold pointer-events-auto"
+				>
+					Explore Now
+				</a>
+			)}
+		</div>
+	</div>
+
+	<!-- Decorative Ethnic SVG Motif -->
+	<div class="absolute bottom-5 sm:bottom-10 left-5 sm:left-10 text-gold/20 animate-pulse">
+		<svg width="80" height="80" class="sm:w-100 sm:h-100 md:w-120 md:h-120" viewBox="0 0 120 120" fill="currentColor">
+			<path d="M60 10 L70 40 L100 40 L75 60 L85 90 L60 70 L35 90 L45 60 L20 40 L50 40 Z"/>
+		</svg>
+	</div>
+
+	<div class="absolute top-5 sm:top-10 right-5 sm:right-10 text-gold/20 animate-pulse" style="animation-delay: 1s">
+		<svg width="60" height="60" class="sm:w-70 sm:h-70 md:w-80 md:h-80" viewBox="0 0 80 80" fill="currentColor">
+			<circle cx="40" cy="40" r="35" fill="none" stroke="currentColor" stroke-width="2"/>
+			<circle cx="40" cy="40" r="25" fill="none" stroke="currentColor" stroke-width="1"/>
+			<circle cx="40" cy="40" r="15" fill="none" stroke="currentColor" stroke-width="1"/>
+		</svg>
+	</div>
+
+	<!-- Scroll Indicator -->
+	<div 
+		data-scroll-indicator
+		class="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-white animate-bounce cursor-pointer hover:text-gold transition-colors duration-300"
+	>
+		<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+		</svg>
+	</div>
+</section>

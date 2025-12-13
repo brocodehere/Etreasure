@@ -1,0 +1,66 @@
+---
+// Product image gallery component
+const images = [
+  "/images/products/banarasi-silk-main.avif",
+  "/images/products/banarasi-silk-2.avif",
+  "/images/products/banarasi-silk-3.avif",
+  "/images/products/banarasi-silk-4.avif"
+];
+
+let mainImage = images[0];
+let isZoomed = false;
+
+function changeImage(image) {
+  mainImage = image;
+  isZoomed = false;
+}
+
+function toggleZoom() {
+  isZoomed = !isZoomed;
+}
+---
+
+<div class="space-y-4">
+  <!-- Main Image -->
+  <div class="relative overflow-hidden rounded-lg bg-cream">
+    <picture>
+      <source srcset={`${mainImage.replace('.avif', '-1200.avif')}`} type="image/avif">
+      <source srcset={`${mainImage.replace('.avif', '-1200.webp')}`} type="image/webp">
+      <img 
+        src={mainImage.replace('.avif', '.jpg')} 
+        alt="Product main image"
+        class={`w-full h-auto transition-transform duration-300 cursor-zoom-in ${isZoomed ? 'scale-150' : 'scale-100'}`}
+        loading="eager"
+        on:click={toggleZoom}
+      />
+    </picture>
+    
+    <!-- Zoom Indicator -->
+    <div class="absolute top-4 right-4 bg-white/80 px-3 py-1 rounded-full text-sm text-dark/80">
+      Click to zoom
+    </div>
+  </div>
+
+  <!-- Thumbnail Gallery -->
+  <div class="grid grid-cols-4 gap-4">
+    {images.map((image, index) => (
+      <button
+        class={`relative overflow-hidden rounded-lg border-2 transition-all duration-300 ${
+          mainImage === image ? 'border-gold shadow-gold' : 'border-transparent hover:border-gold/50'
+        }`}
+        on:click={() => changeImage(image)}
+      >
+        <picture>
+          <source srcset={`${image.replace('.avif', '-200.avif')}`} type="image/avif">
+          <source srcset={`${image.replace('.avif', '-200.webp')}`} type="image/webp">
+          <img 
+            src={image.replace('.avif', '.jpg')} 
+            alt={`Product image ${index + 1}`}
+            class="w-full h-24 object-cover transition-transform duration-300 hover:scale-110"
+            loading="lazy"
+          />
+        </picture>
+      </button>
+    ))}
+  </div>
+</div>

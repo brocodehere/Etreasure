@@ -1,0 +1,214 @@
+---
+// Newsletter subscription section
+---
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const newsletterForm = document.querySelector('[data-newsletter-form]');
+    const successMessage = document.querySelector('[data-success-message]');
+    const errorMessage = document.querySelector('[data-error-message]');
+    const submitButton = newsletterForm?.querySelector('button[type="submit"]');
+    const emailInput = newsletterForm?.querySelector('input[type="email"]');
+    
+    // Newsletter subscription function
+    async function subscribeToNewsletter(email) {
+      const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
+      
+      const response = await fetch(`${apiUrl}/api/public/newsletter/subscribe`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to subscribe: ${response.statusText}`);
+      }
+
+      return await response.json();
+    }
+    
+    if (newsletterForm) {
+      newsletterForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const email = emailInput?.value;
+        if (!email || !email.includes('@')) {
+          showError('Please enter a valid email address.');
+          return;
+        }
+
+        // Disable button and show loading
+        if (submitButton) {
+          submitButton.disabled = true;
+          submitButton.innerHTML = `
+            <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Subscribing...
+          `;
+        }
+        
+        try {
+          const response = await subscribeToNewsletter(email);
+          showSuccess(response.message || 'Thank you for subscribing! Check your email for confirmation.');
+          newsletterForm.reset();
+        } catch (error) {
+          console.error('Newsletter subscription error:', error);
+          const errorMessage = error instanceof Error ? error.message : 'Failed to subscribe. Please try again.';
+          showError(errorMessage);
+        } finally {
+          // Re-enable button
+          if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.innerHTML = `
+              <span>Subscribe</span>
+              <svg class="w-5 h-5 transform group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+              </svg>
+            `;
+          }
+        }
+      });
+    }
+
+    function showSuccess(message) {
+      if (successMessage) {
+        successMessage.querySelector('span').textContent = message;
+        successMessage.classList.remove('hidden');
+        successMessage.classList.add('animate-fade-up');
+      }
+      hideError();
+      setTimeout(() => {
+        if (successMessage) {
+          successMessage.classList.add('hidden');
+        }
+      }, 8000);
+    }
+
+    function showError(message) {
+      if (errorMessage) {
+        errorMessage.querySelector('span').textContent = message;
+        errorMessage.classList.remove('hidden');
+        errorMessage.classList.add('animate-fade-up');
+      }
+      hideSuccess();
+      setTimeout(() => {
+        if (errorMessage) {
+          errorMessage.classList.add('hidden');
+        }
+      }, 5000);
+    }
+
+    function hideSuccess() {
+      if (successMessage) {
+        successMessage.classList.add('hidden');
+      }
+    }
+
+    function hideError() {
+      if (errorMessage) {
+        errorMessage.classList.add('hidden');
+      }
+    }
+  });
+</script>
+
+<section class="relative py-20 bg-gradient-to-br from-cream/95 via-white to-cream/95 overflow-hidden">
+	<!-- Subtle Background Effects -->
+	<div class="absolute inset-0 opacity-[0.02]">
+		<div class="absolute top-10 left-20 w-64 h-64 bg-gradient-to-br from-gold/20 to-transparent rounded-full blur-3xl animate-pulse"></div>
+		<div class="absolute bottom-10 right-20 w-80 h-80 bg-gradient-to-tl from-maroon/20 to-transparent rounded-full blur-3xl animate-pulse" style="animation-delay: 1.5s;"></div>
+	</div>
+	
+	<div class="container mx-auto px-4 relative z-10">
+		<div class="max-w-4xl mx-auto text-center">
+			<!-- Section Header -->
+			<div class="mb-12 animate-fade-in">
+				<div class="inline-flex items-center gap-3 mb-6">
+					<div class="h-px bg-gradient-to-r from-transparent to-gold w-20"></div>
+					<span class="text-gold font-playfair text-sm tracking-widest uppercase bg-white/90 px-4 py-2 rounded-full border-2 border-gold/30">Stay Connected</span>
+					<div class="h-px bg-gradient-to-l from-transparent to-gold w-20"></div>
+				</div>
+				
+				<h2 class="font-playfair text-4xl md:text-5xl font-bold text-gradient mb-6">
+					Subscribe to Our Newsletter
+				</h2>
+				
+				<div class="flex items-center justify-center gap-4 mb-8">
+					<div class="w-16 h-0.5 bg-gold"></div>
+					<div class="w-3 h-3 bg-gold rounded-full animate-pulse"></div>
+					<div class="w-16 h-0.5 bg-gold"></div>
+				</div>
+				
+				<p class="text-xl text-dark/80 max-w-2xl mx-auto leading-relaxed font-light">
+					Get exclusive access to new collections, special offers, and behind-the-scenes stories from our artisan workshops
+				</p>
+			</div>
+
+			<!-- Newsletter Form -->
+			<div class="animate-fade-up" style="animation-delay: 0.2s;">
+				<form data-newsletter-form class="flex flex-col sm:flex-row gap-4 max-w-lg mx-auto">
+					<input 
+						type="email" 
+						placeholder="Enter your email address" 
+						class="flex-1 px-6 py-4 rounded-full border-2 border-gold/30 bg-white/90 backdrop-blur-sm text-dark placeholder-dark/60 focus:outline-none focus:border-gold focus:bg-white transition-all duration-300"
+						required
+					/>
+					<button 
+						type="submit"
+						class="group relative inline-flex items-center justify-center gap-2 bg-white text-maroon px-8 py-4 rounded-full font-bold text-lg shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
+					>
+						<span>Subscribe</span>
+						<svg class="w-5 h-5 transform group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+						</svg>
+					</button>
+				</form>
+				
+				<!-- Success Message -->
+				<div data-success-message class="hidden mt-6 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-2xl px-8 py-6 shadow-2xl transform transition-all duration-500 animate-fade-up">
+					<div class="flex items-center justify-center gap-4">
+						<div class="flex-shrink-0 w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+							<svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+								<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+							</svg>
+						</div>
+						<div class="text-left">
+							<p class="font-semibold text-lg mb-1">Successfully Subscribed!</p>
+							<span class="text-green-50">Thank you for subscribing! Check your email for confirmation.</span>
+						</div>
+					</div>
+				</div>
+				
+				<!-- Error Message -->
+				<div data-error-message class="hidden mt-6 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-2xl px-8 py-6 shadow-2xl transform transition-all duration-500 animate-fade-up">
+					<div class="flex items-center justify-center gap-4">
+						<div class="flex-shrink-0 w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+							<svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+								<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+							</svg>
+						</div>
+						<div class="text-left">
+							<p class="font-semibold text-lg mb-1">Subscription Failed</p>
+							<span class="text-red-50">Please enter a valid email address.</span>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Benefits -->
+			
+
+			<!-- Privacy Note -->
+			<div class="mt-12 text-center animate-fade-up" style="animation-delay: 0.6s;">
+				<p class="text-white/70 text-sm">
+					We respect your privacy. Unsubscribe at any time. No spam, we promise!
+				</p>
+			</div>
+		</div>
+	</div>
+</section>

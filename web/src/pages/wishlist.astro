@@ -1,0 +1,215 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<script>
+	// Check authentication and redirect if not logged in
+	function checkAuth() {
+		if (typeof localStorage !== 'undefined') {
+			const token = localStorage.getItem('accessToken');
+			const user = localStorage.getItem('user');
+			if (!token || !user) {
+				window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+				return;
+			}
+		}
+	}
+
+	// Check auth on page load
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', checkAuth);
+	} else {
+		checkAuth();
+	}
+</script>
+
+<Layout title="My Wishlist - Ethnic Treasures" description="View your favorite handcrafted products saved to wishlist">
+	<Header />
+	
+	<!-- Page Header -->
+	<section class="relative py-20 bg-gradient-to-br from-maroon via-maroon/80 to-maroon overflow-hidden">
+		<!-- Background Effects -->
+		<div class="absolute inset-0">
+			<div class="absolute top-10 left-20 w-64 h-64 bg-gold/20 rounded-full blur-3xl animate-pulse"></div>
+			<div class="absolute bottom-10 right-20 w-80 h-80 bg-white/10 rounded-full blur-3xl animate-pulse" style="animation-delay: 2s;"></div>
+		</div>
+		
+		<div class="container mx-auto px-4 relative z-10">
+			<div class="text-center text-white">
+				<h1 class="font-playfair text-4xl md:text-6xl font-bold mb-6 animate-fade-in">
+					My Wishlist
+				</h1>
+				<div class="w-32 h-1 bg-gold mx-auto mb-8 animate-gold-shine"></div>
+				<p class="text-xl md:text-2xl max-w-3xl mx-auto leading-relaxed animate-fade-up" style="animation-delay: 0.3s">
+					Your favorite handcrafted treasures, all in one place
+				</p>
+			</div>
+		</div>
+	</section>
+
+	<!-- Wishlist Content -->
+	<section class="py-20 bg-gradient-to-br from-cream via-white to-cream relative overflow-hidden">
+		<!-- Decorative Background Elements -->
+		<div class="absolute top-10 left-10 w-32 h-32 bg-gold/10 rounded-full blur-3xl animate-pulse"></div>
+		<div class="absolute bottom-10 right-10 w-40 h-40 bg-maroon/10 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s"></div>
+		
+		<div class="container mx-auto px-4 relative z-10">
+			<!-- Empty Wishlist -->
+			<div id="emptyWishlist" class="text-center py-16">
+				<svg class="w-24 h-24 text-gray-300 mx-auto mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+				</svg>
+				<h3 class="font-playfair text-2xl font-semibold text-maroon mb-4">
+					Your wishlist is empty
+				</h3>
+				<p class="text-dark/70 mb-8 max-w-md mx-auto">
+					Start adding your favorite handcrafted products to your wishlist!
+				</p>
+				<a href="/shop" class="btn-primary inline-flex items-center px-6 py-3">
+					Browse Products
+				</a>
+			</div>
+
+			<!-- Wishlist Items -->
+			<div id="wishlistItems" class="hidden">
+				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+					<!-- Wishlist items will be dynamically inserted here -->
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<Footer />
+</Layout>
+
+<script>
+		import { getWishlist, removeFromWishlist } from '../lib/api.js';
+	import '../lib/toast.js';
+
+	// Wishlist functionality
+	// Wishlist functionality - now uses authenticated API
+
+	async function updateWishlistCount() {
+		try {
+			const wishlistData = await getWishlist();
+			const wishlistCount = document.querySelector('[data-wishlist-count]');
+			if (wishlistCount) {
+				wishlistCount.textContent = wishlistData.count || 0;
+			}
+		} catch (error) {
+			showError('Failed to update wishlist count');
+		}
+	}
+
+	async function renderWishlist() {
+		const emptyWishlist = document.getElementById('emptyWishlist');
+		const wishlistItems = document.getElementById('wishlistItems');
+		const wishlistGrid = wishlistItems.querySelector('.grid');
+
+		try {
+			const wishlistData = await getWishlist();
+
+			if (!wishlistData || !wishlistData.items || !Array.isArray(wishlistData.items)) {
+				emptyWishlist.classList.remove('hidden');
+				wishlistItems.classList.add('hidden');
+				return;
+			}
+
+			if (wishlistData.items.length === 0) {
+				emptyWishlist.classList.remove('hidden');
+				wishlistItems.classList.add('hidden');
+			} else {
+				emptyWishlist.classList.add('hidden');
+				wishlistItems.classList.remove('hidden');
+
+				wishlistGrid.innerHTML = wishlistData.items.map((item, index) => `
+				<div class="bg-white rounded-lg shadow-card overflow-hidden hover:shadow-2xl transition-all duration-300 group">
+					<div class="relative overflow-hidden">
+						<img src="${item.image_url}" alt="${item.title}" class="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-500">
+						<button 
+							onclick="removeFromWishlistItem('${item.product_id}')"
+							class="absolute top-4 right-4 bg-white/90 backdrop-blur-sm p-2 rounded-full text-red-500 hover:bg-red-500 hover:text-white transition-all duration-300 shadow-lg"
+						>
+							<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+								<path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+							</svg>
+						</button>
+					</div>
+					<div class="p-6">
+						<h3 class="font-playfair text-xl font-semibold text-maroon mb-2 line-clamp-1">
+							${item.title}
+						</h3>
+						<p class="text-dark/70 text-sm mb-4 line-clamp-2">
+							${item.description || 'Beautiful handcrafted product'}
+						</p>
+						<div class="flex items-center justify-between">
+							<span class="text-2xl font-bold text-gold">
+								₹${item.price}
+							</span>
+							<button 
+								onclick="addToCartFromWishlist('${item.product_id}', '${item.title}', ${item.price}, '${item.image_url}')"
+								class="bg-maroon text-white px-4 py-2 rounded-full font-semibold hover:bg-gold hover:text-maroon transition-all duration-300"
+							>
+								Add to Cart
+							</button>
+						</div>
+					</div>
+				</div>
+			`).join('');
+			}
+		} catch (error) {
+			console.error('Error rendering wishlist:', error);
+			emptyWishlist.classList.remove('hidden');
+			wishlistItems.classList.add('hidden');
+		}
+	}
+
+	async function removeFromWishlistItem(productId) {
+		try {
+			await removeFromWishlist(productId);
+			updateWishlistCount();
+			renderWishlist();
+			showSuccess('Item removed from wishlist');
+		} catch (error) {
+			showError('Failed to remove from wishlist');
+		}
+	}
+
+	async function addToCartFromWishlist(productId, name, price, image) {
+		try {
+			const response = await fetch('/api/cart/add', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ product_id: productId, quantity: 1 })
+			});
+			
+			if (!response.ok) {
+				throw new Error('Failed to add to cart');
+			}
+			
+			// Update cart count using Header component function
+			if (typeof updateCartCount === 'function') {
+				updateCartCount();
+			}
+			
+			// Show notification
+			showSuccess(`${name} added to cart!`);
+		} catch (error) {
+			showError('Failed to add to cart');
+		}
+	}
+
+	// updateCartCount function is handled by Header component
+
+// Make functions available globally
+	window.removeFromWishlistItem = removeFromWishlistItem;
+	window.addToCartFromWishlist = addToCartFromWishlist;
+
+	// Initialize
+	document.addEventListener('DOMContentLoaded', () => {
+		updateWishlistCount();
+		renderWishlist();
+	});
+</script>

@@ -1,0 +1,54 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import CategoriesGrid from '../components/CategoriesGrid.tsx';
+import { fetchCategories } from '../lib/api';
+
+// Fetch categories on server side for better performance
+let initialCategories = [];
+try {
+  const categoriesData = await fetchCategories();
+  initialCategories = categoriesData.items || [];
+} catch (error) {
+  console.error('Failed to fetch categories on server:', error);
+}
+---
+
+<Layout title="All Categories - Ethnic Treasures" description="Browse our complete collection of handcrafted categories including bags, throws, and accessories.">
+	<Header />
+	
+	<!-- Page Header -->
+	<section class="relative py-20 bg-gradient-to-br from-maroon via-maroon/80 to-maroon overflow-hidden">
+		<!-- Background Effects -->
+		<div class="absolute inset-0">
+			<div class="absolute top-10 left-20 w-64 h-64 bg-gold/20 rounded-full blur-3xl animate-pulse"></div>
+			<div class="absolute bottom-10 right-20 w-80 h-80 bg-white/10 rounded-full blur-3xl animate-pulse" style="animation-delay: 2s;"></div>
+		</div>
+		
+		<div class="container mx-auto px-4 relative z-10">
+			<div class="text-center text-white">
+				<h1 class="font-playfair text-4xl md:text-6xl font-bold mb-6 animate-fade-in">
+					All Categories
+				</h1>
+				<div class="w-32 h-1 bg-gold mx-auto mb-8 animate-gold-shine"></div>
+				<p class="text-xl md:text-2xl max-w-3xl mx-auto leading-relaxed animate-fade-up" style="animation-delay: 0.3s">
+					Explore our complete collection of handcrafted treasures, from elegant bags to beautiful home decor
+				</p>
+			</div>
+		</div>
+	</section>
+
+	<!-- Categories Grid -->
+	<section class="py-20 bg-gradient-to-br from-cream via-white to-cream relative overflow-hidden">
+		<!-- Decorative Background Elements -->
+		<div class="absolute top-10 left-10 w-32 h-32 bg-gold/10 rounded-full blur-3xl animate-pulse"></div>
+		<div class="absolute bottom-10 right-10 w-40 h-40 bg-maroon/10 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s"></div>
+		
+		<div class="container mx-auto px-4 relative z-10">
+			<CategoriesGrid client:load initialCategories={initialCategories} />
+		</div>
+	</section>
+
+	<Footer />
+</Layout>

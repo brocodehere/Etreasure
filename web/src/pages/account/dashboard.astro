@@ -1,0 +1,28 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+---
+
+<Layout title="My Account - Ethnic Treasures" description="View your orders and account details at Ethnic Treasures.">
+  <Header />
+  <main class="min-h-[60vh] py-10 px-4 bg-cream">
+    <section class="container mx-auto max-w-3xl">
+      <h1 class="text-3xl font-playfair text-maroon mb-4">My Account</h1>
+      <p class="text-sm text-dark/70 mb-8">
+        You are signed in. This dashboard will soon show your recent orders, saved addresses, and profile details.
+      </p>
+      <div class="grid gap-4 md:grid-cols-2">
+        <div class="card-luxury p-4">
+          <h2 class="font-playfair text-xl text-maroon mb-2">Orders</h2>
+          <p class="text-sm text-dark/70">Order history and tracking will appear here.</p>
+        </div>
+        <div class="card-luxury p-4">
+          <h2 class="font-playfair text-xl text-maroon mb-2">Profile</h2>
+          <p class="text-sm text-dark/70">Profile details and saved addresses will appear here.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+  <Footer />
+</Layout>

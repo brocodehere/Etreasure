@@ -1,0 +1,27 @@
+---
+import '../styles/global.css';
+export interface Props {
+	title: string;
+	description?: string;
+	image?: string;
+}
+
+const { title, description = "Ethnic Treasures - Crafting Tradition, Weaving Stories", image = "/images/og-default.jpg" } = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="description" content={description} />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+	<link rel="preload" as="image" href="/images/banner1.png" />
+	<meta property="og:image" content={image} />
+	<title>{title}</title>
+  <script src="https://checkout.razorpay.com/v1/checkout.js" defer></script>
+</head>
+<body class="min-h-screen bg-cream">
+	<slot />
+</body>
+</html>

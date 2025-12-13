@@ -1,0 +1,713 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+
+// Get cart data from localStorage (client-side)
+---
+
+
+<Layout title="Shopping Cart - Ethnic Treasures" description="Review your handcrafted treasures in the shopping cart. Secure checkout, free shipping on orders above ₹5000, and easy returns.">
+	<Header />
+	
+	<main class="container mx-auto px-4 py-8">
+		<!-- Page Header -->
+		<div class="text-center mb-12">
+			<h1 class="font-playfair text-4xl md:text-5xl font-bold text-maroon mb-4">
+				Shopping Cart
+			</h1>
+			<div class="w-24 h-1 bg-gold mx-auto mb-6"></div>
+			<p class="text-lg text-dark/80 max-w-2xl mx-auto">
+				Review your selected handcrafted treasures before proceeding to secure checkout
+			</p>
+		</div>
+
+		<div id="cartContent" class="grid grid-cols-1 lg:grid-cols-3 gap-12">
+			<!-- Cart Items will be dynamically loaded here -->
+		</div>
+
+		<!-- Empty Cart Message -->
+		<div id="emptyCart" class="hidden text-center py-16">
+			<svg class="w-24 h-24 text-maroon mx-auto mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+			</svg>
+			<h2 class="font-playfair text-3xl font-bold text-maroon mb-4">Your cart is empty</h2>
+			<p class="text-lg text-dark/80 mb-8 max-w-2xl mx-auto">
+				Looks like you haven't added any handcrafted treasures to your cart yet.
+			</p>
+			<a href="/shop" class="btn-primary inline-flex items-center px-8 py-4">
+				<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+				</svg>
+				Continue Shopping
+			</a>
+		</div>
+	</main>
+
+	<!-- Checkout Modal -->
+	<div id="checkoutModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+		<div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+			<div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" id="modalOverlay"></div>
+
+			<div class="inline-block w-full max-w-4xl my-8 text-left align-middle transition-all transform bg-white shadow-xl rounded-lg">
+				<div class="bg-white rounded-lg">
+					<!-- Modal Header -->
+					<div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+						<h3 class="text-xl font-semibold text-maroon">Secure Checkout</h3>
+						<button id="closeModal" class="text-gray-400 hover:text-gray-500">
+							<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+							</svg>
+						</button>
+					</div>
+
+					<!-- Progress Steps -->
+					<div class="px-6 py-4 border-b border-gray-200">
+						<div class="flex items-center justify-between">
+							<div class="flex items-center">
+								<div id="step1Indicator" class="flex items-center justify-center w-8 h-8 bg-maroon text-white rounded-full text-sm font-medium">1</div>
+								<span class="ml-2 text-sm font-medium text-maroon">Shipping</span>
+							</div>
+							<div class="flex-1 h-px mx-4 bg-gray-300"></div>
+							<div class="flex items-center">
+								<div id="step2Indicator" class="flex items-center justify-center w-8 h-8 bg-gray-300 text-gray-600 rounded-full text-sm font-medium">2</div>
+								<span class="ml-2 text-sm font-medium text-gray-600">Payment</span>
+							</div>
+							<div class="flex-1 h-px mx-4 bg-gray-300"></div>
+							<div class="flex items-center">
+								<div id="step3Indicator" class="flex items-center justify-center w-8 h-8 bg-gray-300 text-gray-600 rounded-full text-sm font-medium">3</div>
+								<span class="ml-2 text-sm font-medium text-gray-600">Review</span>
+							</div>
+						</div>
+					</div>
+
+					<!-- Modal Body -->
+					<div class="px-6 py-6">
+						<!-- Step 1: Shipping Information -->
+						<div id="step1" class="space-y-6">
+							<h4 class="text-lg font-medium text-maroon">Shipping Information</h4>
+							
+							<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+								<div>
+									<label class="block text-sm font-medium text-gray-700 mb-2">First Name *</label>
+									<input type="text" id="firstName" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-maroon focus:border-transparent" required>
+								</div>
+								<div>
+									<label class="block text-sm font-medium text-gray-700 mb-2">Last Name *</label>
+									<input type="text" id="lastName" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-maroon focus:border-transparent" required>
+								</div>
+							</div>
+
+							<div>
+								<label class="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
+								<input type="email" id="email" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-maroon focus:border-transparent" required>
+							</div>
+
+							<div>
+								<label class="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
+								<input type="tel" id="phone" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-maroon focus:border-transparent" required>
+							</div>
+
+							<div>
+								<label class="block text-sm font-medium text-gray-700 mb-2">Shipping Address *</label>
+								<textarea id="address" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-maroon focus:border-transparent" required></textarea>
+							</div>
+
+							<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+								<div>
+									<label class="block text-sm font-medium text-gray-700 mb-2">City *</label>
+									<input type="text" id="city" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-maroon focus:border-transparent" required>
+								</div>
+								<div>
+									<label class="block text-sm font-medium text-gray-700 mb-2">State *</label>
+									<input type="text" id="state" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-maroon focus:border-transparent" required>
+								</div>
+								<div>
+									<label class="block text-sm font-medium text-gray-700 mb-2">PIN Code *</label>
+									<input type="text" id="pinCode" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-maroon focus:border-transparent" required>
+								</div>
+							</div>
+						</div>
+
+						<!-- Step 2: Payment Information -->
+						<div id="step2" class="hidden space-y-6">
+							<h4 class="text-lg font-medium text-maroon">Payment Information</h4>
+							<div class="space-y-4">
+								<div class="flex items-center p-4 border border-gray-200 rounded-lg bg-gray-50">
+									<img src="https://cdn.razorpay.com/logo.svg" alt="Razorpay" class="w-8 h-8 mr-4" />
+									<div class="flex-1">
+										<div class="font-medium">Razorpay (UPI / Cards / NetBanking)</div>
+										<div class="text-sm text-gray-600">Pay securely via Razorpay using UPI, credit/debit card, netbanking, wallets.</div>
+									</div>
+								</div>
+								<button id="razorpayPayBtn" class="w-full btn-primary py-4 mt-4">Pay Securely with Razorpay</button>
+							</div>
+						</div>
+
+						<!-- Step 3: Order Review -->
+						<div id="step3" class="hidden space-y-6">
+							<h4 class="text-lg font-medium text-maroon">Order Review</h4>
+							
+							<!-- Order Summary -->
+							<div id="orderReviewSummary" class="space-y-4">
+								<!-- Will be populated by JavaScript -->
+							</div>
+
+							<!-- Shipping Address Review -->
+							<div id="shippingAddressReview" class="space-y-4">
+								<h5 class="font-medium text-maroon">Shipping Address</h5>
+								<div id="addressReview">
+									<!-- Will be populated by JavaScript -->
+								</div>
+							</div>
+
+							<!-- Payment Method Review -->
+							<div id="paymentMethodReview" class="space-y-4">
+								<h5 class="font-medium text-maroon">Payment Method</h5>
+								<div id="paymentReview">
+									<!-- Will be populated by JavaScript -->
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- Modal Footer -->
+					<div class="flex items-center justify-end px-6 py-4 space-x-4 border-t border-gray-200">
+						<button id="prevBtn" class="hidden px-4 py-2 text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200">
+							Previous
+						</button>
+						<button id="nextBtn" class="px-4 py-2 text-white bg-maroon border border-transparent rounded-md hover:bg-maroon/90">
+							Next
+						</button>
+						<button id="placeOrderBtn" class="hidden px-4 py-2 text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700">
+							Place Order
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Order Success Modal -->
+	<div id="successModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+		<div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+			<div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75"></div>
+
+			<div class="inline-block w-full max-w-md my-8 text-left align-middle transition-all transform bg-white shadow-xl rounded-lg">
+				<div class="text-center px-6 py-8">
+					<div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
+						<svg class="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+						</svg>
+					</div>
+					<h3 class="text-xl font-semibold text-maroon mb-2">Order Placed Successfully!</h3>
+					<p class="text-gray-600 mb-6">Thank you for your order. We'll send you an email with order details and tracking information.</p>
+					<div id="orderNumber" class="text-lg font-medium text-maroon mb-6"></div>
+					<button id="continueShoppingBtn" class="btn-primary">
+						Continue Shopping
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<Footer />
+
+	<script>
+	import { getCart, removeFromCart, addToCart, toggleWishlist } from '../lib/api.js';
+	import '../lib/toast.js';
+
+	// Check authentication and redirect if not logged in
+	function checkAuth() {
+		if (typeof localStorage !== 'undefined') {
+			const token = localStorage.getItem('accessToken');
+			const user = localStorage.getItem('user');
+			if (!token || !user) {
+				window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+				return;
+			}
+		}
+	}
+
+	// Initialize cart functionality
+	document.addEventListener('DOMContentLoaded', () => {
+		checkAuth();
+
+		// Razorpay payment integration
+		const razorpayBtn = document.getElementById('razorpayPayBtn');
+		if (razorpayBtn) {
+			razorpayBtn.addEventListener('click', async function () {
+				try {
+					// Get current cart data from server
+					const cartData = await getCart();
+					
+					// Validate cart is not empty
+					if (!cartData || !cartData.items || cartData.items.length === 0) {
+						showError('Your cart is empty. Please add items before proceeding to payment.');
+						return;
+					}
+
+					// Collect customer info
+					const firstName = document.getElementById('firstName').value.trim();
+					const lastName = document.getElementById('lastName').value.trim();
+					const email = document.getElementById('email').value.trim();
+					const phone = document.getElementById('phone').value.trim();
+					const address = document.getElementById('address').value.trim();
+					const city = document.getElementById('city').value.trim();
+					const state = document.getElementById('state').value.trim();
+					const pinCode = document.getElementById('pinCode').value.trim();
+					const customerName = `${firstName} ${lastName}`;
+					
+					// Validate customer info
+					if (!firstName || !lastName || !email || !phone || !address || !city || !state || !pinCode) {
+						showError('Please fill in all required fields.');
+						return;
+					}
+
+					// Calculate total using server cart data
+					const cart = cartData.items;
+					const subtotal = cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+					const shipping = subtotal >= 5000 ? 0 : 100;
+					const tax = 0;
+					const total = subtotal + shipping + tax;
+					const amountPaise = Math.round(total * 100);
+
+					// Create order in backend and get Razorpay order id
+					const orderRes = await fetch('/api/orders/create-payment', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({
+							items: cart.map(item => ({ product_id: item.product_id, quantity: item.quantity })),
+							customer: { name: customerName, email, phone },
+							shipping_address: { address, city, state, pin_code: pinCode }
+						})
+					});
+					const data = await orderRes.json();
+					if (!orderRes.ok) throw new Error(data.error || 'Order creation failed');
+					
+					// Razorpay options
+					const options = {
+						key: data.key,
+						amount: data.amount,
+						currency: data.currency,
+						name: 'Ethnic Treasures',
+						description: `Order ${data.order_id}`,
+						order_id: data.razorpay_order_id,
+						prefill: {
+							name: customerName,
+							email: email,
+							contact: phone
+						},
+						notes: {
+							internal_order_id: data.order_id
+						},
+						handler: async function (response) {
+							try {
+								const verifyRes = await fetch('/api/orders/verify-payment', {
+									method: 'POST',
+									headers: { 'Content-Type': 'application/json' },
+									body: JSON.stringify({
+										order_id: data.order_id,
+										razorpay_order_id: response.razorpay_order_id,
+										razorpay_payment_id: response.razorpay_payment_id,
+										razorpay_signature: response.razorpay_signature
+									})
+								});
+								const verifyData = await verifyRes.json();
+								if (verifyRes.ok && verifyData.status === 'paid') {
+									localStorage.removeItem('cart');
+									window.location.href = `/order-confirmation?order_id=${data.order_id}`;
+								} else {
+									showError('Payment verification failed. Please try again.');
+								}
+							} catch (err) {
+								showError('Payment verification failed. Please try again.');
+							}
+						},
+						theme: { color: '#800000' }
+					};
+					const rzp = new window.Razorpay(options);
+					rzp.open();
+				} catch (err) {
+					if (err.message === 'User not authenticated') {
+						showError('Please log in to proceed with payment');
+						setTimeout(() => {
+							window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+						}, 2000);
+					} else {
+						showError(err.message || 'Payment failed. Please try again.');
+					}
+				}
+			});
+		}
+
+		// Render cart function
+		async function renderCart() {
+			const cartContent = document.getElementById('cartContent');
+			const emptyCart = document.getElementById('emptyCart');
+
+			try {
+				const cartData = await getCart();
+
+				if (!cartData || !cartData.items) {
+					cartContent.innerHTML = '<p class="text-center text-red-500">Invalid cart data received</p>';
+					return;
+				}
+
+				if (cartData.items.length === 0) {
+					cartContent.innerHTML = '';
+					emptyCart.classList.remove('hidden');
+					return;
+				}
+
+				emptyCart.classList.add('hidden');
+				const cart = cartData.items;
+
+				// Calculate totals - use API total
+				const subtotal = cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+				const shipping = subtotal >= 5000 ? 0 : 100;
+				const tax = 0; // All products are tax-free
+				const total = subtotal + shipping + tax;
+
+				// Render cart items
+				let cartItemsHTML = `
+					<div class="lg:col-span-2">
+						<div class="bg-white rounded-lg shadow-card p-8">
+							<div class="flex items-center justify-between mb-8">
+								<h2 class="font-playfair text-2xl font-semibold text-maroon">
+									Cart Items (${cart.length})
+								</h2>
+								<a href="/shop" class="text-gold hover:text-maroon transition-colors duration-300 font-medium">
+									Continue Shopping
+								</a>
+							</div>
+
+							<div class="space-y-6">
+				`;
+
+				cart.forEach((item, index) => {
+					cartItemsHTML += `
+						<div class="flex flex-col sm:flex-row gap-6 p-6 bg-cream rounded-lg" data-cart-item="${item.id}">
+							<img
+								src="${item.image_url}"
+								alt="${item.title}"
+								class="w-full sm:w-32 h-48 sm:h-32 object-cover rounded-lg"
+							/>
+							<div class="flex-1 space-y-4">
+								<div>
+									<h3 class="font-semibold text-lg text-dark mb-2">${item.title}</h3>
+									<p class="text-sm text-dark/60">SKU: ${item.product_id} | Size: Standard</p>
+								</div>
+								
+								<div class="flex items-center space-x-4">
+									<div class="flex items-center space-x-2">
+										<button class="decrease-qty w-8 h-8 bg-white border border-gold/30 rounded-full flex items-center justify-center hover:bg-gold hover:text-white transition-colors duration-300" data-product-id="${item.product_id}">
+											-
+										</button>
+										<span class="font-semibold w-8 text-center quantity-display">${item.quantity}</span>
+										<button class="increase-qty w-8 h-8 bg-white border border-gold/30 rounded-full flex items-center justify-center hover:bg-gold hover:text-white transition-colors duration-300" data-product-id="${item.product_id}">
+											+
+										</button>
+									</div>
+									<span class="font-semibold text-maroon text-lg">₹${item.price * item.quantity}</span>
+								</div>
+
+								<div class="flex items-center space-x-4">
+									<button class="save-for-later text-gold hover:text-maroon transition-colors duration-300 font-medium" data-product-id="${item.product_id}">
+										Save for Later
+									</button>
+									<button class="remove-item text-red-500 hover:text-red-600 transition-colors duration-300 font-medium" data-cart-item-id="${item.id}">
+										Remove
+									</button>
+								</div>
+							</div>
+						</div>
+					`;
+				});
+
+				cartItemsHTML += `
+							</div>
+						</div>
+					</div>
+				`;
+
+				// Add order summary
+				cartItemsHTML += `
+					<div class="lg:col-span-1">
+						<div class="bg-white rounded-lg shadow-card p-8 sticky top-24">
+							<h3 class="font-playfair text-2xl font-semibold text-maroon mb-6">
+								Order Summary
+							</h3>
+
+							<div class="space-y-4 mb-6">
+								<div class="flex justify-between text-dark/80">
+									<span>Subtotal (${cart.length} items)</span>
+									<span>₹${subtotal.toFixed(2)}</span>
+								</div>
+								<div class="flex justify-between text-dark/80">
+									<span>Shipping</span>
+									<span class="${shipping === 0 ? 'text-green-600' : ''}">${shipping === 0 ? 'FREE' : `₹${shipping.toFixed(2)}`}</span>
+								</div>
+								<div class="flex justify-between text-dark/80">
+									<span>Tax</span>
+									<span>₹${tax.toFixed(2)}</span>
+								</div>
+								<div class="border-t border-gold/20 pt-4">
+									<div class="flex justify-between font-semibold text-lg text-maroon">
+										<span>Total</span>
+										<span>₹${total.toFixed(2)}</span>
+									</div>
+								</div>
+							</div>
+
+							<!-- Checkout Button -->
+							<button id="checkoutBtn" class="w-full btn-primary py-4 mb-4">
+								Proceed to Checkout
+							</button>
+
+							<!-- Security Badges -->
+							<div class="text-center space-y-4">
+								<div class="flex items-center justify-center space-x-2 text-sm text-dark/60">
+									<svg class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+										<path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/>
+									</svg>
+									<span>Secure Checkout</span>
+								</div>
+							</div>
+						</div>
+					</div>
+				`;
+
+				cartContent.innerHTML = cartItemsHTML;
+
+				// Add event listeners for quantity changes and removal
+				document.querySelectorAll('.decrease-qty').forEach(button => {
+					button.addEventListener('click', (e) => {
+						const productId = e.target.dataset.productId;
+						updateQuantity(productId, -1);
+					});
+				});
+
+				document.querySelectorAll('.increase-qty').forEach(button => {
+					button.addEventListener('click', (e) => {
+						const productId = e.target.dataset.productId;
+						updateQuantity(productId, 1);
+					});
+				});
+
+				document.querySelectorAll('.remove-item').forEach(button => {
+					button.addEventListener('click', (e) => {
+						const cartItemId = e.target.dataset.cartItemId;
+						removeItem(cartItemId);
+					});
+				});
+
+				document.querySelectorAll('.save-for-later').forEach(button => {
+					button.addEventListener('click', (e) => {
+						const productId = e.target.dataset.productId;
+						saveForLater(productId);
+					});
+				});
+			} catch (error) {
+					console.error('Error rendering cart:', error);
+					
+					// Check if it's an authentication error
+					if (error.message === 'User not authenticated') {
+						cartContent.innerHTML = '<p class="text-center text-red-500">Please log in to view your cart</p>';
+						// Redirect to login after a short delay
+						setTimeout(() => {
+							window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+						}, 2000);
+					} else {
+						cartContent.innerHTML = '<p class="text-center text-red-500">Failed to load cart</p>';
+					}
+				}
+			}
+
+			async function updateQuantity(productId, change) {
+				try {
+					await addToCart(productId, change);
+					renderCart();
+				} catch (error) {
+					console.error('Error updating quantity:', error);
+					showError('Failed to update quantity');
+				}
+			}
+
+			async function removeItem(productId) {
+				try {
+					await removeFromCart(productId);
+					renderCart();
+					showSuccess('Item removed from cart');
+				} catch (error) {
+					console.error('Error removing item:', error);
+					showError('Failed to remove item');
+				}
+			}
+
+			async function saveForLater(productId) {
+				try {
+					// Add to wishlist first
+					await toggleWishlist(productId);
+					// Then remove from cart
+					await removeFromCart(productId);
+					renderCart();
+					showSuccess('Item saved to wishlist!');
+				} catch (error) {
+					console.error('Failed to save for later:', error);
+					showError('Failed to save item to wishlist. Please try again.');
+				}
+			}
+
+			// updateCartCount function is now in Header component
+
+			// Initial render
+			renderCart();
+
+			// Checkout functionality
+			let currentStep = 1;
+			const checkoutModal = document.getElementById('checkoutModal');
+			const successModal = document.getElementById('successModal');
+			
+			// Open checkout modal
+			document.addEventListener('click', (e) => {
+				if (e.target && e.target.id === 'checkoutBtn') {
+					checkoutModal.classList.remove('hidden');
+					currentStep = 1;
+					showStep(1);
+				}
+			});
+
+			// Close checkout modal
+			document.addEventListener('click', (e) => {
+				// Check if click is on close button or its children
+				if (e.target.id === 'closeModal' || e.target.closest('#closeModal')) {
+					checkoutModal.classList.add('hidden');
+				}
+				if (e.target.id === 'modalOverlay') {
+					checkoutModal.classList.add('hidden');
+				}
+			});
+
+			// Payment method change handlers
+			document.addEventListener('change', (e) => {
+				if (e.target && e.target.name === 'paymentMethod') {
+					const cardDetails = document.getElementById('cardDetails');
+					const upiDetails = document.getElementById('upiDetails');
+					
+					cardDetails.classList.add('hidden');
+					upiDetails.classList.add('hidden');
+					
+					if (e.target.value === 'card') {
+						cardDetails.classList.remove('hidden');
+					} else if (e.target.value === 'upi') {
+						upiDetails.classList.remove('hidden');
+					}
+				}
+			});
+
+			// Step navigation
+			function showStep(step) {
+				// Hide all steps
+				document.getElementById('step1').classList.add('hidden');
+				document.getElementById('step2').classList.add('hidden');
+				document.getElementById('step3').classList.add('hidden');
+				
+				// Show current step
+				document.getElementById(`step${step}`).classList.remove('hidden');
+				
+				// Update indicators
+				document.getElementById('step1Indicator').className = step >= 1 ? 'flex items-center justify-center w-8 h-8 bg-maroon text-white rounded-full text-sm font-medium' : 'flex items-center justify-center w-8 h-8 bg-gray-300 text-gray-600 rounded-full text-sm font-medium';
+				document.getElementById('step2Indicator').className = step >= 2 ? 'flex items-center justify-center w-8 h-8 bg-maroon text-white rounded-full text-sm font-medium' : 'flex items-center justify-center w-8 h-8 bg-gray-300 text-gray-600 rounded-full text-sm font-medium';
+				document.getElementById('step3Indicator').className = step >= 3 ? 'flex items-center justify-center w-8 h-8 bg-maroon text-white rounded-full text-sm font-medium' : 'flex items-center justify-center w-8 h-8 bg-gray-300 text-gray-600 rounded-full text-sm font-medium';
+				
+				// Update step labels
+				const stepLabels = document.querySelectorAll('.text-sm.font-medium');
+				stepLabels[1].className = step >= 1 ? 'ml-2 text-sm font-medium text-maroon' : 'ml-2 text-sm font-medium text-gray-600';
+				stepLabels[3].className = step >= 2 ? 'ml-2 text-sm font-medium text-maroon' : 'ml-2 text-sm font-medium text-gray-600';
+				stepLabels[5].className = step >= 3 ? 'ml-2 text-sm font-medium text-maroon' : 'ml-2 text-sm font-medium text-gray-600';
+				
+				// Update buttons
+				const prevBtn = document.getElementById('prevBtn');
+				const nextBtn = document.getElementById('nextBtn');
+				const placeOrderBtn = document.getElementById('placeOrderBtn');
+				
+				if (step === 1) {
+					prevBtn.classList.add('hidden');
+					nextBtn.classList.remove('hidden');
+					placeOrderBtn.classList.add('hidden');
+				} else if (step === 2) {
+					prevBtn.classList.remove('hidden');
+					nextBtn.classList.remove('hidden');
+					placeOrderBtn.classList.add('hidden');
+				} else if (step === 3) {
+					prevBtn.classList.remove('hidden');
+					nextBtn.classList.add('hidden');
+					placeOrderBtn.classList.remove('hidden');
+					// Populate review step
+					populateReviewStep();
+				}
+			}
+
+			// Next button handler
+			document.addEventListener('click', (e) => {
+				if (e.target && e.target.id === 'nextBtn') {
+					if (validateStep(currentStep)) {
+						currentStep++;
+						showStep(currentStep);
+					}
+				}
+			});
+
+			// Previous button handler
+			document.addEventListener('click', (e) => {
+				if (e.target && e.target.id === 'prevBtn') {
+					currentStep--;
+					showStep(currentStep);
+				}
+			});
+
+			// Form validation
+			function validateStep(step) {
+				if (step === 1) {
+					const firstName = document.getElementById('firstName').value.trim();
+					const lastName = document.getElementById('lastName').value.trim();
+					const email = document.getElementById('email').value.trim();
+					const phone = document.getElementById('phone').value.trim();
+					const address = document.getElementById('address').value.trim();
+					const city = document.getElementById('city').value.trim();
+					const state = document.getElementById('state').value.trim();
+					const pinCode = document.getElementById('pinCode').value.trim();
+
+					if (!firstName || !lastName || !email || !phone || !address || !city || !state || !pinCode) {
+						showError('Please fill in all required fields');
+						return false;
+					}
+
+					// Email validation
+					const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+					if (!emailRegex.test(email)) {
+						showError('Please enter a valid email address');
+						return false;
+					}
+
+					// Phone validation
+					const phoneRegex = /^[0-9]{10}$/;
+					if (!phoneRegex.test(phone)) {
+						showError('Please enter a valid 10-digit phone number');
+						return false;
+					}
+
+					// PIN code validation
+					const pinRegex = /^[0-9]{6}$/;
+					if (!pinRegex.test(pinCode)) {
+						showError('Please enter a valid 6-digit PIN code');
+						return false;
+					}
+				}
+
+				return true;
+			}
+		}); // Close DOMContentLoaded event listener
+	</script>
+</Layout>

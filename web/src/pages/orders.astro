@@ -1,0 +1,108 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<script>
+	// Check authentication and redirect if not logged in
+	function checkAuth() {
+		if (typeof localStorage !== 'undefined') {
+			const token = localStorage.getItem('accessToken');
+			const user = localStorage.getItem('user');
+			if (!token || !user) {
+				window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+				return;
+			}
+		}
+	}
+
+	// Load user orders
+	async function loadOrders() {
+		checkAuth();
+		
+		try {
+			const token = localStorage.getItem('accessToken');
+			// For now, we'll show a placeholder since orders API isn't implemented yet
+			// In a real implementation, this would fetch from /api/orders
+			showEmptyState();
+		} catch (error) {
+			console.error('Error loading orders:', error);
+			showEmptyState();
+		}
+	}
+
+	// Show empty state when no orders
+	function showEmptyState() {
+		const ordersContainer = document.getElementById('ordersContainer');
+		if (ordersContainer) {
+			ordersContainer.innerHTML = `
+				<div class="text-center py-16">
+					<svg class="w-24 h-24 text-dark/30 mx-auto mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+					</svg>
+					<h3 class="text-xl font-semibold text-dark mb-2">No orders yet</h3>
+					<p class="text-dark/60 mb-6">You haven't placed any orders yet. Start shopping to see your order history here!</p>
+					<a href="/shop" class="inline-flex items-center space-x-2 px-6 py-3 bg-maroon text-white rounded-lg hover:bg-maroon/90 transition-colors">
+						<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+							<path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 4H3z"></path>
+							<path d="M16 16a2 2 0 11-4 0 2 2 0 014 0zM4 12a2 2 0 11-4 0 2 2 0 014 0z"></path>
+						</svg>
+						<span>Start Shopping</span>
+					</a>
+				</div>
+			`;
+		}
+	}
+
+	// Initialize page
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', loadOrders);
+	} else {
+		loadOrders();
+	}
+</script>
+
+<Layout title="My Orders - Ethnic Treasures" description="View your order history and track your handcrafted treasures">
+	<Header />
+	
+	<!-- Page Header -->
+	<section class="relative py-20 bg-gradient-to-br from-maroon via-maroon/80 to-maroon overflow-hidden">
+		<!-- Background Effects -->
+		<div class="absolute inset-0">
+			<div class="absolute top-10 left-20 w-64 h-64 bg-gold/20 rounded-full blur-3xl animate-pulse"></div>
+			<div class="absolute bottom-10 right-20 w-80 h-80 bg-white/10 rounded-full blur-3xl animate-pulse" style="animation-delay: 2s;"></div>
+		</div>
+		
+		<div class="container mx-auto px-4 relative z-10">
+			<div class="text-center text-white">
+				<h1 class="font-playfair text-4xl md:text-6xl font-bold mb-6 animate-fade-in">
+					My Orders
+				</h1>
+				<div class="w-32 h-1 bg-gold mx-auto mb-8 animate-gold-shine"></div>
+				<p class="text-xl md:text-2xl max-w-3xl mx-auto leading-relaxed animate-fade-up" style="animation-delay: 0.3s">
+					Track your handcrafted treasures and view order history
+				</p>
+			</div>
+		</div>
+	</section>
+
+	<!-- Orders Content -->
+	<main class="container mx-auto px-4 py-12">
+		<!-- Breadcrumb -->
+		<nav class="flex items-center space-x-2 text-sm mb-8">
+			<a href="/profile" class="text-dark/60 hover:text-maroon transition-colors">Profile</a>
+			<svg class="w-4 h-4 text-dark/40" fill="currentColor" viewBox="0 0 20 20">
+				<path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+			</svg>
+			<span class="text-maroon font-medium">Orders</span>
+		</nav>
+
+		<!-- Orders Container -->
+		<div id="ordersContainer" class="space-y-6">
+			<!-- Orders will be loaded here dynamically -->
+		</div>
+	</main>
+
+	<Footer />
+</Layout>

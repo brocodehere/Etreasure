@@ -1,0 +1,212 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import ProductGallery from '../../components/ProductGallery.astro';
+import ProductInfo from '../../components/ProductInfo.astro';
+import Footer from '../../components/Footer.astro';
+---
+
+<Layout title="Banarasi Silk Saree - Pure Zari Work | Ethnic Treasures" description="Exquisite Banarasi silk saree handwoven with pure zari work. Features intricate floral motifs and traditional patterns passed down through generations.">
+	<Header />
+	
+	<main class="container mx-auto px-4 py-8">
+		<!-- Breadcrumb -->
+		<nav class="flex items-center space-x-2 text-sm text-dark/60 mb-8">
+			<a href="/" class="hover:text-gold transition-colors duration-300">Home</a>
+			<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+			</svg>
+			<a href="/sarees" class="hover:text-gold transition-colors duration-300">Sarees</a>
+			<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+			</svg>
+			<span class="text-dark font-medium">Banarasi Silk Saree</span>
+		</nav>
+
+		<!-- Product Section -->
+		<div class="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-16">
+			<!-- Product Gallery -->
+			<div>
+				<ProductGallery client:load />
+			</div>
+
+			<!-- Product Information -->
+			<div>
+				<ProductInfo client:load />
+			</div>
+		</div>
+
+		<!-- Product Tabs -->
+		<section class="mb-16">
+			<div class="border-b border-gold/20">
+				<nav class="flex space-x-8">
+					<button class="py-4 px-1 border-b-2 border-gold text-gold font-semibold">
+						Details
+					</button>
+					<button class="py-4 px-1 border-b-2 border-transparent text-dark/60 hover:text-gold transition-colors duration-300">
+						Fabric & Care
+					</button>
+					<button class="py-4 px-1 border-b-2 border-transparent text-dark/60 hover:text-gold transition-colors duration-300">
+						Shipping
+					</button>
+					<button class="py-4 px-1 border-b-2 border-transparent text-dark/60 hover:text-gold transition-colors duration-300">
+						Reviews (127)
+					</button>
+				</nav>
+			</div>
+
+			<!-- Tab Content -->
+			<div class="py-8">
+				<div id="details" class="space-y-6">
+					<div>
+						<h3 class="font-playfair text-2xl font-semibold text-maroon mb-4">Product Details</h3>
+						<div class="prose prose-lg text-dark/90 max-w-none">
+							<p>
+								This magnificent Banarasi silk saree is a testament to the timeless artistry of Indian weavers. Handwoven in the ancient city of Varanasi, this piece showcases the intricate jangla pattern with pure zari work that has been perfected over centuries.
+							</p>
+							<p>
+								The saree features traditional motifs including floral patterns, paisley designs, and Mughal-inspired geometric shapes. Each element is meticulously woven using the kadwa technique, ensuring that the patterns stand out with remarkable clarity and depth.
+							</p>
+							<h4 class="font-semibold text-xl text-gold mt-6 mb-3">Craftsmanship Highlights</h4>
+							<ul class="space-y-2">
+								<li class="flex items-start">
+									<svg class="w-5 h-5 text-gold mr-3 mt-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+										<path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+									</svg>
+									<span>Pure zari work with 24k gold-plated silver threads</span>
+								</li>
+								<li class="flex items-start">
+									<svg class="w-5 h-5 text-gold mr-3 mt-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+										<path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+									</svg>
+									<span>Handwoven by master weavers with 40+ years of experience</span>
+								</li>
+								<li class="flex items-start">
+									<svg class="w-5 h-5 text-gold mr-3 mt-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+										<path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+									</svg>
+									<span>Traditional jangla pattern with intricate floral motifs</span>
+								</li>
+								<li class="flex items-start">
+									<svg class="w-5 h-5 text-gold mr-3 mt-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+										<path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+									</svg>
+									<span>Approximately 45 days to complete a single piece</span>
+								</li>
+							</ul>
+						</div>
+					</div>
+
+					<!-- Craft Story -->
+					<div class="bg-gradient-to-r from-cream to-white p-8 rounded-lg">
+						<h3 class="font-playfair text-2xl font-semibold text-maroon mb-4">The Banarasi Legacy</h3>
+						<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+							<div>
+								<p class="text-dark/90 leading-relaxed mb-4">
+									Banarasi silk weaving dates back to the Mughal era, when artisans from Gujarat migrated to Varanasi at the invitation of Emperor Akbar. Over centuries, this craft has evolved while maintaining its traditional essence.
+								</p>
+								<p class="text-dark/90 leading-relaxed">
+									Today, Banarasi sarees are recognized worldwide for their opulent textures, intricate designs, and cultural significance. Each piece represents not just clothing, but a piece of living heritage.
+								</p>
+							</div>
+							<div class="bg-white p-6 rounded-lg border border-gold/20">
+								<h4 class="font-semibold text-lg text-gold mb-3">Artisan Spotlight</h4>
+								<p class="text-dark/80 italic mb-4">
+									"Weaving Banarasi sarees is not just our profession; it's our legacy. Every thread we weave carries the stories of our ancestors and the hopes for future generations."
+								</p>
+								<p class="text-sm text-dark/60">
+									- Ram Prasad, Master Weaver, Varanasi
+								</p>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- Related Products -->
+		<section class="mb-16">
+			<div class="text-center mb-12">
+				<h2 class="font-playfair text-3xl md:text-4xl font-bold text-maroon mb-4">
+					You May Also Like
+				</h2>
+				<div class="w-24 h-1 bg-gold mx-auto mb-4"></div>
+				<p class="text-lg text-dark/80 max-w-2xl mx-auto">
+					Discover more handcrafted treasures from our curated collection
+				</p>
+			</div>
+
+			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+				<!-- Related product cards would go here -->
+				<div class="card-luxury">
+					<div class="relative overflow-hidden">
+						<img src="/images/products/kashmiri-shawl.avif" alt="Kashmiri Shawl" class="w-full h-64 object-cover" />
+						<div class="absolute top-4 left-4">
+							<span class="bg-gold text-maroon px-3 py-1 text-sm font-semibold rounded-full">Similar</span>
+						</div>
+					</div>
+					<div class="p-6">
+						<h3 class="font-playfair text-lg font-semibold text-maroon mb-2">Kashmiri Pashmina Shawl</h3>
+					 <div class="flex items-center justify-between mb-4">
+							<span class="text-xl font-bold text-maroon">₹8,900</span>
+							<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Save 26%</span>
+						</div>
+						<a href="/products/kashmiri-pashmina-shawl" class="btn-primary w-full text-center py-2">
+							View Details
+						</a>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- Reviews Section -->
+		<section class="mb-16">
+			<div class="text-center mb-12">
+				<h2 class="font-playfair text-3xl md:text-4xl font-bold text-maroon mb-4">
+					Customer Reviews
+				</h2>
+				<div class="w-24 h-1 bg-gold mx-auto mb-4"></div>
+				<div class="flex items-center justify-center space-x-4">
+					<div class="flex text-gold">
+						{Array.from({ length: 5 }, (_, i) => (
+							<svg class="w-6 h-6 fill-current" viewBox="0 0 20 20">
+								<path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
+							</svg>
+						))}
+					</div>
+					<span class="text-2xl font-bold text-dark">4.8</span>
+					<span class="text-dark/80">based on 127 reviews</span>
+				</div>
+			</div>
+
+			<!-- Review cards would go here -->
+			<div class="space-y-6">
+				<div class="bg-white p-6 rounded-lg shadow-card">
+					<div class="flex items-start space-x-4">
+						<div class="w-12 h-12 bg-cream rounded-full flex items-center justify-center">
+							<span class="text-maroon font-semibold">AS</span>
+						</div>
+						<div class="flex-1">
+							<div class="flex items-center justify-between mb-2">
+								<h4 class="font-semibold text-dark">Anita Sharma</h4>
+								<div class="flex text-gold">
+									{Array.from({ length: 5 }, (_, i) => (
+										<svg class="w-4 h-4 fill-current" viewBox="0 0 20 20">
+											<path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
+										</svg>
+									))}
+								</div>
+							</div>
+							<p class="text-dark/80 mb-2">
+								Absolutely stunning saree! The zari work is exquisite and the silk quality is exceptional. Wore it to my daughter's wedding and received countless compliments. Worth every penny!
+							</p>
+							<p class="text-sm text-dark/60">Verified Purchase • 2 weeks ago</p>
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
+	</main>
+
+	<Footer />
+</Layout>

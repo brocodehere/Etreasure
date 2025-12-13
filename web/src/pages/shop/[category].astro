@@ -1,0 +1,634 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+
+// Generate static paths for all categories from database
+export async function getStaticPaths() {
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+  let categories = [];
+  
+  try {
+    const response = await fetch(`${API_URL}/api/public/categories`);
+    
+    if (response.ok) {
+      const data = await response.json();
+      
+      categories = (data.items || []).map((cat: any) => ({
+        id: cat.slug,
+        uuid: cat.uuid_id,
+        name: cat.name,
+      }));
+    }
+  } catch (error) {
+    // Error fetching categories
+  }
+
+  const dynamicPaths = categories.map((category) => ({
+    params: { category: category.id },
+    props: { category: category.id }
+  }));
+
+  // If no categories found, add some common fallback paths
+  if (categories.length === 0) {
+    const fallbackPaths = [
+      { params: { category: 'embroidered-clutches' }, props: { category: 'embroidered-clutches' } },
+      { params: { category: 'baby' }, props: { category: 'baby' } },
+      { params: { category: 'women' }, props: { category: 'women' } },
+      { params: { category: 'men' }, props: { category: 'men' } },
+      { params: { category: 'all' }, props: { category: 'all' } },
+    ];
+    
+    return fallbackPaths;
+  }
+
+  // Add 'all' category path
+  dynamicPaths.push({
+    params: { category: 'all' },
+    props: { category: 'all' }
+  });
+
+  return dynamicPaths;
+}
+
+// Fetch categories from database API
+let categories = [];
+try {
+  const response = await fetch(`${API_URL}/api/public/categories`);
+  if (response.ok) {
+    const data = await response.json();
+    categories = (data.items || []).map((cat: any) => ({
+      id: cat.slug,
+      uuid: cat.uuid_id,
+      name: cat.name,
+      image: cat.image_path || "/images/categories/default.webp",
+      description: cat.description || "",
+      count: 0
+    }));
+  }
+} catch (error) {
+  categories = [];
+}
+
+// Get category from URL parameter
+const { category } = Astro.params;
+const currentCategory = categories.find(cat => cat.id === category);
+
+// If category not found, show 404 or fallback
+if (!currentCategory && category !== 'all') {
+  // Try to find by partial match or create fallback
+  const fallbackCategory = categories.find(cat => 
+    cat.id.toLowerCase().includes(category.toLowerCase()) ||
+    category.toLowerCase().includes(cat.id.toLowerCase())
+  );
+  
+  if (!fallbackCategory) {
+    // Return a proper 404 response
+    return Astro.redirect('/shop');
+  }
+}
+
+// Use current category or fallback
+const displayCategory = currentCategory || { 
+  name: category === 'all' ? 'All Products' : 'Category', 
+  description: category === 'all' ? 'Browse all available products' : 'Products in this category'
+};
+
+// Fetch products for this category (by uuid) - filtered from database
+let filteredProducts = [];
+let allProducts = [];
+if (currentCategory?.uuid || category === 'all') {
+  try {
+    const apiUrl = category === 'all' 
+  ? `${API_URL}/api/products`
+  : `${API_URL}/api/products?category_id=${currentCategory.uuid}`;
+  const res = await fetch(apiUrl);
+    if (res.ok) {
+      const data = await res.json();
+      filteredProducts = (data.items || []).map((p: any) => ({
+        id: p.id || p.uuid_id || p.slug,
+        uuid_id: p.id || p.uuid_id,
+        slug: p.slug,
+        name: p.title,
+        description: p.description || '',
+        category: p.category_id,
+        category_uuid: p.category_id,
+        price: p.price_cents ? Math.round(p.price_cents / 100) : 0,
+        price_cents: p.price_cents || 0,
+        currency: p.currency || 'INR',
+        image: p.image_url || "/images/categories/baby.webp"
+      }));
+      allProducts = filteredProducts; // For client-side filtering
+    }
+  } catch (error) {
+    filteredProducts = [];
+    allProducts = [];
+  }
+}
+
+// Update category counts
+categories.forEach(cat => {
+  if (cat.uuid === currentCategory?.uuid) {
+    cat.count = filteredProducts.length;
+  } else {
+    // For other categories, we'd need to fetch separately or count from allProducts
+    cat.count = 0;
+  }
+});
+---
+
+<Layout title={`Shop - ${displayCategory.name} - Ethnic Treasures`} description={`Browse ${displayCategory.name} collection - ${displayCategory.description}`}>
+	<Header />
+	
+	<style>
+		#productsGrid {
+			display: grid !important;
+			grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+			gap: 1rem !important;
+		}
+		
+		@media (min-width: 768px) {
+			#productsGrid {
+				grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+				gap: 1.5rem !important;
+			}
+		}
+		
+		@media (min-width: 1024px) {
+			#productsGrid {
+				grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+				gap: 1.5rem !important;
+			}
+		}
+	</style>
+	
+	<!-- Shop Content -->
+	<section class="py-16 bg-gradient-to-br from-cream via-white to-cream">
+		<div class="container mx-auto px-4">
+			<!-- Mobile Filter Button -->
+			<div class="lg:hidden mb-6">
+				<button id="mobileFilterBtn" class="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-maroon to-maroon/80 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:from-gold hover:to-gold/80 hover:text-maroon transition-all duration-300 transform hover:scale-105">
+					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+					</svg>
+					<span>Filters & Categories</span>
+					<div class="ml-auto">
+						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+						</svg>
+					</div>
+				</button>
+			</div>
+
+			<div class="flex flex-col lg:flex-row gap-8">
+				<!-- Left Sidebar - Categories (Hidden on mobile, shown in dropdown) -->
+				<aside class="lg:w-1/4 hidden lg:block">
+					<div class="bg-gradient-to-br from-white via-cream to-white rounded-3xl shadow-xl border border-gold/20 p-8 sticky top-24 backdrop-blur-sm">
+						<div class="flex items-center gap-3 mb-8">
+							<div class="w-10 h-10 bg-gradient-to-br from-maroon to-gold rounded-xl flex items-center justify-center">
+								<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+								</svg>
+							</div>
+							<h3 class="font-playfair text-2xl font-bold bg-gradient-to-r from-maroon to-gold bg-clip-text text-transparent">Categories</h3>
+						</div>
+						
+						<!-- All Categories Link -->
+						<a 
+							href="/shop"
+							class={`group flex items-center justify-between px-5 py-4 rounded-2xl transition-all duration-300 mb-3 hover:bg-gradient-to-r hover:from-gold/10 hover:to-gold/5 hover:border-gold/30 border-2 border-transparent`}
+						>
+							<div class="flex items-center gap-3">
+								<div class="w-8 h-8 rounded-xl flex items-center justify-center bg-maroon/10 group-hover:bg-gold/20 transition-all duration-300">
+									<svg class="w-4 h-4 text-maroon group-hover:text-gold transition-all duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+									</svg>
+								</div>
+								<span class="font-semibold text-dark group-hover:text-maroon transition-all duration-300">All Products</span>
+							</div>
+							<span class="text-sm font-medium px-3 py-1 rounded-full bg-maroon/10 text-maroon/70 group-hover:bg-gold/20 group-hover:text-gold transition-all duration-300">0</span>
+						</a>
+						
+						<!-- Category Links -->
+						{categories.map((cat) => (
+							<a 
+								href={`/shop/${cat.id}`}
+								class={`group flex items-center justify-between px-5 py-4 rounded-2xl transition-all duration-300 mb-3 ${
+									category === cat.id 
+										? 'bg-gradient-to-r from-gold/20 to-gold/10 border-2 border-gold/50 shadow-lg' 
+										: 'hover:bg-gradient-to-r hover:from-gold/10 hover:to-gold/5 hover:border-gold/30 border-2 border-transparent'
+								}`}
+							>
+								<div class="flex items-center gap-3">
+									<div class={`w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-300 ${
+										category === cat.id 
+											? 'bg-gradient-to-br from-gold to-gold/80' 
+											: 'bg-maroon/10 group-hover:bg-gold/20'
+									}`}>
+										<svg class={`w-4 h-4 transition-all duration-300 ${
+											category === cat.id ? 'text-white' : 'text-maroon group-hover:text-gold'
+										}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+										</svg>
+									</div>
+									<span class={`font-semibold transition-all duration-300 ${
+										category === cat.id ? 'text-maroon' : 'text-dark group-hover:text-maroon'
+									}`}>{cat.name}</span>
+								</div>
+								<span class={`text-sm font-medium px-3 py-1 rounded-full transition-all duration-300 ${
+										category === cat.id 
+											? 'bg-gold text-maroon' 
+											: 'bg-maroon/10 text-maroon/70 group-hover:bg-gold/20 group-hover:text-gold'
+									}`}>{cat.count}</span>
+							</a>
+						))}
+					</div>
+				</aside>
+
+				<!-- Mobile Filter Dropdown -->
+				<div id="mobileFilterDropdown" class="fixed inset-0 bg-black/50 z-50 hidden lg:hidden">
+					<div class="absolute right-0 top-0 h-full w-80 bg-white shadow-xl transform translate-x-full transition-transform duration-300" id="mobileFilterPanel">
+						<div class="p-6">
+							<div class="flex items-center justify-between mb-6">
+								<h3 class="font-playfair text-xl font-bold text-maroon">Filters & Categories</h3>
+								<button id="closeMobileFilter" class="p-2 hover:bg-gold/10 rounded-lg transition-colors duration-300">
+									<svg class="w-5 h-5 text-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+									</svg>
+								</button>
+							</div>
+
+							<!-- Categories Section -->
+							<div class="mb-6">
+								<h4 class="font-semibold text-maroon mb-4">Categories</h4>
+								<div class="space-y-2">
+									<!-- All Categories Link -->
+									<a 
+										href="/shop"
+										class={`block px-4 py-3 rounded-lg transition-all duration-300 text-dark hover:bg-gold/10 hover:text-maroon`}
+										onClick="closeMobileFilter()"
+									>
+										All Products
+										<span class="float-right text-sm opacity-70">(0)</span>
+									</a>
+									
+									<!-- Category Links -->
+									{categories.map((cat) => (
+										<a 
+											href={`/shop/${cat.id}`}
+											class={`block px-4 py-3 rounded-lg transition-all duration-300 ${
+												category === cat.id 
+													? 'bg-gradient-to-r from-gold to-gold/80 text-maroon font-semibold' 
+													: 'text-dark hover:bg-gold/10 hover:text-maroon'
+											}`}
+											onClick="closeMobileFilter()"
+										>
+											{cat.name}
+											<span class="float-right text-sm opacity-70">({cat.count})</span>
+										</a>
+									))}
+								</div>
+							</div>
+
+							<!-- Sort Section -->
+							<div class="mb-6">
+								<h4 class="font-semibold text-maroon mb-4">Sort By</h4>
+								<select id="mobileSortSelect" class="w-full px-4 py-2 border-2 border-gold/30 rounded-lg bg-white text-dark focus:outline-none focus:border-gold">
+									<option value="featured">Sort by: Featured</option>
+									<option value="price-low">Price: Low to High</option>
+									<option value="price-high">Price: High to Low</option>
+									<option value="name-az">Name: A to Z</option>
+									<option value="name-za">Name: Z to A</option>
+								</select>
+							</div>
+
+							<!-- Apply Button -->
+							<button id="applyMobileFilter" class="w-full bg-maroon text-white py-3 rounded-lg font-semibold hover:bg-gold hover:text-maroon transition-colors duration-300">
+								Apply Filters
+							</button>
+						</div>
+					</div>
+				</div>
+
+				<!-- Right Content - Products -->
+				<main class="lg:w-3/4">
+					<!-- Products Header -->
+					<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
+						<div>
+							<h2 class="font-playfair text-2xl font-bold text-maroon mb-2">
+								{displayCategory.name}
+							</h2>
+							<p id="productCount" class="text-dark/70">
+								Loading products...
+							</p>
+						</div>
+						
+						<!-- Sort Dropdown -->
+						<div class="mt-4 sm:mt-0">
+							<div class="relative">
+								<select id="sortSelect" class="appearance-none bg-gradient-to-r from-white to-cream border-2 border-gold/30 rounded-2xl px-6 py-3 pr-12 text-dark font-medium focus:outline-none focus:border-gold focus:shadow-lg transition-all duration-300 cursor-pointer hover:border-gold/50">
+									<option value="featured">Sort by: Featured</option>
+									<option value="price-low">Price: Low to High</option>
+									<option value="price-high">Price: High to Low</option>
+									<option value="name-az">Name: A to Z</option>
+									<option value="name-za">Name: Z to A</option>
+								</select>
+								<div class="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+									<svg class="w-5 h-5 text-maroon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+									</svg>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- Products Grid -->
+					<div id="productsGrid">
+						<!-- Products will be rendered here by JavaScript -->
+					</div>
+				</main>
+			</div>
+		
+	</section>
+
+	<Footer />
+							
+				
+	<!-- Cart Notification -->
+	<div id="cartNotification" class="fixed top-24 right-4 bg-green-500 text-white px-6 py-4 rounded-lg shadow-lg transform translate-x-full transition-transform duration-300 z-50">
+		<div class="flex items-center gap-3">
+			<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+			</svg>
+			<span id="cartNotificationText">Product added to cart!</span>
+		</div>
+	</div>
+
+	
+<!-- Products data from database API -->
+	<script define:vars={{ filteredProducts }}>
+		window.allProducts = filteredProducts;
+	</script>
+
+	<script>
+	const products = window.allProducts || [];
+	let clientFilteredProducts = [...products];
+	let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+
+	function updateCartCount() {
+		const cartCount = document.querySelector('[data-cart-count]');
+		if (cartCount) cartCount.textContent = cart.reduce((total, item) => total + item.quantity, 0);
+	}
+
+	function addToCart(product) {
+		const existingItem = cart.find(item => item.id === product.id);
+		if (existingItem) existingItem.quantity++;
+		else cart.push({ ...product, quantity: 1 });
+		localStorage.setItem('cart', JSON.stringify(cart));
+		updateCartCount();
+		showNotification(`${product.name} added to cart!`);
+	}
+
+	function addToCartById(productId) {
+		const product = products.find(p => String(p.id) === String(productId));
+		if (product) {
+			addToCart(product);
+		} else {
+			// Product not found
+		}
+	}
+
+	function showNotification(message) {
+		const notification = document.getElementById('cartNotification');
+		const notificationText = document.getElementById('cartNotificationText');
+		notificationText.textContent = message;
+		notification.classList.remove('translate-x-full');
+		setTimeout(() => notification.classList.add('translate-x-full'), 3000);
+	}
+
+		// Wishlist functionality
+	let wishlist = [];
+	try {
+		wishlist = JSON.parse(localStorage.getItem('wishlist') || '[]');
+	} catch (error) {
+		wishlist = [];
+	}
+
+	function updateWishlistUI() {
+		document.querySelectorAll('[data-wishlist-btn]').forEach(btn => {
+			const productId = String(btn.dataset.productId);
+			const isInWishlist = wishlist.some(item => String(item.id) === productId);
+			const icon = btn.querySelector('.wishlist-icon');
+			if (icon) {
+				icon.setAttribute('fill', isInWishlist ? 'currentColor' : 'none');
+			}
+			btn.classList.toggle('bg-gold/20', isInWishlist);
+		});
+		const wishlistCount = document.querySelector('[data-wishlist-count]');
+		if (wishlistCount) {
+			wishlistCount.textContent = wishlist.length;
+		}
+	}
+
+	function toggleWishlistById(productId) {
+		const product = products.find(p => String(p.id) === String(productId));
+		if (!product) {
+			return;
+		}
+
+		const idx = wishlist.findIndex(item => String(item.id) === String(product.id));
+		if (idx > -1) {
+			wishlist.splice(idx, 1);
+			showNotification(`${product.name} removed from wishlist!`);
+		} else {
+			const { id, name, price, image, description } = product;
+			wishlist.push({ id, name, price, image, description: description || '' });
+			showNotification(`${product.name} added to wishlist!`);
+		}
+		localStorage.setItem('wishlist', JSON.stringify(wishlist));
+		updateWishlistUI();
+	}
+
+	// Sorting functionality
+function sortProducts(sortBy) {
+	let sortedProducts = [...clientFilteredProducts];
+	switch(sortBy) {
+		case 'price-low':
+			sortedProducts.sort((a, b) => a.price - b.price);
+			break;
+		case 'price-high':
+			sortedProducts.sort((a, b) => b.price - a.price);
+			break;
+		case 'name-az':
+			sortedProducts.sort((a, b) => a.name.localeCompare(b.name));
+			break;
+		case 'name-za':
+			sortedProducts.sort((a, b) => b.name.localeCompare(a.name));
+			break;
+		case 'featured':
+		default:
+			sortedProducts.sort((a, b) => a.id - b.id);
+			break;
+	}
+	clientFilteredProducts = sortedProducts;
+	renderProducts();
+}
+
+function renderProducts() {
+	const grid = document.getElementById('productsGrid');
+	
+	if (!grid) {
+		return;
+	}
+	
+	// Force grid behavior with JavaScript
+	const width = window.innerWidth;
+	if (width < 768) {
+		grid.style.gridTemplateColumns = 'repeat(1, minmax(0, 1fr))';
+		grid.style.gap = '1rem';
+	} else if (width < 1024) {
+		grid.style.gridTemplateColumns = 'repeat(2, minmax(0, 1fr))';
+		grid.style.gap = '1.5rem';
+	} else {
+		grid.style.gridTemplateColumns = 'repeat(3, minmax(0, 1fr))';
+		grid.style.gap = '1.5rem';
+	}
+		
+	if (clientFilteredProducts.length === 0) {
+		grid.innerHTML = '<div class="col-span-full text-center py-12"><h3 class="font-playfair text-2xl font-bold text-maroon mb-4">No products found</h3></div>';
+		return;
+	}
+	
+	let html = '';
+	clientFilteredProducts.forEach(product => {
+		html += '<div class="bg-white rounded-2xl shadow-lg overflow-hidden group hover:shadow-xl transition-all duration-300">';
+		html += '<div class="relative h-64 overflow-hidden">';
+		html += '<a href="/product/' + product.id + '" class="block w-full h-full">';
+		html += '<img src="' + product.image + '" alt="' + product.name + '" class="w-full h-full object-cover group-hover:scale-110" loading="lazy" />';
+		html += '</a></div>';
+		html += '<div class="p-4 sm:p-6">';
+		html += '<h3 class="font-playfair text-lg sm:text-xl font-bold text-maroon mb-2 line-clamp-2">' + product.name + '</h3>';
+		html += '<p class="text-dark/60 text-xs sm:text-sm mb-4 line-clamp-2">' + product.description + '</p>';
+		html += '<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">';
+		html += '<span class="text-lg sm:text-2xl font-bold text-gold">$' + product.price + '</span>';
+		html += '<div class="flex items-center gap-2">';
+		html += '<button class="bg-gold/20 py-2 px-3 sm:px-4 rounded-lg text-dark text-sm sm:text-base font-medium hover:bg-gold hover:text-maroon transition-colors duration-300 flex-shrink-0" data-product-id="' + product.id + '" onclick="addToCartById(\'' + product.id + '\')">Add to Cart</button>';
+		html += '<button class="bg-transparent py-2 px-2 sm:px-4 rounded-lg text-dark text-sm sm:text-base font-medium hover:bg-gold hover:text-maroon transition-colors duration-300 flex-shrink-0" data-product-id="' + product.id + '" data-wishlist-btn><svg class="w-5 h-5 sm:w-6 sm:h-6 wishlist-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg></button>';
+		html += '</div>';
+		html += '</div>';
+		html += '</div>';
+		html += '</div>';
+	});
+	grid.innerHTML = html;
+}
+
+	window.addToCart = addToCart;
+	window.products = products;
+	window.toggleWishlistById = toggleWishlistById;
+
+	// Initialize
+	document.addEventListener('DOMContentLoaded', () => {
+		updateCartCount();
+		updateWishlistUI();
+		renderProducts();
+		
+		// Add resize listener for responsive grid
+		window.addEventListener('resize', () => {
+			const grid = document.getElementById('productsGrid');
+			if (grid) {
+				const width = window.innerWidth;
+				if (width < 768) {
+					grid.style.gridTemplateColumns = 'repeat(1, minmax(0, 1fr))';
+					grid.style.gap = '1rem';
+				} else if (width < 1024) {
+					grid.style.gridTemplateColumns = 'repeat(2, minmax(0, 1fr))';
+					grid.style.gap = '1.5rem';
+				} else {
+					grid.style.gridTemplateColumns = 'repeat(3, minmax(0, 1fr))';
+					grid.style.gap = '1.5rem';
+				}
+			}
+		});
+		
+		// Sort dropdown (desktop)
+		const sortSelect = document.getElementById('sortSelect');
+		if (sortSelect) {
+			sortSelect.addEventListener('change', (e) => {
+				sortProducts(e.target.value);
+			});
+		}
+
+		// Mobile filter functionality
+		const mobileFilterBtn = document.getElementById('mobileFilterBtn');
+		const mobileFilterDropdown = document.getElementById('mobileFilterDropdown');
+		const mobileFilterPanel = document.getElementById('mobileFilterPanel');
+		const closeMobileFilter = document.getElementById('closeMobileFilter');
+		const applyMobileFilter = document.getElementById('applyMobileFilter');
+		const mobileSortSelect = document.getElementById('mobileSortSelect');
+
+		// Open mobile filter
+		if (mobileFilterBtn) {
+			mobileFilterBtn.addEventListener('click', () => {
+				mobileFilterDropdown.classList.remove('hidden');
+				setTimeout(() => {
+					mobileFilterPanel.classList.remove('translate-x-full');
+				}, 10);
+			});
+		}
+
+		// Close mobile filter
+		function closeMobileFilterPanel() {
+			mobileFilterPanel.classList.add('translate-x-full');
+			setTimeout(() => {
+				mobileFilterDropdown.classList.add('hidden');
+			}, 300);
+		}
+
+		if (closeMobileFilter) {
+			closeMobileFilter.addEventListener('click', closeMobileFilterPanel);
+		}
+
+		// Close when clicking outside
+		if (mobileFilterDropdown) {
+			mobileFilterDropdown.addEventListener('click', (e) => {
+				if (e.target === mobileFilterDropdown) {
+					closeMobileFilterPanel();
+				}
+			});
+		}
+
+		// Apply mobile filters
+		if (applyMobileFilter && mobileSortSelect) {
+			applyMobileFilter.addEventListener('click', () => {
+				sortProducts(mobileSortSelect.value);
+				closeMobileFilterPanel();
+			});
+		}
+
+		// Mobile sort change
+		if (mobileSortSelect) {
+			mobileSortSelect.addEventListener('change', (e) => {
+				const sortSelect = document.getElementById('sortSelect');
+				if (sortSelect) {
+					sortSelect.value = e.target.value;
+				}
+			});
+		}
+	});
+
+	// Make closeMobileFilter available globally for onClick handlers
+	window.closeMobileFilter = () => {
+		const mobileFilterPanel = document.getElementById('mobileFilterPanel');
+		const mobileFilterDropdown = document.getElementById('mobileFilterDropdown');
+		if (mobileFilterPanel && mobileFilterDropdown) {
+			mobileFilterPanel.classList.add('translate-x-full');
+			setTimeout(() => {
+				mobileFilterDropdown.classList.add('hidden');
+			}, 300);
+		}
+	};
+
+	</script>
+</Layout>

@@ -1,0 +1,26 @@
+{
+  "name": "etreasure1",
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "dev:admin": "astro dev --config astro.admin.config.mjs",
+    "build:admin": "astro build --config astro.admin.config.mjs",
+    "preview:admin": "astro preview --config astro.admin.config.mjs --port 3001"
+  },
+  "dependencies": {
+    "@astrojs/react": "^4.4.2",
+    "@astrojs/tailwind": "^5.0.0",
+    "@astrojs/node": "^9.0.0",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "astro": "^5.16.2",
+    "autoprefixer": "^10.4.22",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "tailwindcss": "^3.4.0"
+  }
+}

@@ -1,0 +1,46 @@
+# Performance Headers for Cloudflare Pages
+
+# HTML
+/*.html
+  Cache-Control: public, max-age=600, s-maxage=600
+
+# Static Assets (CSS, JS, Fonts)
+/*.css
+  Cache-Control: public, max-age=31536000, immutable
+/*.js
+  Cache-Control: public, max-age=31536000, immutable
+/*.woff2
+  Cache-Control: public, max-age=31536000, immutable
+/*.woff
+  Cache-Control: public, max-age=31536000, immutable
+
+# Images (AVIF, WebP, JPG)
+/*.avif
+  Cache-Control: public, max-age=31536000, immutable
+/*.webp
+  Cache-Control: public, max-age=31536000, immutable
+/*.jpg
+  Cache-Control: public, max-age=31536000, immutable
+/*.jpeg
+  Cache-Control: public, max-age=31536000, immutable
+/*.png
+  Cache-Control: public, max-age=31536000, immutable
+
+# SVG
+/*.svg
+  Cache-Control: public, max-age=31536000, immutable
+
+# JSON and API responses
+/*.json
+  Cache-Control: public, max-age=3600
+
+# Security Headers
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), microphone=(), camera=()
+
+# Enable Brotli compression
+/*
+  Content-Encoding: br

@@ -1,0 +1,23 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+---
+
+<Layout title="My Profile - Ethnic Treasures" description="Manage your personal details and account settings.">
+  <Header />
+  <main class="min-h-[60vh] py-10 px-4 bg-cream">
+    <section class="container mx-auto max-w-3xl">
+      <h1 class="text-3xl font-playfair text-maroon mb-4">Profile</h1>
+      <p class="text-sm text-dark/70 mb-6">
+        This page will show and let you update your personal details (name, email, addresses, preferences).
+      </p>
+      <div class="card-luxury p-4">
+        <p class="text-sm text-dark/70">
+          Profile editing is not wired yet, but the route is working. You can extend this section with forms for name, email, password change, and address management.
+        </p>
+      </div>
+    </section>
+  </main>
+  <Footer />
+</Layout>

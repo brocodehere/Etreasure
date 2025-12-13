@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-maroon: #6d0f19;
+  --color-gold: #d4a857;
+  --color-cream: #f7f3eb;
+  --color-dark: #161616;
+}
+
+body {
+  @apply font-inter bg-cream text-dark antialiased;
+}
+
+.app-shell {
+  @apply min-h-screen flex bg-cream text-dark;
+}
+
+.app-sidebar {
+  @apply w-64 bg-dark text-cream flex flex-col border-r border-gold/40;
+}
+
+.app-header {
+  @apply h-16 flex items-center justify-between px-6 border-b border-gold/30 bg-cream/80 backdrop-blur;
+}
+
+.app-main {
+  @apply flex-1 p-6 overflow-y-auto;
+}
+
+.app-link-active {
+  @apply bg-maroon text-cream shadow-gold;
+}
+
+.skeleton {
+  @apply animate-pulse bg-dark/5 rounded;
+}

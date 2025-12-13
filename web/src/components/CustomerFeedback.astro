@@ -1,0 +1,127 @@
+---
+// Customer Feedback section with Indian names and ratings
+const customerReviews = [
+	{
+		name: "Priya Sharma",
+		location: "Mumbai, Maharashtra",
+		rating: 5,
+		review: "Handcrafted, beautiful, and much sturdier than expected.The design looks even better in real life. I was worried about durability, but it’s surprisingly strong and holds all my work essentials. The zipper quality is solid, and the colors haven’t faded even after regular use. Love supporting Indian artisans — great job Ethnic Treasures!",
+		product: "Laptop Bag"
+	},
+	{
+		name: "Anjali Patel",
+		location: "Patna, Bihar",
+		rating: 4.5,
+		review: "Perfect gift for my friend — she loved it! I gifted this embroidered clutch to my best friend for her engagement, and she was so happy. The bag looks elegant and very stylish. The embroidery work reflects true artisan skill. Delivery was fast and packaging was beautiful too.",
+		product: "Embroidered Clutches"
+	},
+	{
+		name: "Kavita Reddy",
+		location: "Bangalore, Karnataka",
+		rating: 5,
+		review: "Perfect for newborns — warm, lightweight and super cozy. This baby throw feels like a warm hug. The material is light yet keeps the baby comfortably warm at night. The stitching is neat and durable. I washed it twice already and it still looks brand new. Amazing quality from Ethnic Treasures!",
+		product: "Baby Throw"
+	},
+	{
+		name: "Meera Gupta",
+		location: "Shalimar Bag, New Delhi",
+		rating: 4.8,
+		review: "The tote is very easy to carry, not heavy like many designer bags. The straps are comfortable even when the bag is full. The print and colors look much more vibrant in real life. Amazing product for a great price.",
+		product: "Tote Bag"
+	}
+];
+---
+
+<section class="relative py-20 bg-gradient-to-br from-cream/95 via-white to-cream/95 overflow-hidden">
+	<!-- Enhanced Background Effects -->
+	<div class="absolute inset-0">
+		<!-- Subtle Pattern -->
+		<div class="absolute inset-0 opacity-[0.02]" style="background-image: url('data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="%23D4A857" fill-opacity="0.3"%3E%3Cpath d="M30 30m-20 0a20 20 0 1 0 40 0a20 20 0 1 0 -40 0"/%3E%3C/g%3E%3C/svg%3E');"></div>
+		
+		<!-- Gradient Layers -->
+		<div class="absolute inset-0 bg-gradient-to-tr from-gold/5 via-transparent to-maroon/5"></div>
+		<div class="absolute inset-0 bg-gradient-to-bl from-white/10 via-transparent to-cream/5"></div>
+		
+		<!-- Soft Glow Elements -->
+		<div class="absolute top-10 left-20 w-64 h-64 bg-gradient-to-br from-gold/15 to-transparent rounded-full blur-3xl animate-pulse"></div>
+		<div class="absolute bottom-10 right-20 w-80 h-80 bg-gradient-to-tl from-maroon/15 to-transparent rounded-full blur-3xl animate-pulse" style="animation-delay: 2s;"></div>
+	</div>
+	
+	<div class="container mx-auto px-4 relative z-10">
+		<!-- Section Header -->
+		<div class="text-center mb-16 animate-fade-in">
+			<div class="inline-flex items-center gap-3 mb-6">
+				<div class="h-px bg-gradient-to-r from-transparent to-gold w-20"></div>
+				<span class="text-gold font-playfair text-sm tracking-widest uppercase">Customer Voices</span>
+				<div class="h-px bg-gradient-to-l from-transparent to-gold w-20"></div>
+			</div>
+			
+			<h2 class="font-playfair text-4xl md:text-5xl font-bold text-gradient mb-6">
+				What Our Customers Say
+			</h2>
+			<p class="text-xl text-dark/80 max-w-3xl mx-auto leading-relaxed">
+				Hear from our valued customers across India who have experienced the beauty and quality of Ethnic Treasure's handcrafted pieces
+			</p>
+		</div>
+		
+		<!-- Reviews Grid -->
+		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+			{customerReviews.map((review, index) => (
+				<div key={index} class="group bg-white/80 backdrop-blur-sm rounded-2xl border border-gold/20 shadow-lg hover:shadow-xl transition-all duration-300 p-4 md:p-6 animate-fade-up" style={`animation-delay: ${index * 0.15}s;`}>
+					<!-- Rating Stars -->
+					<div class="flex items-center gap-1 mb-4">
+						<div class="flex items-center">
+							{Array.from({ length: Math.floor(review.rating) }, (_, i) => (
+								<svg class="w-4 h-4 md:w-5 md:h-5 text-yellow-400 fill-current" viewBox="0 0 20 20">
+									<path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
+								</svg>
+							))}
+							{review.rating % 1 !== 0 && (
+								<svg class="w-4 h-4 md:w-5 md:h-5 text-yellow-400 fill-current" viewBox="0 0 20 20">
+									<path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0v15z" opacity="0.5"/>
+								</svg>
+							)}
+							{Array.from({ length: 5 - Math.ceil(review.rating) }, (_, i) => (
+								<svg class="w-4 h-4 md:w-5 md:h-5 text-gray-300 fill-current" viewBox="0 0 20 20">
+									<path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
+								</svg>
+							))}
+						</div>
+						<span class="text-sm font-semibold text-gold ml-2">{review.rating}</span>
+					</div>
+					
+					<!-- Review Text -->
+					<p class="text-dark/80 leading-relaxed mb-4 line-clamp-3 md:line-clamp-4 group-hover:line-clamp-none transition-all duration-300 text-sm md:text-base">
+						"{review.review}"
+					</p>
+					
+					<!-- Customer Info -->
+					<div class="border-t border-gold/20 pt-4">
+						<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+							<div>
+								<h4 class="font-semibold text-maroon text-sm md:text-base">{review.name}</h4>
+								<p class="text-xs md:text-sm text-dark/60">{review.location}</p>
+							</div>
+							<div class="text-right">
+								<p class="text-xs text-gold font-medium">{review.product}</p>
+							</div>
+						</div>
+					</div>
+					
+					<!-- Hover Effect Line -->
+					<div class="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-gold to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
+				</div>
+			))}
+		</div>
+		
+		<!-- Bottom CTA -->
+		<div class="text-center mt-16 animate-fade-up" style="animation-delay: 0.8s;">
+			<p class="text-lg text-dark/80 mb-6">
+				Join thousands of satisfied customers across India
+			</p>
+			<a href="/shop" class="btn-primary">
+				Shop Our Collection
+			</a>
+		</div>
+	</div>
+</section>

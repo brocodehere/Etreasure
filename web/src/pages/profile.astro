@@ -1,0 +1,297 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<script>
+	import { getCart, getWishlist } from '../lib/api.js';
+	import '../lib/toast.js';
+
+	// Check authentication and redirect if not logged in
+	function checkAuth() {
+		if (typeof localStorage !== 'undefined') {
+			const token = localStorage.getItem('accessToken');
+			const user = localStorage.getItem('user');
+			if (!token || !user) {
+				window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+				return;
+			}
+			return JSON.parse(user);
+		}
+		return null;
+	}
+
+	// Load user profile data
+	async function loadUserProfile() {
+		const user = checkAuth();
+		if (!user) return;
+
+		try {
+			const token = localStorage.getItem('accessToken');
+			const response = await fetch('/api/auth/me', {
+				headers: {
+					'Authorization': `Bearer ${token}`,
+					'Content-Type': 'application/json'
+				}
+			});
+
+			if (response.ok) {
+				const userData = await response.json();
+				updateProfileUI(userData);
+			} else if (response.status === 401) {
+				// Clear auth data on 401
+				localStorage.removeItem('accessToken');
+				localStorage.removeItem('refreshToken');
+				localStorage.removeItem('user');
+				window.location.href = '/login';
+			} else {
+				// Use cached user data as fallback
+				updateProfileUI(user);
+			}
+		} catch (error) {
+			// Use cached user data as fallback
+			updateProfileUI(user);
+		}
+	}
+
+	// Update counters
+	async function updateCounters() {
+		try {
+			// Update cart counter
+			const cartData = await getCart();
+			const cartCount = document.querySelector('.bg-gradient-to-br.from-green\\/10 .text-3xl[data-cart-count]');
+			if (cartCount) {
+				const cartCountValue = cartData.count || 0;
+				cartCount.textContent = cartCountValue;
+			}
+
+			// Update wishlist counter
+			const wishlistData = await getWishlist();
+			const wishlistCount = document.querySelector('.bg-gradient-to-br.from-maroon\\/10 .text-3xl[data-wishlist-count]');
+			if (wishlistCount) {
+				const wishlistCountValue = wishlistData.count || 0;
+				wishlistCount.textContent = wishlistCountValue;
+			}
+		} catch (error) {
+			showError('Failed to update counters');
+		}
+	}
+
+	// Update profile UI with user data
+	function updateProfileUI(userData) {
+		// Update sidebar user info
+		const sidebarUserName = document.getElementById('sidebarUserName');
+		const sidebarUserEmail = document.getElementById('sidebarUserEmail');
+		
+		if (sidebarUserName) sidebarUserName.textContent = userData.name || 'User';
+		if (sidebarUserEmail) sidebarUserEmail.textContent = userData.email || '';
+		
+		// Update profile information section
+		const profileUserName = document.getElementById('profileUserName');
+		const profileUserEmail = document.getElementById('profileUserEmail');
+		const profileUserRoles = document.getElementById('profileUserRoles');
+		const memberSince = document.getElementById('memberSince');
+		
+		if (profileUserName) profileUserName.textContent = userData.name || 'User';
+		if (profileUserEmail) profileUserEmail.textContent = userData.email || '';
+		if (profileUserRoles) {
+			const roles = userData.roles || [];
+			profileUserRoles.textContent = roles.join(', ') || 'Customer';
+		}
+		
+		// Update member since date with actual data from API
+		if (memberSince && userData.created_at) {
+			const createdDate = new Date(userData.created_at);
+			const formattedDate = createdDate.toLocaleDateString('en-US', { 
+				year: 'numeric', 
+				month: 'long' 
+			});
+			memberSince.textContent = formattedDate;
+		}
+	}
+
+	// Handle logout
+	async function handleLogout() {
+		try {
+			const token = localStorage.getItem('accessToken');
+			await fetch('/api/auth/logout', {
+				method: 'POST',
+				headers: {
+					'Authorization': `Bearer ${token}`,
+					'Content-Type': 'application/json'
+				}
+			});
+		} catch (error) {
+			console.error('Logout error:', error);
+		} finally {
+			// Clear local storage and redirect
+			localStorage.removeItem('accessToken');
+			localStorage.removeItem('refreshToken');
+			localStorage.removeItem('user');
+			window.location.href = '/';
+		}
+	}
+
+	// Initialize page
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', () => {
+			loadUserProfile();
+			updateCounters();
+			
+			// Add logout event listener
+			const logoutBtn = document.getElementById('logoutBtn');
+			if (logoutBtn) {
+				logoutBtn.addEventListener('click', handleLogout);
+			}
+		});
+	} else {
+		loadUserProfile();
+		updateCounters();
+		// Add logout event listener
+		const logoutBtn = document.getElementById('logoutBtn');
+		if (logoutBtn) {
+			logoutBtn.addEventListener('click', handleLogout);
+		}
+	}
+</script>
+
+<Layout title="My Profile - Ethnic Treasures" description="Manage your account settings and view your order history">
+	<Header />
+	
+	<!-- Page Header -->
+	<section class="relative py-20 bg-gradient-to-br from-maroon via-maroon/80 to-maroon overflow-hidden">
+		<!-- Background Effects -->
+		<div class="absolute inset-0">
+			<div class="absolute top-10 left-20 w-64 h-64 bg-gold/20 rounded-full blur-3xl animate-pulse"></div>
+			<div class="absolute bottom-10 right-20 w-80 h-80 bg-white/10 rounded-full blur-3xl animate-pulse" style="animation-delay: 2s;"></div>
+		</div>
+		
+		<div class="container mx-auto px-4 relative z-10">
+			<div class="text-center text-white">
+				<h1 class="font-playfair text-4xl md:text-6xl font-bold mb-6 animate-fade-in">
+					My Profile
+				</h1>
+				<div class="w-32 h-1 bg-gold mx-auto mb-8 animate-gold-shine"></div>
+				<p class="text-xl md:text-2xl max-w-3xl mx-auto leading-relaxed animate-fade-up" style="animation-delay: 0.3s">
+					Manage your account and view your order history
+				</p>
+			</div>
+		</div>
+	</section>
+
+	<!-- Profile Content -->
+	<main class="container mx-auto px-4 py-12">
+		<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+			<!-- Sidebar -->
+			<div class="lg:col-span-1">
+				<div class="bg-white rounded-xl shadow-lg p-6 sticky top-24">
+					<div class="text-center mb-6">
+						<div class="w-24 h-24 bg-gradient-to-br from-gold/30 to-gold/10 rounded-full mx-auto mb-4 flex items-center justify-center">
+							<svg class="w-12 h-12 text-gold" fill="currentColor" viewBox="0 0 20 20">
+								<path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+							</svg>
+						</div>
+						<h2 class="text-xl font-bold text-dark" id="sidebarUserName">Loading...</h2>
+						<p class="text-dark/60" id="sidebarUserEmail">Loading...</p>
+					</div>
+					
+					<nav class="space-y-2">
+						<a href="/profile" class="flex items-center space-x-3 px-4 py-3 bg-gold/10 text-maroon rounded-lg font-medium">
+							<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+								<path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
+							</svg>
+							<span>Profile Overview</span>
+						</a>
+						<a href="/orders" class="flex items-center space-x-3 px-4 py-3 text-dark hover:bg-gold/5 rounded-lg transition-colors">
+							<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+								<path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path>
+								<path fill-rule="evenodd" d="M4 5a2 2 0 012-2 1 1 0 000 2H6a2 2 0 100 4h2a2 2 0 100-4h-.5a1 1 0 000-2H8a2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5z" clip-rule="evenodd"></path>
+							</svg>
+							<span>Order History</span>
+						</a>
+						<a href="/wishlist" class="flex items-center space-x-3 px-4 py-3 text-dark hover:bg-gold/5 rounded-lg transition-colors">
+							<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+								<path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"></path>
+							</svg>
+							<span>Wishlist</span>
+						</a>
+						<a href="/cart" class="flex items-center space-x-3 px-4 py-3 text-dark hover:bg-gold/5 rounded-lg transition-colors">
+							<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+								<path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 4H3z"></path>
+								<path d="M16 16a2 2 0 11-4 0 2 2 0 014 0zM4 12a2 2 0 11-4 0 2 2 0 014 0z"></path>
+							</svg>
+							<span>Shopping Cart</span>
+						</a>
+					</nav>
+					
+					<div class="mt-6 pt-6 border-t border-gold/20">
+						<button id="logoutBtn" class="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">
+							<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+							</svg>
+							<span>Logout</span>
+						</button>
+					</div>
+				</div>
+			</div>
+
+			<!-- Main Content -->
+			<div class="lg:col-span-2">
+				<!-- Profile Information -->
+				<div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+					<h3 class="text-2xl font-bold text-dark mb-6">Profile Information</h3>
+					
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+						<div>
+							<label class="block text-sm font-medium text-dark/70 mb-2">Full Name</label>
+							<p class="text-dark font-medium" id="profileUserName">Loading...</p>
+						</div>
+						<div>
+							<label class="block text-sm font-medium text-dark/70 mb-2">Email Address</label>
+							<p class="text-dark font-medium" id="profileUserEmail">Loading...</p>
+						</div>
+						<div>
+							<label class="block text-sm font-medium text-dark/70 mb-2">Account Type</label>
+							<p class="text-dark font-medium" id="profileUserRoles">Loading...</p>
+						</div>
+						<div>
+							<label class="block text-sm font-medium text-dark/70 mb-2">Member Since</label>
+							<p class="text-dark font-medium" id="memberSince">December 2024</p>
+						</div>
+					</div>
+				</div>
+
+				<!-- Quick Stats -->
+				<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+					<div class="bg-gradient-to-br from-gold/10 to-gold/5 rounded-xl p-6 text-center">
+						<div class="text-3xl font-bold text-maroon mb-2">0</div>
+						<p class="text-dark/70">Total Orders</p>
+					</div>
+					<div class="bg-gradient-to-br from-maroon/10 to-maroon/5 rounded-xl p-6 text-center">
+						<div class="text-3xl font-bold text-maroon mb-2" data-wishlist-count>0</div>
+						<p class="text-dark/70">Wishlist Items</p>
+					</div>
+					<div class="bg-gradient-to-br from-green/10 to-green/5 rounded-xl p-6 text-center">
+						<div class="text-3xl font-bold text-maroon mb-2" data-cart-count>0</div>
+						<p class="text-dark/70">Cart Items</p>
+					</div>
+				</div>
+
+				<!-- Recent Activity -->
+				<div class="bg-white rounded-xl shadow-lg p-6">
+					<h3 class="text-2xl font-bold text-dark mb-6">Recent Activity</h3>
+					<div class="text-center py-8 text-dark/60">
+						<svg class="w-16 h-16 text-dark/30 mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">
+							<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
+						</svg>
+						<p>No recent activity</p>
+						<p class="text-sm mt-2">Start shopping to see your activity here!</p>
+					</div>
+				</div>
+			</div>
+		</div>
+	</main>
+
+	<Footer />
+</Layout>

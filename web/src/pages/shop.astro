@@ -1,0 +1,160 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import CategorySidebar from '../components/CategorySidebar';
+import ProductFilters from '../components/ProductFilters';
+import ProductGrid from '../components/ProductGrid';
+
+// Environment variables
+const PUBLIC_API_URL = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
+const PUBLIC_R2_BASE_URL = import.meta.env.PUBLIC_R2_BASE_URL || 'https://pub-1a3924a6c6994107be6fe9f3ed794c0a.r2.dev';
+
+// SSR data fetching for initial load
+async function getInitialData() {
+  try {
+    // Get URL parameters for SSR
+    const url = new URL(Astro.request.url);
+    const category = url.searchParams.get('category') || '';
+    const page = parseInt(url.searchParams.get('page') || '1');
+    
+    // Build products URL with filters
+    let productsUrl = `${PUBLIC_API_URL}/api/products?limit=12&page=${page}`;
+    if (category) {
+      productsUrl += `&category=${encodeURIComponent(category)}`;
+    }
+    
+    const [categoriesRes, productsRes] = await Promise.all([
+      fetch(`${PUBLIC_API_URL}/api/public/categories`),
+      fetch(productsUrl)
+    ]);
+    
+    const categories = categoriesRes.ok ? await categoriesRes.json() : { items: [] };
+    const products = productsRes.ok ? await productsRes.json() : { items: [], total: 0 };
+    
+    // Try to get total count if not available
+    if (!products.total && products.items) {
+      products.total = products.items.length;
+    }
+    
+    return { categories, products, initialCategory: category, initialPage: page };
+  } catch (error) {
+    console.error('Failed to fetch initial data:', error);
+    return { categories: { items: [] }, products: { items: [], total: 0 }, initialCategory: '', initialPage: 1 };
+  }
+}
+
+const { categories, products, initialCategory, initialPage } = await getInitialData();
+---
+
+<Layout title="Shop - Ethnic Treasures" description="Browse our collection of traditional and contemporary ethnic wear">
+  <Header />
+  
+  <!-- Inject initial data for React islands -->
+  <script define:vars={{categories, products, initialCategory, initialPage, PUBLIC_R2_BASE_URL}}>
+    window.__INITIAL_DATA__ = {
+      categories: categories,
+      products: products,
+      totalProducts: products.total,
+      currentPage: initialPage,
+      initialCategory: initialCategory,
+      r2BaseUrl: PUBLIC_R2_BASE_URL
+    };
+  </script>
+
+  <!-- Hero Section -->
+  <section class="relative bg-gradient-to-r from-maroon to-burgundy text-white">
+    <div class="absolute inset-0 bg-black opacity-20"></div>
+    <div class="relative container mx-auto px-4 py-8 md:py-10">
+      <div class="text-center">
+        <h1 class="text-2xl md:text-3xl lg:text-4xl font-playfair font-bold mb-2">
+          Discover Our Collection
+        </h1>
+        <p class="text-sm md:text-base max-w-lg mx-auto mb-4 text-cream/90">
+          Explore our exquisite range of traditional and contemporary ethnic wear, 
+          handcrafted with love and attention to detail.
+        </p>
+        <div class="flex flex-col sm:flex-row gap-2 justify-center">
+          <div class="bg-white/20 backdrop-blur-sm rounded-lg px-4 py-1.5 text-center">
+            <div class="text-lg font-bold">{products?.total || 0}</div>
+            <div class="text-xs text-cream/80">Products</div>
+          </div>
+          <div class="bg-white/20 backdrop-blur-sm rounded-lg px-4 py-1.5 text-center">
+            <div class="text-lg font-bold">{categories?.items?.length || 0}</div>
+            <div class="text-xs text-cream/80">Categories</div>
+          </div>
+                  </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Shop Content -->
+  <main class="container mx-auto px-4 py-8 md:py-12">
+    <!-- Mobile Filter Toggle -->
+    <div class="lg:hidden mb-6">
+      <button id="mobileFilterToggle" class="w-full bg-maroon text-white py-3 px-4 rounded-lg flex items-center justify-between hover:bg-maroon/90 transition-colors">
+        <span class="font-medium">Filters & Categories</span>
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
+      </button>
+    </div>
+
+    <div class="flex flex-col lg:flex-row gap-8">
+      <!-- Category Sidebar -->
+      <aside id="mobileSidebar" class="lg:w-80 lg:sticky lg:top-24 h-fit hidden lg:block">
+        <CategorySidebar client:load initialCategories={categories.items} initialCategory={initialCategory} />
+      </aside>
+
+      <!-- Main Content -->
+      <div class="flex-1">
+        <!-- Breadcrumb -->
+        <nav class="mb-6 text-sm text-gray-600">
+          <ol class="flex items-center space-x-2">
+            <li><a href="/" class="hover:text-maroon transition-colors">Home</a></li>
+            <li><span class="text-gray-400">/</span></li>
+            <li class="text-maroon font-medium">Shop</li>
+            {initialCategory && (
+              <>
+                <li><span class="text-gray-400">/</span></li>
+                <li class="text-maroon font-medium capitalize">{initialCategory.replace('-', ' ')}</li>
+              </>
+            )}
+          </ol>
+        </nav>
+
+        <!-- Filters Bar -->
+        <div class="mb-8">
+          <ProductFilters client:load />
+        </div>
+        
+        <!-- Product Grid -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 md:p-8">
+          <ProductGrid client:load initialProducts={products.items} initialTotal={products.total} />
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Mobile Sidebar Script -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const toggle = document.getElementById('mobileFilterToggle');
+      const sidebar = document.getElementById('mobileSidebar');
+      
+      if (toggle && sidebar) {
+        toggle.addEventListener('click', () => {
+          sidebar.classList.toggle('hidden');
+          sidebar.classList.toggle('fixed');
+          sidebar.classList.toggle('inset-0');
+          sidebar.classList.toggle('z-50');
+          sidebar.classList.toggle('bg-white');
+          sidebar.classList.toggle('p-4');
+          sidebar.classList.toggle('overflow-y-auto');
+        });
+      }
+    });
+  </script>
+  
+  <Footer />
+</Layout>

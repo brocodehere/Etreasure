@@ -1,0 +1,132 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+  
+  body {
+    background-color: #F7F3EB;
+    color: #161616;
+    font-family: 'Inter', sans-serif;
+    line-height: 1.6;
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', serif;
+    line-height: 1.3;
+    letter-spacing: 0.05em;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    background: linear-gradient(to right, #6D0F19, #D4A857);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  
+  .btn-primary {
+    background-color: #6D0F19;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border: 2px solid #D4A857;
+    transition: all 0.3s ease;
+    transform: scale(1);
+  }
+  
+  .btn-primary:hover {
+    background-color: #D4A857;
+    color: #6D0F19;
+    transform: scale(1.05);
+    box-shadow: 0 0 30px rgba(212, 168, 87, 0.5);
+  }
+  
+  .btn-secondary {
+    background-color: rgba(212, 168, 87, 0.15);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border: 2px solid #D4A857;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+  
+  .btn-secondary:hover {
+    background-color: rgba(212, 168, 87, 0.25);
+    color: white;
+    transform: scale(1.05);
+    box-shadow: 0 0 25px rgba(212, 168, 87, 0.4);
+  }
+  
+  .card-luxury {
+    background-color: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s ease;
+    transform: scale(1);
+    border: 1px solid transparent;
+  }
+  
+  .card-luxury:hover {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    transform: scale(1.05);
+    border-color: #D4A857;
+  }
+  
+  .gold-border {
+    border: 2px solid #D4A857;
+  }
+  
+  .gold-accent {
+    color: #D4A857;
+  }
+  
+  .maroon-bg {
+    background-color: #6D0F19;
+  }
+  
+  .cream-bg {
+    background-color: #F7F3EB;
+  }
+}
+
+@layer keyframes {
+  @keyframes slide-in {
+    from {
+      transform: translateX(400px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes slide-out {
+    from {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    to {
+      transform: translateX(400px);
+      opacity: 0;
+    }
+  }
+}
+
+@layer utilities {
+  .animate-slide-in {
+    animation: slide-in 0.3s ease-out;
+  }
+
+  .animate-slide-out {
+    animation: slide-out 0.3s ease-in;
+  }
+}

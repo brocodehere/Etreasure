@@ -1,0 +1,187 @@
+---
+// Bestsellers Page - Display all bestselling products
+import Layout from '../layouts/Layout.astro';
+import Bestsellers from '../components/Bestsellers.astro';
+---
+
+<Layout title="Bestsellers - Ethnic Treasures">
+	<main>
+		<!-- Hero Section -->
+		<section class="relative py-20 bg-gradient-to-br from-cream via-white to-cream overflow-hidden">
+			<!-- Background Decorative Elements -->
+			<div class="absolute inset-0 opacity-5">
+				<div class="absolute top-20 left-20 w-64 h-64 bg-gold rounded-full blur-3xl animate-pulse"></div>
+				<div class="absolute bottom-20 right-20 w-96 h-96 bg-maroon rounded-full blur-3xl animate-pulse" style="animation-delay: 2s"></div>
+			</div>
+			
+			<div class="container mx-auto px-4 relative z-10">
+				<div class="text-center">
+					<div class="inline-flex items-center gap-2 mb-6">
+						<div class="h-px bg-gradient-to-r from-transparent to-gold w-20"></div>
+						<span class="text-gold font-playfair text-sm tracking-widest uppercase">Premium Collection</span>
+						<div class="h-px bg-gradient-to-l from-transparent to-gold w-20"></div>
+					</div>
+					
+					<h1 class="font-playfair text-5xl md:text-7xl font-bold text-gradient mb-6">
+						Bestsellers
+					</h1>
+					
+					<div class="flex items-center justify-center gap-4 mb-8">
+						<div class="w-16 h-0.5 bg-gold shadow-gold"></div>
+						<div class="w-2 h-2 bg-gold rounded-full shadow-gold animate-pulse"></div>
+						<div class="w-16 h-0.5 bg-gold shadow-gold"></div>
+					</div>
+					
+					<p class="text-lg md:text-xl text-dark/80 max-w-4xl mx-auto leading-relaxed font-light mb-8">
+						Discover our most coveted pieces, cherished by discerning customers worldwide. Each creation tells a story of <span class="text-maroon font-semibold">heritage craftsmanship</span> and <span class="text-gold font-semibold">timeless elegance</span>.
+					</p>
+					
+					<!-- Stats Bar -->
+					<div class="flex flex-wrap justify-center gap-8 mt-12">
+						<div class="text-center">
+							<div class="text-3xl font-bold text-maroon mb-2">500+</div>
+							<div class="text-sm text-dark/60">Happy Customers</div>
+						</div>
+						<div class="text-center">
+							<div class="text-3xl font-bold text-maroon mb-2">4.9</div>
+							<div class="text-sm text-dark/60">Average Rating</div>
+						</div>
+						<div class="text-center">
+							<div class="text-3xl font-bold text-maroon mb-2">24/7</div>
+							<div class="text-sm text-dark/60">Customer Support</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- Features Section -->
+		<section class="py-16 bg-white">
+			<div class="container mx-auto px-4">
+				<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+					<div class="text-center group">
+						<div class="w-16 h-16 bg-gold/20 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-gold/30 transition-colors duration-300">
+							<svg class="w-8 h-8 text-gold" fill="currentColor" viewBox="0 0 20 20">
+								<path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+							</svg>
+						</div>
+						<h3 class="font-playfair text-xl font-semibold text-maroon mb-2">Premium Quality</h3>
+						<p class="text-dark/60">Handpicked materials and exceptional craftsmanship</p>
+					</div>
+					
+					<div class="text-center group">
+						<div class="w-16 h-16 bg-maroon/20 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-maroon/30 transition-colors duration-300">
+							<svg class="w-8 h-8 text-maroon" fill="currentColor" viewBox="0 0 20 20">
+								<path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+							</svg>
+						</div>
+						<h3 class="font-playfair text-xl font-semibold text-maroon mb-2">Authentic Craftsmanship</h3>
+						<p class="text-dark/60">Traditional techniques passed down through generations</p>
+					</div>
+					
+					<div class="text-center group">
+						<div class="w-16 h-16 bg-gold/20 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-gold/30 transition-colors duration-300">
+							<svg class="w-8 h-8 text-gold" fill="currentColor" viewBox="0 0 20 20">
+								<path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
+								<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd"/>
+							</svg>
+						</div>
+						<h3 class="font-playfair text-xl font-semibold text-maroon mb-2">Free Shipping</h3>
+						<p class="text-dark/60">Free shipping on all orders worldwide</p>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- Bestsellers Grid Section -->
+		<section class="py-16 bg-gradient-to-br from-cream via-white to-cream">
+			<div class="container mx-auto px-4">
+				<div class="text-center mb-12">
+					<h2 class="font-playfair text-4xl md:text-5xl font-bold text-gradient mb-4">
+						Our Bestselling Collection
+					</h2>
+					<p class="text-lg text-dark/80 max-w-3xl mx-auto">
+						Each piece in our collection has been carefully curated based on customer love and exceptional quality standards.
+					</p>
+				</div>
+				
+				<!-- Bestsellers Component -->
+				<Bestsellers />
+			</div>
+		</section>
+
+		<!-- Trust Badges Section -->
+		<section class="py-16 bg-white border-t border-gold/20">
+			<div class="container mx-auto px-4">
+				<div class="text-center mb-12">
+					<h2 class="font-playfair text-3xl md:text-4xl font-bold text-gradient mb-4">
+						Why Choose Our Bestsellers?
+					</h2>
+				</div>
+				
+				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+					<div class="text-center p-6 rounded-xl bg-gradient-to-br from-gold/5 to-transparent border border-gold/20 hover:border-gold/40 transition-colors duration-300">
+						<div class="w-12 h-12 bg-gold rounded-full flex items-center justify-center mx-auto mb-4">
+							<svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+								<path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+							</svg>
+						</div>
+						<h3 class="font-semibold text-maroon mb-2">Customer Favorites</h3>
+						<p class="text-sm text-dark/60">Loved by thousands of satisfied customers</p>
+					</div>
+					
+					<div class="text-center p-6 rounded-xl bg-gradient-to-br from-maroon/5 to-transparent border border-maroon/20 hover:border-maroon/40 transition-colors duration-300">
+						<div class="w-12 h-12 bg-maroon rounded-full flex items-center justify-center mx-auto mb-4">
+							<svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+								<path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+							</svg>
+						</div>
+						<h3 class="font-semibold text-maroon mb-2">Quality Assured</h3>
+						<p class="text-sm text-dark/60">Rigorous quality checks on every product</p>
+					</div>
+					
+					<div class="text-center p-6 rounded-xl bg-gradient-to-br from-gold/5 to-transparent border border-gold/20 hover:border-gold/40 transition-colors duration-300">
+						<div class="w-12 h-12 bg-gold rounded-full flex items-center justify-center mx-auto mb-4">
+							<svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+								<path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
+								<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd"/>
+							</svg>
+						</div>
+						<h3 class="font-semibold text-maroon mb-2">Best Value</h3>
+						<p class="text-sm text-dark/60">Competitive prices without compromising quality</p>
+					</div>
+					
+					<div class="text-center p-6 rounded-xl bg-gradient-to-br from-maroon/5 to-transparent border border-maroon/20 hover:border-maroon/40 transition-colors duration-300">
+						<div class="w-12 h-12 bg-maroon rounded-full flex items-center justify-center mx-auto mb-4">
+							<svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+								<path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/>
+							</svg>
+						</div>
+						<h3 class="font-semibold text-maroon mb-2">Expert Support</h3>
+						<p class="text-sm text-dark/60">Dedicated customer service for your needs</p>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- CTA Section -->
+		<section class="py-20 bg-gradient-to-r from-maroon to-maroon/90 text-white">
+			<div class="container mx-auto px-4 text-center">
+				<h2 class="font-playfair text-4xl md:text-5xl font-bold mb-6">
+					Ready to Discover Your Perfect Piece?
+				</h2>
+				<p class="text-xl mb-8 max-w-2xl mx-auto opacity-90">
+					Join thousands of satisfied customers who have found their perfect ethnic treasure in our bestselling collection.
+				</p>
+				<div class="flex flex-col sm:flex-row gap-4 justify-center">
+					<a href="/shop" class="bg-white text-maroon px-8 py-4 rounded-full font-semibold text-lg hover:bg-gold hover:text-white transition-all duration-300 transform hover:scale-105 shadow-xl">
+						Shop All Bestsellers
+					</a>
+					<a href="/contact" class="border-2 border-white text-white px-8 py-4 rounded-full font-semibold text-lg hover:bg-white hover:text-maroon transition-all duration-300 transform hover:scale-105">
+						Get Expert Advice
+					</a>
+				</div>
+			</div>
+		</section>
+	</main>
+</Layout>

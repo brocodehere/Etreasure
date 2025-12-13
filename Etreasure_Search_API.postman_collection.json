@@ -1,0 +1,393 @@
+{
+  "info": {
+    "_postman_id": "etreasure-search-api",
+    "name": "Etreasure Search API",
+    "description": "API collection for full-text product search, autocomplete, and faceted filtering",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Search",
+      "item": [
+        {
+          "name": "Full-Text Search",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/search?q=silk&category=&min_price=&max_price=&sort=relevance&limit=20",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "search"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "silk",
+                  "description": "Search query (required)"
+                },
+                {
+                  "key": "category",
+                  "value": "",
+                  "description": "Category ID (optional)",
+                  "disabled": true
+                },
+                {
+                  "key": "min_price",
+                  "value": "",
+                  "description": "Minimum price in cents (optional)",
+                  "disabled": true
+                },
+                {
+                  "key": "max_price",
+                  "value": "",
+                  "description": "Maximum price in cents (optional)",
+                  "disabled": true
+                },
+                {
+                  "key": "sort",
+                  "value": "relevance",
+                  "description": "Sort by: relevance, price_asc, price_desc, newest"
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Results per page (1-100)"
+                },
+                {
+                  "key": "cursor",
+                  "value": "",
+                  "description": "Pagination cursor from previous response (optional)",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Search for products with optional filters"
+          },
+          "response": []
+        },
+        {
+          "name": "Search with Price Filter",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/search?q=saree&min_price=50000&max_price=200000&sort=price_asc&limit=20",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "search"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "saree"
+                },
+                {
+                  "key": "min_price",
+                  "value": "50000",
+                  "description": "Min price in paise"
+                },
+                {
+                  "key": "max_price",
+                  "value": "200000",
+                  "description": "Max price in paise"
+                },
+                {
+                  "key": "sort",
+                  "value": "price_asc"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Search with price range filter"
+          },
+          "response": []
+        },
+        {
+          "name": "Search with Category Filter",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/search?q=saree&category=1&sort=relevance&limit=20",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "search"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "saree"
+                },
+                {
+                  "key": "category",
+                  "value": "1",
+                  "description": "Category ID"
+                },
+                {
+                  "key": "sort",
+                  "value": "relevance"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Search within a specific category"
+          },
+          "response": []
+        },
+        {
+          "name": "Search Next Page (Pagination)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/search?q=saree&cursor=eyJpZCI6IDE0MywgInNjb3JlIjogMC44NX0=&limit=20",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "search"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "saree"
+                },
+                {
+                  "key": "cursor",
+                  "value": "eyJpZCI6IDE0MywgInNjb3JlIjogMC44NX0=",
+                  "description": "Cursor from previous response"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Fetch next page of results using cursor"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Autocomplete",
+      "item": [
+        {
+          "name": "Get Suggestions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/search/suggest?q=bana&limit=8",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "search", "suggest"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "bana",
+                  "description": "Partial query for suggestions"
+                },
+                {
+                  "key": "limit",
+                  "value": "8",
+                  "description": "Max suggestions (1-50)"
+                }
+              ]
+            },
+            "description": "Get autocomplete suggestions for partial queries"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Suggestions (Fuzzy Match)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/search/suggest?q=saree&limit=10",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "search", "suggest"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "saree"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Get suggestions with fuzzy matching (typo tolerance)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Facets & Filters",
+      "item": [
+        {
+          "name": "Get Search Facets",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/search/facets?q=saree",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "search", "facets"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "saree",
+                  "description": "Search query to contextualize facets (optional)"
+                }
+              ]
+            },
+            "description": "Get category and price range facets for UI filters"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Facets (No Query)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/search/facets",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "search", "facets"],
+              "query": []
+            },
+            "description": "Get all category and price facets"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Reindex Search Vectors",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt_token}}",
+                "type": "text",
+                "description": "Admin JWT token"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/admin/search/reindex",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "admin", "search", "reindex"]
+            },
+            "description": "Manually trigger reindexing of all search vectors (admin only)"
+          },
+          "response": []
+        },
+        {
+          "name": "Search Health Check",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/search/health",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "search", "health"]
+            },
+            "description": "Check if search infrastructure is healthy and extensions are installed"
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "admin_jwt_token",
+      "value": "",
+      "type": "string",
+      "description": "Admin user JWT token for protected endpoints"
+    }
+  ]
+}

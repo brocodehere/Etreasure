@@ -1,0 +1,209 @@
+---
+// Product grid component for listing pages
+const products = [
+  {
+    id: 1,
+    name: "Banarasi Silk Saree",
+    price: "₹12,500",
+    originalPrice: "₹18,000",
+    image: "/images/products/banarasi-silk.avif",
+    href: "/products/banarasi-silk-saree",
+    badge: "Bestseller",
+    rating: 4.8,
+    reviews: 127,
+    category: "Sarees",
+    craft: "Banarasi",
+    color: "Red"
+  },
+  {
+    id: 2,
+    name: "Kashmiri Pashmina Shawl",
+    price: "₹8,900",
+    originalPrice: "₹12,000",
+    image: "/images/products/pashmina-shawl.avif",
+    href: "/products/kashmiri-pashmina-shawl",
+    badge: "Limited",
+    rating: 4.9,
+    reviews: 89,
+    category: "Dupattas",
+    craft: "Kashmiri",
+    color: "Blue"
+  },
+  {
+    id: 3,
+    name: "Rajasthani Lehenga",
+    price: "₹15,750",
+    originalPrice: "₹22,000",
+    image: "/images/products/rajasthani-lehenga.avif",
+    href: "/products/rajasthani-lehenga",
+    badge: "New",
+    rating: 4.7,
+    reviews: 203,
+    category: "Lehengas",
+    craft: "Rajasthani",
+    color: "Pink"
+  },
+  {
+    id: 4,
+    name: "Kantha Work Kurti",
+    price: "₹3,250",
+    originalPrice: "₹4,500",
+    image: "/images/products/kantha-kurti.avif",
+    href: "/products/kantha-work-kurti",
+    badge: "Popular",
+    rating: 4.6,
+    reviews: 156,
+    category: "Kurtis",
+    craft: "Kantha",
+    color: "Green"
+  },
+  {
+    id: 5,
+    name: "Chikankari Anarkali",
+    price: "₹6,800",
+    originalPrice: "₹9,200",
+    image: "/images/products/chikankari-anarkali.avif",
+    href: "/products/chikankari-anarkali",
+    badge: "Trending",
+    rating: 4.8,
+    reviews: 178,
+    category: "Kurtis",
+    craft: "Chikankari",
+    color: "White"
+  },
+  {
+    id: 6,
+    name: "Block Print Saree",
+    price: "₹4,200",
+    originalPrice: "₹5,800",
+    image: "/images/products/block-print-saree.avif",
+    href: "/products/block-print-saree",
+    badge: "Eco-Friendly",
+    rating: 4.5,
+    reviews: 92,
+    category: "Sarees",
+    craft: "Block Print",
+    color: "Orange"
+  },
+  {
+    id: 7,
+    name: "Silk Blend Fabric",
+    price: "₹2,800",
+    originalPrice: "₹3,500",
+    image: "/images/products/silk-blend-fabric.avif",
+    href: "/products/silk-blend-fabric",
+    badge: "Premium",
+    rating: 4.7,
+    reviews: 67,
+    category: "Fabrics",
+    craft: "Banarasi",
+    color: "Gold"
+  },
+  {
+    id: 8,
+    name: "Ethnic Jewelry Set",
+    price: "₹3,900",
+    originalPrice: "₹5,200",
+    image: "/images/products/ethnic-jewelry.avif",
+    href: "/products/ethnic-jewelry-set",
+    badge: "Handcrafted",
+    rating: 4.9,
+    reviews: 234,
+    category: "Accessories",
+    craft: "Traditional",
+    color: "Gold"
+  }
+];
+
+export { products };
+---
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+  {products.map((product, index) => (
+    <div 
+      class="card-luxury group animate-fade-up" 
+      style={`animation-delay: ${index * 0.1}s;`}
+    >
+      <div class="relative overflow-hidden">
+        <picture>
+          <source srcset={`${product.image.replace('.avif', '-600.avif')}`} type="image/avif">
+          <source srcset={`${product.image.replace('.avif', '-600.webp')}`} type="image/webp">
+          <img 
+            src={product.image.replace('.avif', '.jpg')} 
+            alt={product.name}
+            class="w-full h-80 object-cover transition-transform duration-700 group-hover:scale-110"
+            loading="lazy"
+          />
+        </picture>
+        
+        <!-- Badge -->
+        <div class="absolute top-4 left-4">
+          <span class="bg-gold text-maroon px-3 py-1 text-sm font-semibold rounded-full">
+            {product.badge}
+          </span>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="absolute top-4 right-4 space-y-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <button class="w-10 h-10 bg-white/90 rounded-full flex items-center justify-center hover:bg-gold hover:text-white transition-colors duration-300">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+            </svg>
+          </button>
+          <button class="w-10 h-10 bg-white/90 rounded-full flex items-center justify-center hover:bg-gold hover:text-white transition-colors duration-300">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Quick View Button -->
+        <div class="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <button class="btn-primary text-sm">
+            Quick View
+          </button>
+        </div>
+      </div>
+
+      <div class="p-6">
+        <h3 class="font-playfair text-lg font-semibold text-maroon mb-2 group-hover:text-gold transition-colors duration-300">
+          <a href={product.href}>{product.name}</a>
+        </h3>
+        
+        <!-- Rating -->
+        <div class="flex items-center mb-3">
+          <div class="flex text-gold">
+            {Array.from({ length: 5 }, (_, i) => (
+              <svg class={`w-4 h-4 ${i < Math.floor(product.rating) ? 'fill-current' : 'fill-gray-300'}`} viewBox="0 0 20 20">
+                <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
+              </svg>
+            ))}
+          </div>
+          <span class="text-sm text-dark/60 ml-2">({product.reviews})</span>
+        </div>
+
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <span class="text-xl font-bold text-maroon">{product.price}</span>
+            <span class="text-sm text-dark/60 line-through ml-2">{product.originalPrice}</span>
+          </div>
+          <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-semibold">
+            Save {Math.round((parseInt(product.originalPrice.replace('₹', '').replace(',', '')) - parseInt(product.price.replace('₹', '').replace(',', ''))) / parseInt(product.originalPrice.replace('₹', '').replace(',', '')) * 100)}%
+          </span>
+        </div>
+
+        <div class="flex gap-2">
+          <a href={product.href} class="btn-primary flex-1 text-center py-2 text-sm">
+            View Details
+          </a>
+          <button class="btn-secondary px-3 py-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  ))}
+</div>

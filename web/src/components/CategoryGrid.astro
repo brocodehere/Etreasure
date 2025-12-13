@@ -1,0 +1,145 @@
+---
+import { fetchCategories } from '../lib/api';
+
+// Fetch categories from API to get R2 images
+let featuredCategories = [];
+try {
+  const categoriesData = await fetchCategories();
+  const allCategories = categoriesData.items || [];
+  
+  // Show only first 3 categories on homepage
+  featuredCategories = allCategories.slice(0, 3).map(category => ({
+    name: category.name,
+    image: category.image_url || getFallbackImage(category.name),
+    href: `/shop?category=${category.slug}`,
+    description: category.description || `Discover our ${category.name} collection`
+  }));
+} catch (error) {
+  console.error('Failed to fetch categories on server:', error);
+  // Fallback to static categories if API fails
+  featuredCategories = [
+    {
+      name: "Hand Bags",
+      image: "/images/categories/hand.webp",
+      href: "/shop?category=hand-bags",
+      description: "Premium leather and crafted hand bags"
+    },
+    {
+      name: "Laptop Bags", 
+      image: "/images/categories/enhanced_laptop__bag.png",
+      href: "/shop?category=laptop-bags",
+      description: "Professional and stylish laptop bags"
+    },
+    {
+      name: "Tote Bags",
+      image: "/images/categories/tote.webp", 
+      href: "/shop?category=tote-bags",
+      description: "Spacious and eco-friendly tote bags"
+    }
+  ];
+}
+
+// Fallback image function
+function getFallbackImage(categoryName) {
+  const imageMap = {
+    'hand bags': '/images/categories/hand.webp',
+    'laptop bags': '/images/categories/enhanced_laptop__bag.png',
+    'tote bags': '/images/categories/tote.webp',
+    'crochet throws': '/images/categories/enhanced_cohort.png',
+    'embroidered clutches': '/images/categories/clutches.png',
+    'baby throw': '/images/categories/baby.webp',
+    'everyday bags': '/images/categories/daily.webp',
+  };
+  
+  const normalizedName = categoryName.toLowerCase();
+  return imageMap[normalizedName] || '/images/categories/daily.webp';
+}
+---
+
+<section class="py-20 bg-gradient-to-br from-cream via-white to-cream relative overflow-hidden">
+  <!-- Decorative Background Elements -->
+  <div class="absolute top-10 left-10 w-32 h-32 bg-gold/10 rounded-full blur-3xl animate-pulse"></div>
+  <div class="absolute bottom-10 right-10 w-40 h-40 bg-maroon/10 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s"></div>
+  
+  <div class="container mx-auto px-4 relative z-10">
+    <!-- Section Header -->
+    <div class="text-center mb-16 animate-fade-in">
+      <h2 class="font-playfair text-4xl md:text-5xl font-bold text-maroon mb-6 relative inline-block">
+        Shop by Category
+        <span class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-32 h-1 bg-gradient-to-r from-transparent via-gold to-transparent animate-gold-shine"></span>
+      </h2>
+      <div class="w-32 h-1 bg-gold mx-auto mb-8 shadow-gold"></div>
+      <p class="text-lg md:text-xl text-dark/80 max-w-3xl mx-auto leading-relaxed font-light">
+        Discover our curated collection of handcrafted bags and throws, each piece crafted with care and attention to detail
+      </p>
+    </div>
+
+    <!-- Category Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+      {featuredCategories.map((category, index) => (
+        <a 
+          href={category.href}
+          class="group relative overflow-hidden rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-700 transform hover:scale-105 animate-fade-up"
+          style={`animation-delay: ${index * 0.15}s;`}
+        >
+          <!-- Category Card Container -->
+          <div class="relative h-72 overflow-hidden bg-white">
+            <!-- Image with Enhanced Effects -->
+            <div class="relative w-full h-full">
+              <picture>
+                <source srcset={category.image} type="image/webp">
+                <source srcset={category.image.replace('.webp', '.png')} type="image/png">
+                <img 
+                  src={category.image}
+                  alt={category.name}
+                  class="w-full h-full object-cover transition-all duration-700 group-hover:scale-110 group-hover:brightness-110"
+                  loading="lazy"
+                />
+              </picture>
+              
+              <!-- Overlay Gradient -->
+              <div class="absolute inset-0 bg-gradient-to-t from-maroon/90 via-maroon/40 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
+              
+              <!-- Hover Content -->
+              <div class="absolute bottom-0 left-0 right-0 p-6 text-white transform translate-y-full group-hover:translate-y-0 transition-transform duration-500">
+                <p class="text-sm md:text-base mb-3 leading-relaxed">{category.description}</p>
+                <div class="flex items-center justify-between">
+                  <span class="text-gold font-semibold text-sm md:text-base flex items-center gap-2">
+                    Shop Now 
+                    <svg class="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Category Badge -->
+            <div class="absolute top-4 left-4 bg-gradient-to-r from-gold to-gold/80 text-maroon px-4 py-2 rounded-full font-semibold text-sm md:text-base shadow-lg backdrop-blur-sm transform group-hover:scale-110 transition-transform duration-300">
+              {category.name}
+            </div>
+            
+            <!-- Decorative Corner Accent -->
+            <div class="absolute top-2 right-2 w-8 h-8 border-t-2 border-r-2 border-gold/50 transform rotate-45 group-hover:scale-150 transition-transform duration-500"></div>
+          </div>
+          
+          <!-- Card Border Effect -->
+          <div class="absolute inset-0 rounded-2xl border-2 border-transparent group-hover:border-gold/50 transition-all duration-500 pointer-events-none"></div>
+        </a>
+      ))}
+    </div>
+    
+    <!-- View All Button -->
+    <div class="text-center mt-16 animate-fade-up" style="animation-delay: 0.8s">
+      <a 
+        href="/categories" 
+        class="inline-flex items-center gap-3 bg-maroon text-white px-8 py-4 rounded-full font-semibold text-lg hover:bg-gold hover:text-maroon transition-all duration-500 transform hover:scale-105 shadow-lg hover:shadow-gold"
+      >
+        View All Categories
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
+        </svg>
+      </a>
+    </div>
+  </div>
+</section>

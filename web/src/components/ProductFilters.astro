@@ -1,0 +1,160 @@
+---
+// Product filters component
+export let priceRange = [0, 50000];
+export let selectedCategories = [];
+export let selectedCrafts = [];
+export let selectedColors = [];
+
+const categories = ['Sarees', 'Kurtis', 'Dupattas', 'Lehengas', 'Fabrics', 'Accessories'];
+const crafts = ['Banarasi', 'Kashmiri', 'Rajasthani', 'Kantha', 'Chikankari', 'Block Print'];
+const colors = ['Red', 'Blue', 'Green', 'Gold', 'Pink', 'Purple', 'Orange', 'White'];
+---
+
+  function toggleCategory(category) {
+    const index = selectedCategories.indexOf(category);
+    if (index > -1) {
+      selectedCategories.splice(index, 1);
+    } else {
+      selectedCategories.push(category);
+    }
+  }
+
+  function toggleCraft(craft) {
+    const index = selectedCrafts.indexOf(craft);
+    if (index > -1) {
+      selectedCrafts.splice(index, 1);
+    } else {
+      selectedCrafts.push(craft);
+    }
+  }
+
+  function toggleColor(color) {
+    const index = selectedColors.indexOf(color);
+    if (index > -1) {
+      selectedColors.splice(index, 1);
+    } else {
+      selectedColors.push(color);
+    }
+  }
+
+  function applyFilters() {
+    // Emit filter event to parent
+    const event = new CustomEvent('filtersChanged', {
+      detail: {
+        categories: selectedCategories,
+        crafts: selectedCrafts,
+        colors: selectedColors,
+        priceRange
+      }
+    });
+    document.dispatchEvent(event);
+  }
+
+  function clearFilters() {
+    selectedCategories = [];
+    selectedCrafts = [];
+    selectedColors = [];
+    priceRange = [0, 50000];
+    applyFilters();
+  }
+</script>
+
+<div class="bg-white rounded-lg shadow-card p-6 sticky top-24">
+  <div class="flex items-center justify-between mb-6">
+    <h3 class="font-playfair text-xl font-semibold text-maroon">Filters</h3>
+    <button 
+      on:click={clearFilters}
+      class="text-sm text-gold hover:text-maroon transition-colors duration-300"
+    >
+      Clear All
+    </button>
+  </div>
+
+  <!-- Price Range -->
+  <div class="mb-6">
+    <h4 class="font-semibold text-dark mb-4">Price Range</h4>
+    <div class="space-y-3">
+      <div class="flex items-center justify-between">
+        <span class="text-sm text-dark/80">Min: ₹{priceRange[0].toLocaleString()}</span>
+        <span class="text-sm text-dark/80">Max: ₹{priceRange[1].toLocaleString()}</span>
+      </div>
+      <input 
+        type="range" 
+        min="0" 
+        max="50000" 
+        step="1000"
+        bind:value={priceRange[0]}
+        class="w-full h-2 bg-cream rounded-lg appearance-none cursor-pointer"
+      />
+      <input 
+        type="range" 
+        min="0" 
+        max="50000" 
+        step="1000"
+        bind:value={priceRange[1]}
+        class="w-full h-2 bg-cream rounded-lg appearance-none cursor-pointer"
+      />
+    </div>
+  </div>
+
+  <!-- Categories -->
+  <div class="mb-6">
+    <h4 class="font-semibold text-dark mb-4">Categories</h4>
+    <div class="space-y-2">
+      {#each categories as category}
+        <label class="flex items-center cursor-pointer hover:text-gold transition-colors duration-300">
+          <input 
+            type="checkbox" 
+            checked={selectedCategories.includes(category)}
+            on:change={() => toggleCategory(category)}
+            class="mr-3 w-4 h-4 text-gold border-gold rounded focus:ring-gold focus:ring-2"
+          />
+          <span class="text-sm">{category}</span>
+        </label>
+      {/each}
+    </div>
+  </div>
+
+  <!-- Crafts -->
+  <div class="mb-6">
+    <h4 class="font-semibold text-dark mb-4">Craft Types</h4>
+    <div class="space-y-2">
+      {#each crafts as craft}
+        <label class="flex items-center cursor-pointer hover:text-gold transition-colors duration-300">
+          <input 
+            type="checkbox" 
+            checked={selectedCrafts.includes(craft)}
+            on:change={() => toggleCraft(craft)}
+            class="mr-3 w-4 h-4 text-gold border-gold rounded focus:ring-gold focus:ring-2"
+          />
+          <span class="text-sm">{craft}</span>
+        </label>
+      {/each}
+    </div>
+  </div>
+
+  <!-- Colors -->
+  <div class="mb-6">
+    <h4 class="font-semibold text-dark mb-4">Colors</h4>
+    <div class="grid grid-cols-4 gap-2">
+      {#each colors as color}
+        <button 
+          class={`w-10 h-10 rounded-full border-2 transition-all duration-300 ${
+            selectedColors.includes(color) ? 'border-gold scale-110' : 'border-gray-300 hover:border-gold'
+          }`}
+          style={`background-color: ${color.toLowerCase()};`}
+          on:click={() => toggleColor(color)}
+          title={color}
+        ></button>
+      {/each}
+    </div>
+  </div>
+
+  <!-- Apply Button -->
+  <button 
+    on:click={applyFilters}
+    class="w-full btn-primary"
+  >
+    Apply Filters
+  </button>
+</div>
