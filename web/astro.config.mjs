@@ -1,18 +1,20 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
+
 import tailwind from '@astrojs/tailwind';
 import react from '@astrojs/react';
-import node from '@astrojs/node';
 
+// https://astro.build/config
 export default defineConfig({
-  output: 'server', // ✅ REQUIRED for Render
+  integrations: [
+    tailwind(),
+    react()
+  ],
 
-  adapter: node({
-    mode: 'standalone', // ✅ REQUIRED
-  }),
+  // ✅ Keep output static (best for performance + Vercel/Cloudflare)
+  output: 'static',
 
-  integrations: [tailwind(), react()],
-
+  // ✅ Vite config (safe + minimal)
   vite: {
     resolve: {
       alias: {
@@ -20,17 +22,20 @@ export default defineConfig({
         '@components': '/src/components',
       },
     },
-    build: {
-      rollupOptions: {
-        output: {
-          manualChunks: {
-            vendor: ['react', 'react-dom'],
-          },
+
+    // ✅ Dev-only API proxy (ignored in build)
+    server: {
+      proxy: {
+        '/api': {
+          target: 'http://localhost:8080',
+          changeOrigin: true,
+          secure: false,
         },
       },
     },
   },
 
+  // ✅ Image service (safe)
   image: {
     service: {
       entrypoint: 'astro/assets/services/sharp',
@@ -40,5 +45,6 @@ export default defineConfig({
     },
   },
 
+  // ✅ Good for SEO & performance
   compressHTML: true,
 });

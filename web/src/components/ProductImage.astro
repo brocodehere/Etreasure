@@ -1,0 +1,15 @@
+---
+// Simple Product Gallery Component
+const { heroImage, title = "Product" } = Astro.props;
+---
+
+<div class="space-y-4">
+  <!-- Main Image -->
+  <div class="relative overflow-hidden rounded-lg bg-cream">
+    <img 
+      src={heroImage || "/images/products/banarasi-silk-main.avif"} 
+      alt={title}
+      class="w-full h-auto object-cover"
+    />
+  </div>
+</div>

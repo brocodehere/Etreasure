@@ -1,10 +1,9 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
-import Footer from '../components/Footer.astro';
 import CategorySidebar from '../components/CategorySidebar';
-import ProductFilters from '../components/ProductFilters';
 import ProductGrid from '../components/ProductGrid';
+import Footer from '../components/Footer.astro';
 
 // Environment variables
 const PUBLIC_API_URL = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
@@ -124,8 +123,41 @@ const { categories, products, initialCategory, initialPage } = await getInitialD
         </nav>
 
         <!-- Filters Bar -->
-        <div class="mb-8">
-          <ProductFilters client:load />
+        <div class="w-full lg:w-3/4">
+            <!-- Product Filters -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+              <h3 class="font-playfair text-xl font-bold text-dark mb-6">Filter Products</h3>
+              
+              <!-- Categories -->
+              <div class="mb-6">
+                <h4 class="font-semibold text-dark mb-4">Categories</h4>
+                <div class="space-y-2">
+                  <label class="flex items-center space-x-2 cursor-pointer">
+                    <input type="checkbox" class="rounded border-gray-300 text-gold focus:ring-gold" />
+                    <span class="text-sm">Sarees</span>
+                  </label>
+                  <label class="flex items-center space-x-2 cursor-pointer">
+                    <input type="checkbox" class="rounded border-gray-300 text-gold focus:ring-gold" />
+                    <span class="text-sm">Kurtis</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Price Range -->
+              <div class="mb-6">
+                <h4 class="font-semibold text-dark mb-4">Price Range</h4>
+                <div class="flex items-center space-x-4">
+                  <input type="number" placeholder="Min" min="0" class="w-20 px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-gold" />
+                  <span class="text-gray-500">-</span>
+                  <input type="number" placeholder="Max" min="0" class="w-20 px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-gold" />
+                </div>
+              </div>
+
+              <!-- Apply Filters Button -->
+              <button type="button" class="w-full bg-maroon text-cream py-2 px-4 rounded-md hover:bg-maroon/90 transition-colors font-medium">
+                Apply Filters
+              </button>
+            </div>
         </div>
         
         <!-- Product Grid -->

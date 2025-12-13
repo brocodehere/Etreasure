@@ -1,197 +1,21 @@
----
-// Product information and details component
-const product = {
-  name: "Banarasi Silk Saree",
-  price: "₹12,500",
-  originalPrice: "₹18,000",
-  description: "Exquisite Banarasi silk saree handwoven with pure zari work. This masterpiece features intricate floral motifs and traditional patterns that have been passed down through generations of skilled weavers.",
-  rating: 4.8,
-  reviews: 127,
-  inStock: true,
-  sku: "BSK-001",
-  category: "Sarees",
-  craft: "Banarasi",
-  material: "Pure Silk",
-  color: "Royal Red",
-  length: "6.5 meters",
-  blousePiece: true,
-  care: "Dry clean only"
-};
-
-let selectedSize = "Standard";
-let quantity = 1;
-
-function updateQuantity(change) {
-  quantity = Math.max(1, Math.min(10, quantity + change));
-}
-
-function addToCart() {
-  // Add to cart logic
-  alert(`Added ${quantity} ${product.name} to cart!`);
-}
-
-function buyNow() {
-  // Buy now logic
-  alert(`Proceeding to checkout with ${quantity} ${product.name}`);
-}
----
-
 <div class="space-y-6">
-  <!-- Title and Price -->
-  <div>
-    <h1 class="font-playfair text-3xl md:text-4xl font-bold text-maroon mb-4">
-      {product.name}
-    </h1>
-    
-    <div class="flex items-center space-x-6 mb-4">
-      <div class="flex items-center">
-        <span class="text-3xl font-bold text-maroon">{product.price}</span>
-        <span class="text-lg text-dark/60 line-through ml-3">{product.originalPrice}</span>
-      </div>
-      <span class="bg-green-100 text-green-800 text-sm px-3 py-1 rounded-full font-semibold">
-        Save {Math.round((parseInt(product.originalPrice.replace('₹', '').replace(',', '')) - parseInt(product.price.replace('₹', '').replace(',', ''))) / parseInt(product.originalPrice.replace('₹', '').replace(',', '')) * 100)}%
-      </span>
-    </div>
+  <!-- Product Title -->
+  <h1 class="text-3xl font-playfair font-bold text-dark">
+    Product Title
+  </h1>
 
-    <!-- Rating -->
-    <div class="flex items-center space-x-4">
-      <div class="flex text-gold">
-        {Array.from({ length: 5 }, (_, i) => (
-          <svg class={`w-5 h-5 ${i < Math.floor(product.rating) ? 'fill-current' : 'fill-gray-300'}`} viewBox="0 0 20 20">
-            <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
-          </svg>
-        ))}
-      </div>
-      <span class="text-dark/80">{product.rating} ({product.reviews} reviews)</span>
-      <span class="text-green-600 font-semibold">✓ In Stock</span>
-    </div>
+  <!-- Price -->
+  <div class="text-2xl font-bold text-gold">
+    $0.00
   </div>
 
   <!-- Description -->
-  <div>
-    <p class="text-dark/90 leading-relaxed">
-      {product.description}
-    </p>
-  </div>
+  <p class="text-dark/70 leading-relaxed">
+    Product description
+  </p>
 
-  <!-- Product Details -->
-  <div class="bg-cream p-6 rounded-lg">
-    <h3 class="font-semibold text-lg text-maroon mb-4">Product Details</h3>
-    <div class="grid grid-cols-2 gap-4">
-      <div>
-        <span class="text-sm text-dark/60">SKU:</span>
-        <p class="font-medium">{product.sku}</p>
-      </div>
-      <div>
-        <span class="text-sm text-dark/60">Category:</span>
-        <p class="font-medium">{product.category}</p>
-      </div>
-      <div>
-        <span class="text-sm text-dark/60">Craft:</span>
-        <p class="font-medium">{product.craft}</p>
-      </div>
-      <div>
-        <span class="text-sm text-dark/60">Material:</span>
-        <p class="font-medium">{product.material}</p>
-      </div>
-      <div>
-        <span class="text-sm text-dark/60">Color:</span>
-        <p class="font-medium">{product.color}</p>
-      </div>
-      <div>
-        <span class="text-sm text-dark/60">Length:</span>
-        <p class="font-medium">{product.length}</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- Size Selection -->
-  <div>
-    <label class="block text-sm font-medium text-dark/80 mb-3">Size</label>
-    <div class="flex space-x-3">
-      {["Standard", "Plus"].map(size => (
-        <button
-          class={`px-6 py-3 border-2 rounded-lg transition-all duration-300 ${
-            selectedSize === size 
-              ? 'border-gold bg-gold text-maroon font-semibold' 
-              : 'border-gray-300 hover:border-gold'
-          }`}
-          on:click={() => selectedSize = size}
-        >
-          {size}
-        </button>
-      ))}
-    </div>
-  </div>
-
-  <!-- Quantity -->
-  <div>
-    <label class="block text-sm font-medium text-dark/80 mb-3">Quantity</label>
-    <div class="flex items-center space-x-4">
-      <div class="flex items-center border border-gold/30 rounded-lg">
-        <button
-          class="px-4 py-2 hover:bg-gold hover:text-white transition-colors duration-300"
-          on:click={() => updateQuantity(-1)}
-        >
-          -
-        </button>
-        <span class="px-6 py-2 font-semibold">{quantity}</span>
-        <button
-          class="px-4 py-2 hover:bg-gold hover:text-white transition-colors duration-300"
-          on:click={() => updateQuantity(1)}
-        >
-          +
-        </button>
-      </div>
-      <span class="text-sm text-dark/60">
-        {product.inStock ? `${10} items available` : 'Out of stock'}
-      </span>
-    </div>
-  </div>
-
-  <!-- Action Buttons -->
-  <div class="flex flex-col sm:flex-row gap-4">
-    <button
-      class="flex-1 btn-primary text-lg py-4"
-      on:click={addToCart}
-    >
-      Add to Cart
-    </button>
-    <button
-      class="flex-1 btn-secondary text-lg py-4"
-      on:click={buyNow}
-    >
-      Buy Now
-    </button>
-  </div>
-
-  <!-- Features -->
-  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 border-t border-gold/20">
-    <div class="text-center">
-      <div class="w-12 h-12 bg-gold rounded-full flex items-center justify-center mx-auto mb-3">
-        <svg class="w-6 h-6 text-maroon" fill="currentColor" viewBox="0 0 20 20">
-          <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
-          <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 1 1 0 000 2H6a2 2 0 100 4h2a2 2 0 100 4h2a1 1 0 100 2 2 2 0 01-2 2H4a2 2 0 01-2-2V5z" clip-rule="evenodd"/>
-        </svg>
-      </div>
-      <p class="text-sm font-semibold text-dark">Authentic Handcrafted</p>
-    </div>
-    <div class="text-center">
-      <div class="w-12 h-12 bg-gold rounded-full flex items-center justify-center mx-auto mb-3">
-        <svg class="w-6 h-6 text-maroon" fill="currentColor" viewBox="0 0 20 20">
-          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-        </svg>
-      </div>
-      <p class="text-sm font-semibold text-dark">GI Certified</p>
-    </div>
-    <div class="text-center">
-      <div class="w-12 h-12 bg-gold rounded-full flex items-center justify-center mx-auto mb-3">
-        <svg class="w-6 h-6 text-maroon" fill="currentColor" viewBox="0 0 20 20">
-          <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/>
-          <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1v-5a1 1 0 00-.293-.707l-2-2A1 1 0 0015 7h-1z"/>
-        </svg>
-      </div>
-      <p class="text-sm font-semibold text-dark">Free Shipping</p>
-    </div>
-  </div>
+  <!-- Add to Cart Button -->
+  <button class="w-full bg-maroon text-cream py-3 px-6 rounded-md hover:bg-maroon/90 transition-colors font-medium">
+    Add to Cart
+  </button>
 </div>

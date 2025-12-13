@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { api } from '../lib/api';
+import { fetchCategories, fetchProducts, API_BASE_URL } from '../lib/api';
 
 interface Product {
   id: string;
@@ -19,10 +19,10 @@ const DynamicProductGrid: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const loadProducts = async () => {
       try {
         setLoading(true);
-        const data = await api.products.getAll();
+        const data = await fetchProducts({ page: 1, limit: 20 });
         setProducts(data.items || []);
       } catch (err) {
         console.error('Failed to fetch products:', err);
@@ -32,7 +32,7 @@ const DynamicProductGrid: React.FC = () => {
       }
     };
 
-    fetchProducts();
+    loadProducts();
   }, []);
 
   if (loading) {

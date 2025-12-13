@@ -1,8 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import Header from '../../components/Header.astro';
-import ProductGallery from '../../components/ProductGallery.astro';
-import ProductInfo from '../../components/ProductInfo.astro';
+import ProductImage from '../../components/ProductImage.astro';
 import Footer from '../../components/Footer.astro';
 ---
 
@@ -27,12 +26,32 @@ import Footer from '../../components/Footer.astro';
 		<div class="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-16">
 			<!-- Product Gallery -->
 			<div>
-				<ProductGallery client:load />
+				<ProductImage />
 			</div>
 
 			<!-- Product Information -->
 			<div>
-				<ProductInfo client:load />
+				<div class="space-y-6">
+					<!-- Product Title -->
+					<h1 class="text-3xl font-playfair font-bold text-dark">
+						Banarasi Silk Saree
+					</h1>
+
+					<!-- Price -->
+					<div class="text-2xl font-bold text-gold">
+						$12,500
+					</div>
+
+					<!-- Description -->
+					<p class="text-dark/70 leading-relaxed">
+						Exquisite Banarasi silk saree handwoven with pure zari work. Features intricate floral motifs and traditional patterns passed down through generations.
+					</p>
+
+					<!-- Add to Cart Button -->
+					<button class="w-full bg-maroon text-cream py-3 px-6 rounded-md hover:bg-maroon/90 transition-colors font-medium">
+						Add to Cart
+					</button>
+				</div>
 			</div>
 		</div>
 
