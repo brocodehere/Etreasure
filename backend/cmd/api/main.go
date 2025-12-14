@@ -85,8 +85,22 @@ func main() {
 			AllowCredentials: true,
 		}))
 	} else {
+		// Get allowed origins from environment or use defaults
+		allowedOrigins := []string{"http://localhost:4321", "http://localhost:3000", "http://127.0.0.1:4321", "http://localhost:5174"}
+
+		// Add production frontend URLs from environment
+		if adminURL := os.Getenv("ADMIN_FRONTEND_URL"); adminURL != "" {
+			allowedOrigins = append(allowedOrigins, adminURL)
+		}
+		if webURL := os.Getenv("WEB_FRONTEND_URL"); webURL != "" {
+			allowedOrigins = append(allowedOrigins, webURL)
+		}
+
+		// Fallback to hardcoded admin URL for backward compatibility
+		allowedOrigins = append(allowedOrigins, "https://etreasureadmin.onrender.com")
+
 		r.Use(cors.New(cors.Config{
-			AllowOrigins:     []string{"http://localhost:4321", "http://localhost:3000", "http://127.0.0.1:4321", "http://localhost:5174"},
+			AllowOrigins:     allowedOrigins,
 			AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 			AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 			ExposeHeaders:    []string{"Content-Length"},
