@@ -163,9 +163,9 @@ func (h *RazorpayHandler) CreatePayment(c *gin.Context) {
 		_, err = h.DB.Exec(ctx, `
 			INSERT INTO order_line_items (
 				order_id, product_id, variant_id, product_title, product_sku, 
-				product_image_url, quantity, unit_price, total_price
+				product_image_url, quantity, price, total
 			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		`, orderID, it.ProductID, variantID, productTitle, productSKU, productImageURL,
+		`, orderID, it.ProductID, fmt.Sprintf("%d", variantID), productTitle, productSKU, productImageURL,
 			it.Quantity, float64(itemPriceCents)/100.0, float64(itemPriceCents*it.Quantity)/100.0)
 
 		if err != nil {

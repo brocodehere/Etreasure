@@ -492,6 +492,7 @@ CREATE INDEX IF NOT EXISTS idx_wishlist_product ON wishlist(product_id);
 	// Payment endpoints (Razorpay)
 	razorpay := &handlers.RazorpayHandler{DB: pool, Cfg: cfg}
 	r.POST("/api/orders/create-payment", razorpay.CreatePayment)
+	r.POST("/api/orders/verify-payment", razorpay.VerifyPayment)
 
 	// Public media proxy (serves R2 images locally) - after R2 client is initialized
 	r.GET("/api/public/media/:key", func(c *gin.Context) {
