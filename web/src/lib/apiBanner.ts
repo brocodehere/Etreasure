@@ -16,7 +16,7 @@ export interface BannerResponse {
 }
 
 export async function fetchBanners(): Promise<BannerResponse> {
-  const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
+  const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://etreasure-1.onrender.com';
   
   try {
     const response = await fetch(`${apiUrl}/api/public/banners`);
