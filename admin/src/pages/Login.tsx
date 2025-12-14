@@ -267,9 +267,7 @@ export const LoginPage: React.FC = () => {
               Forgot your password?
             </button>
           </div>
-          <p className="text-[11px] text-dark/60 mt-2">
-            Default admin: <span className="font-mono">admin@example.com / ChangeMe123!</span> (change in production).
-          </p>
+          
         </form>
       </div>
     </div>
