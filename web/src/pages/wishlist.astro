@@ -2,6 +2,8 @@
 import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+
+const PUBLIC_API_URL = 'https://etreasure-1.onrender.com';
 ---
 
 <script>
@@ -179,7 +181,7 @@ import Footer from '../components/Footer.astro';
 
 	async function addToCartFromWishlist(productId, name, price, image) {
 		try {
-			const response = await fetch('/api/cart/add', {
+			const response = await fetch(`${PUBLIC_API_URL}/api/cart/add`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ product_id: productId, quantity: 1 })

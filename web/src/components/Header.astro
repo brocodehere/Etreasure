@@ -1,13 +1,15 @@
 ---
 // Header component with dropdown menu for categories
 import SearchBar from './SearchBar.astro';
+
+const PUBLIC_API_URL = 'https://etreasure-1.onrender.com';
 ---
 
 <script>
 	// Fetch categories from API
 	async function fetchCategories() {
 		try {
-			const response = await fetch('/api/public/categories');
+			const response = await fetch(`${PUBLIC_API_URL}/api/public/categories`);
 			const data = await response.json();
 			return data.items || [];
 		} catch (error) {
@@ -308,7 +310,7 @@ import SearchBar from './SearchBar.astro';
 
 		try {
 			const token = localStorage.getItem('accessToken');
-			const response = await fetch('/api/cart', {
+			const response = await fetch(`${PUBLIC_API_URL}/api/cart`, {
 				headers: {
 					'Authorization': `Bearer ${token}`,
 					'Content-Type': 'application/json'
@@ -352,7 +354,7 @@ import SearchBar from './SearchBar.astro';
 
 		try {
 			const token = localStorage.getItem('accessToken');
-			const response = await fetch('/api/wishlist', {
+			const response = await fetch(`${PUBLIC_API_URL}/api/wishlist`, {
 				headers: {
 					'Authorization': `Bearer ${token}`,
 					'Content-Type': 'application/json'

@@ -5,9 +5,8 @@ import CategorySidebar from '../components/CategorySidebar';
 import ProductGrid from '../components/ProductGrid';
 import Footer from '../components/Footer.astro';
 
-// Environment variables
-const PUBLIC_API_URL = import.meta.env.PUBLIC_API_URL || 'https://etreasure-1.onrender.com';
-const PUBLIC_R2_BASE_URL = import.meta.env.PUBLIC_R2_BASE_URL || 'https://pub-1a3924a6c6994107be6fe9f3ed794c0a.r2.dev';
+const PUBLIC_API_URL = 'https://etreasure-1.onrender.com';
+const PUBLIC_R2_BASE_URL = 'https://pub-1a3924a6c6994107be6fe9f3ed794c0a.r2.dev';
 
 // SSR data fetching for initial load
 async function getInitialData() {

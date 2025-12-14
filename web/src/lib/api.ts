@@ -34,7 +34,7 @@ export interface CategoriesResponse {
   items: Category[];
 }
 
-export const API_BASE_URL = import.meta.env.PUBLIC_API_URL || 'https://etreasure-1.onrender.com';
+export const API_BASE_URL = 'https://etreasure-1.onrender.com';
 const R2_BASE_URL = import.meta.env.PUBLIC_R2_BASE_URL || 'https://pub-1a3924a6c6994107be6fe9f3ed794c0a.r2.dev';
 
 // Authentication types

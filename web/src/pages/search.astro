@@ -11,7 +11,7 @@ let took = 0;
 
 // Fetch search results from API
 if (q && q.length >= 1) {
-  const apiUrl = new URL(`/api/search?q=${encodeURIComponent(q)}&limit=20`, Astro.request.url).toString();
+  const apiUrl = `https://etreasure-1.onrender.com/api/search?q=${encodeURIComponent(q)}&limit=20`;
   try {
     const start = Date.now();
     const res = await fetch(apiUrl);

@@ -273,7 +273,7 @@ import Footer from '../components/Footer.astro';
 					const amountPaise = Math.round(total * 100);
 
 					// Create order in backend and get Razorpay order id
-					const orderRes = await fetch('/api/orders/create-payment', {
+					const orderRes = await fetch('https://etreasure-1.onrender.com/api/orders/create-payment', {
 						method: 'POST',
 						headers: { 'Content-Type': 'application/json' },
 						body: JSON.stringify({
@@ -303,7 +303,7 @@ import Footer from '../components/Footer.astro';
 						},
 						handler: async function (response) {
 							try {
-								const verifyRes = await fetch('/api/orders/verify-payment', {
+								const verifyRes = await fetch('https://etreasure-1.onrender.com/api/orders/verify-payment', {
 									method: 'POST',
 									headers: { 'Content-Type': 'application/json' },
 									body: JSON.stringify({

@@ -1,7 +1,9 @@
 // Updated wishlist functions to use API
+const PUBLIC_API_URL = 'https://etreasure-1.onrender.com';
+
 async function updateWishlistCount() {
     try {
-        const response = await fetch('/api/wishlist');
+        const response = await fetch(`${PUBLIC_API_URL}/api/wishlist`);
         const wishlistData = await response.json();
         
         if (response.ok) {
@@ -17,7 +19,7 @@ async function updateWishlistCount() {
 
 async function removeFromWishlist(productId) {
     try {
-        const response = await fetch(`/api/wishlist/remove/${productId}`, {
+        const response = await fetch(`https://etreasure-1.onrender.com/api/wishlist/remove/${productId}`, {
             method: 'DELETE'
         });
         
@@ -35,7 +37,7 @@ async function removeFromWishlist(productId) {
 
 async function addToCartFromWishlist(productId, title, price, imageUrl) {
     try {
-        const response = await fetch('/api/cart/add', {
+        const response = await fetch(`${PUBLIC_API_URL}/api/cart/add`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ product_id: productId, quantity: 1 })
@@ -58,7 +60,7 @@ async function addToCartFromWishlist(productId, title, price, imageUrl) {
 
 async function updateCartCount() {
     try {
-        const response = await fetch('/api/cart');
+        const response = await fetch(`${PUBLIC_API_URL}/api/cart`);
         const cartData = await response.json();
         
         if (response.ok) {
