@@ -368,8 +368,14 @@ categories.forEach(cat => {
 
 	
 <!-- Products data from database API -->
-	<script>
-		window.allProducts = {JSON.stringify(filteredProducts)};
+	<script is:inline type="application/json" id="shop-category-products" set:html={JSON.stringify(filteredProducts)} />
+	<script is:inline>
+		const el = document.getElementById('shop-category-products');
+		try {
+			window.allProducts = JSON.parse(el?.textContent || '[]');
+		} catch {
+			window.allProducts = [];
+		}
 	</script>
 
 	<script>

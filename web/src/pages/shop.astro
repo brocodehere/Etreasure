@@ -50,15 +50,22 @@ const { categories, products, initialCategory, initialPage } = await getInitialD
   <Header />
   
   <!-- Inject initial data for React islands -->
-  <script>
-    window.__INITIAL_DATA__ = {JSON.stringify({
-      categories,
-      products,
-      totalProducts: products?.total,
-      currentPage: initialPage,
-      initialCategory,
-      r2BaseUrl: PUBLIC_R2_BASE_URL
-    })};
+  <script is:inline type="application/json" id="shop-initial-data" set:html={JSON.stringify({
+    categories,
+    products,
+    totalProducts: products?.total,
+    currentPage: initialPage,
+    initialCategory,
+    r2BaseUrl: PUBLIC_R2_BASE_URL,
+  })} />
+
+  <script is:inline>
+    const el = document.getElementById('shop-initial-data');
+    try {
+      window.__INITIAL_DATA__ = JSON.parse(el?.textContent || '{}');
+    } catch {
+      window.__INITIAL_DATA__ = {};
+    }
   </script>
 
   <!-- Hero Section -->
