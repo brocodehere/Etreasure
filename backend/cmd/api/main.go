@@ -78,7 +78,7 @@ func main() {
 	devMode := os.Getenv("DEV") == "true"
 	if devMode {
 		r.Use(cors.New(cors.Config{
-			AllowOrigins:     []string{"*"},
+			AllowOrigins:     []string{"http://localhost:4321", "http://127.0.0.1:4321", "http://localhost:3000", "http://127.0.0.1:3000"},
 			AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 			AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 			ExposeHeaders:    []string{"Content-Length"},
@@ -341,17 +341,17 @@ CREATE INDEX IF NOT EXISTS idx_wishlist_product ON wishlist(product_id);
 		c.JSON(http.StatusOK, gin.H{"message": "Cart and wishlist tables created successfully!"})
 	})
 
-	// Protected Cart and Wishlist endpoints (require authentication)
+	// Public Cart and Wishlist endpoints (no authentication required)
 	cartHandler := &handlers.CartHandler{DB: pool, ImageHelper: imageHelper}
-	r.POST("/api/cart/add", middleware.AuthRequired(cfg), cartHandler.AddToCart)
-	r.GET("/api/cart", middleware.AuthRequired(cfg), cartHandler.GetCart)
-	r.DELETE("/api/cart/:id", middleware.AuthRequired(cfg), cartHandler.RemoveFromCart)
-	r.POST("/api/cart/clear", middleware.AuthRequired(cfg), cartHandler.ClearCart)
+	r.POST("/api/cart/add", cartHandler.AddToCart)
+	r.GET("/api/cart", cartHandler.GetCart)
+	r.DELETE("/api/cart/:id", cartHandler.RemoveFromCart)
+	r.POST("/api/cart/clear", cartHandler.ClearCart)
 
 	wishlistHandler := &handlers.WishlistHandler{DB: pool, ImageHelper: imageHelper}
-	r.POST("/api/wishlist/toggle", middleware.AuthRequired(cfg), wishlistHandler.ToggleWishlist)
-	r.GET("/api/wishlist", middleware.AuthRequired(cfg), wishlistHandler.GetWishlist)
-	r.DELETE("/api/wishlist/:id", middleware.AuthRequired(cfg), wishlistHandler.RemoveFromWishlist)
+	r.POST("/api/wishlist/toggle", wishlistHandler.ToggleWishlist)
+	r.GET("/api/wishlist", wishlistHandler.GetWishlist)
+	r.DELETE("/api/wishlist/:id", wishlistHandler.RemoveFromWishlist)
 
 	// Public search endpoints (fast, cached, rate-limited)
 	searchHandler := handlers.NewSearchHandler(pool)
@@ -422,83 +422,22 @@ CREATE INDEX IF NOT EXISTS idx_wishlist_product ON wishlist(product_id);
 		})
 	})
 
-	// Debug endpoint to check search_vector content
-	r.GET("/api/search/debug", func(c *gin.Context) {
-		ctx := c.Request.Context()
-
-		rows, err := pool.Query(ctx, `
-			SELECT title, slug, search_vector 
-			FROM products 
-			LIMIT 5
-		`)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to query products: " + err.Error()})
-			return
-		}
-		defer rows.Close()
-
-		var products []map[string]interface{}
-		for rows.Next() {
-			var title, slug string
-			var searchVector interface{}
-			if err := rows.Scan(&title, &slug, &searchVector); err != nil {
-				continue
-			}
-			products = append(products, map[string]interface{}{
-				"title":         title,
-				"slug":          slug,
-				"search_vector": searchVector,
-			})
-		}
-
-		// Test search query directly
-		testQuery := "cart"
-		searchRows, err := pool.Query(ctx, `
-			SELECT title, slug
-			FROM products
-			WHERE search_vector @@ plainto_tsquery('simple', unaccent($1))
-			LIMIT 3
-		`, testQuery)
-
-		var searchResults []map[string]string
-		if err == nil {
-			defer searchRows.Close()
-			for searchRows.Next() {
-				var title, slug string
-				if err := searchRows.Scan(&title, &slug); err != nil {
-					continue
-				}
-				searchResults = append(searchResults, map[string]string{
-					"title": title,
-					"slug":  slug,
-				})
-			}
-		}
-
-		c.JSON(http.StatusOK, gin.H{
-			"products_count": len(products),
-			"products":       products,
-			"test_query":     testQuery,
-			"search_results": searchResults,
-			"search_error": func() string {
-				if err != nil {
-					return err.Error()
-				}
-				return ""
-			}(),
-		})
-	})
-
 	// Payment endpoints (Razorpay)
 	razorpay := &handlers.RazorpayHandler{DB: pool, Cfg: cfg}
 	r.POST("/api/orders/create-payment", razorpay.CreatePayment)
 	r.POST("/api/orders/verify-payment", razorpay.VerifyPayment)
 
+	// Authenticated user orders
+	userOrders := r.Group("/api/orders")
+	userOrders.Use(middleware.AuthRequired(cfg))
+	{
+		userOrders.GET("/my", (&handlers.Handler{DB: pool}).ListMyOrders)
+	}
+
 	// Public media proxy (serves R2 images locally) - after R2 client is initialized
 	r.GET("/api/public/media/:key", func(c *gin.Context) {
 		key := c.Param("key")
 		if key == "" {
-			log.Printf("Media proxy: No key provided")
 			c.JSON(http.StatusBadRequest, gin.H{"error": "key is required"})
 			return
 		}
@@ -506,19 +445,15 @@ CREATE INDEX IF NOT EXISTS idx_wishlist_product ON wishlist(product_id);
 		// Decode the key (replace underscores back to slashes)
 		originalKey := key
 		key = strings.ReplaceAll(key, "_", "/")
-
-		log.Printf("Media proxy: Request received - original: %s, decoded: %s", originalKey, key)
+		_ = originalKey
 
 		// Try to get the object from R2
 		result, err := r2Client.GetObject(c.Request.Context(), key)
 		if err != nil {
-			log.Printf("Media proxy: R2 GetObject failed for key %s: %v", key, err)
 			c.JSON(http.StatusNotFound, gin.H{"error": "Image not found"})
 			return
 		}
 		defer result.Body.Close()
-
-		log.Printf("Media proxy: Got object from R2, Content-Type: %s, Size: %d", *result.ContentType, *result.ContentLength)
 
 		// Set content type
 		c.Header("Content-Type", *result.ContentType)
@@ -530,8 +465,6 @@ CREATE INDEX IF NOT EXISTS idx_wishlist_product ON wishlist(product_id);
 			log.Printf("Media proxy: Failed to stream image: %v", err)
 			return
 		}
-
-		log.Printf("Media proxy: Successfully streamed image: %s", key)
 	})
 
 	if err := r.Run(":" + port); err != nil {

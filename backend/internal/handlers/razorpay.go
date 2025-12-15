@@ -9,10 +9,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/etreasure/backend/internal/config"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -55,43 +55,43 @@ func (h *RazorpayHandler) CreatePayment(c *gin.Context) {
 		return
 	}
 
-	if len(req.Items) == 0 {
+	ctx := c.Request.Context()
+
+	// Compute amount from the server-side cart for this session.
+	// This keeps UI cart total and Razorpay amount consistent and avoids client-side manipulation.
+	sessionID, err := c.Cookie("session_id")
+	if err != nil || sessionID == "" {
+		sessionID = strings.TrimSpace(c.GetHeader("X-Session-Id"))
+		if sessionID == "" {
+			sessionID = fmt.Sprintf("session_%d", len(body)+len(c.Request.RemoteAddr))
+		}
+		c.SetCookie("session_id", sessionID, 86400*30, "/", "", false, true) // 30 days
+	}
+
+	var subtotal int
+	err = h.DB.QueryRow(ctx, `
+		SELECT COALESCE(SUM(pv.price_cents * c.quantity), 0)
+		FROM cart c
+		JOIN product_variants pv ON c.variant_id = pv.id
+		WHERE c.session_id = $1
+	`, sessionID).Scan(&subtotal)
+	if err != nil {
+		if strings.Contains(err.Error(), "does not exist") || strings.Contains(err.Error(), "relation") {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "cart is empty"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load cart", "details": err.Error()})
+		return
+	}
+	if subtotal <= 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "cart is empty"})
 		return
 	}
 
-	ctx := c.Request.Context()
-
-	// Very simple pricing: sum min variant price for each product * qty
-	subtotal := 0
-	for _, it := range req.Items {
-		if it.Quantity <= 0 {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid quantity"})
-			return
-		}
-		var priceCents int
-		// Parse product_id as UUID
-		productUUID, err := uuid.Parse(it.ProductID)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid product_id"})
-			return
-		}
-		err = h.DB.QueryRow(ctx, `
-      SELECT COALESCE(MIN(pv.price_cents), 0)
-      FROM product_variants pv
-      JOIN products p ON p.uuid_id = pv.product_id
-      WHERE pv.product_id = $1
-    `, productUUID).Scan(&priceCents)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load product pricing", "details": err.Error()})
-			return
-		}
-		subtotal += priceCents * it.Quantity
-	}
-
-	tax := int(float64(subtotal) * 0.18)
+	// Keep tax and shipping at 0 to match the cart UI.
+	tax := 0
 	shipping := 0
-	total := subtotal + tax + shipping
+	total := subtotal
 
 	// Extract shipping address details
 	shippingAddr := req.ShippingAddress
@@ -115,7 +115,7 @@ func (h *RazorpayHandler) CreatePayment(c *gin.Context) {
 
 	// Insert complete order with customer details
 	var orderID string
-	err := h.DB.QueryRow(ctx, `
+	err = h.DB.QueryRow(ctx, `
     INSERT INTO orders (
         order_number, status, currency, total_price, subtotal, tax_amount, shipping_amount,
         customer_name, customer_email, customer_phone,
@@ -139,35 +139,47 @@ func (h *RazorpayHandler) CreatePayment(c *gin.Context) {
 		return
 	}
 
-	// Insert order line items with product details
-	for _, it := range req.Items {
-		// Get product details and price
-		var productTitle, productSKU, productImageURL string
+	// Insert order line items from cart
+	rows, err := h.DB.Query(ctx, `
+		SELECT c.product_id::text, c.variant_id, c.quantity
+		FROM cart c
+		WHERE c.session_id = $1
+	`, sessionID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load cart items", "details": err.Error()})
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var productID string
 		var variantID int
+		var qty int
+		if err := rows.Scan(&productID, &variantID, &qty); err != nil {
+			continue
+		}
+
+		var productTitle, productSKU, productImageURL string
 		var itemPriceCents int
 		err := h.DB.QueryRow(ctx, `
-			SELECT p.title, pv.sku, 
+			SELECT p.title, pv.sku,
 				   (SELECT m.path FROM product_images pi JOIN media m ON pi.media_id = m.id WHERE pi.product_id = p.uuid_id ORDER BY pi.sort_order LIMIT 1),
-				   pv.id, pv.price_cents
+				   pv.price_cents
 			FROM products p
 			JOIN product_variants pv ON p.uuid_id = pv.product_id
-			WHERE pv.product_id = $1
-			ORDER BY pv.price_cents LIMIT 1
-		`, it.ProductID).Scan(&productTitle, &productSKU, &productImageURL, &variantID, &itemPriceCents)
-
+			WHERE pv.id = $1
+		`, variantID).Scan(&productTitle, &productSKU, &productImageURL, &itemPriceCents)
 		if err != nil {
 			continue
 		}
 
-		// Insert line item
 		_, err = h.DB.Exec(ctx, `
 			INSERT INTO order_line_items (
-				order_id, product_id, variant_id, product_title, product_sku, 
+				order_id, product_id, variant_id, product_title, product_sku,
 				product_image_url, quantity, price, total
 			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		`, orderID, it.ProductID, fmt.Sprintf("%d", variantID), productTitle, productSKU, productImageURL,
-			it.Quantity, float64(itemPriceCents)/100.0, float64(itemPriceCents*it.Quantity)/100.0)
-
+		`, orderID, productID, fmt.Sprintf("%d", variantID), productTitle, productSKU, productImageURL,
+			qty, float64(itemPriceCents)/100.0, float64(itemPriceCents*qty)/100.0)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create order line item", "details": err.Error()})
 			return
@@ -263,6 +275,11 @@ func (h *RazorpayHandler) VerifyPayment(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update order"})
 		return
+	}
+
+	// Clear cart after successful payment (session-based cart)
+	if sessionID, errCookie := c.Cookie("session_id"); errCookie == nil && sessionID != "" {
+		_, _ = h.DB.Exec(ctx, `DELETE FROM cart WHERE session_id = $1`, sessionID)
 	}
 
 	c.JSON(http.StatusOK, gin.H{"order_id": req.OrderID, "status": "paid"})

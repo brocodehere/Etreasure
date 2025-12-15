@@ -69,33 +69,34 @@ func (h *CartHandler) AddToCart(c *gin.Context) {
 		return
 	}
 
-	// Get authenticated user ID from middleware
-	userID, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
-		return
+	// Get session ID from cookie or create new one
+	sessionID, err := c.Cookie("session_id")
+	if err != nil || sessionID == "" {
+		// Generate new session ID
+		sessionID = fmt.Sprintf("session_%d", len(req.ProductID)+len(c.Request.RemoteAddr))
+		c.SetCookie("session_id", sessionID, 86400*30, "/", "", false, true) // 30 days
 	}
 
 	// Check if item already exists in cart
 	var existingQuantity int
 	err = h.DB.QueryRow(ctx, `
 		SELECT quantity FROM cart 
-		WHERE user_id = $1 AND product_id = $2::uuid AND variant_id = $3
-	`, userID, req.ProductID, variantID).Scan(&existingQuantity)
+		WHERE session_id = $1 AND product_id = $2::uuid AND variant_id = $3
+	`, sessionID, req.ProductID, variantID).Scan(&existingQuantity)
 
 	if err == nil {
 		// Update existing item
 		_, err = h.DB.Exec(ctx, `
 			UPDATE cart 
 			SET quantity = quantity + $1, updated_at = NOW()
-			WHERE user_id = $2 AND product_id = $3::uuid AND variant_id = $4
-		`, req.Quantity, userID, req.ProductID, variantID)
+			WHERE session_id = $2 AND product_id = $3::uuid AND variant_id = $4
+		`, req.Quantity, sessionID, req.ProductID, variantID)
 	} else {
 		// Insert new item
 		_, err = h.DB.Exec(ctx, `
-			INSERT INTO cart (user_id, product_id, variant_id, quantity, updated_at)
+			INSERT INTO cart (session_id, product_id, variant_id, quantity, updated_at)
 			VALUES ($1, $2::uuid, $3, $4, NOW())
-		`, userID, req.ProductID, variantID, req.Quantity)
+		`, sessionID, req.ProductID, variantID, req.Quantity)
 	}
 
 	if err != nil {
@@ -119,10 +120,15 @@ func (h *CartHandler) AddToCart(c *gin.Context) {
 func (h *CartHandler) GetCart(c *gin.Context) {
 	ctx := context.Background()
 
-	// Get authenticated user ID from middleware
-	userID, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+	// Get session ID from cookie
+	sessionID, err := c.Cookie("session_id")
+	if err != nil || sessionID == "" {
+		// Return empty cart for new users
+		c.JSON(http.StatusOK, CartResponse{
+			Items: []CartItem{},
+			Total: 0.0,
+			Count: 0,
+		})
 		return
 	}
 
@@ -138,10 +144,10 @@ func (h *CartHandler) GetCart(c *gin.Context) {
 		FROM cart c
 		JOIN products p ON c.product_id = p.uuid_id
 		JOIN product_variants pv ON c.variant_id = pv.id
-		WHERE c.user_id = $1
+		WHERE c.session_id = $1
 	`
 
-	rows, err := h.DB.Query(ctx, query, userID)
+	rows, err := h.DB.Query(ctx, query, sessionID)
 	if err != nil {
 		// Check if it's a table doesn't exist error
 		if strings.Contains(err.Error(), "does not exist") || strings.Contains(err.Error(), "relation") {
@@ -221,18 +227,18 @@ func (h *CartHandler) RemoveFromCart(c *gin.Context) {
 
 	ctx := context.Background()
 
-	// Get authenticated user ID from middleware
-	userID, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+	// Get session ID from cookie
+	sessionID, err := c.Cookie("session_id")
+	if err != nil || sessionID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "No session found"})
 		return
 	}
 
 	// Delete item from cart
-	_, err := h.DB.Exec(ctx, `
+	_, err = h.DB.Exec(ctx, `
 		DELETE FROM cart 
-		WHERE id = $1 AND user_id = $2
-	`, itemID, userID)
+		WHERE id = $1 AND session_id = $2
+	`, itemID, sessionID)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to remove item from cart"})
@@ -249,18 +255,18 @@ func (h *CartHandler) RemoveFromCart(c *gin.Context) {
 func (h *CartHandler) ClearCart(c *gin.Context) {
 	ctx := context.Background()
 
-	// Get authenticated user ID from middleware
-	userID, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+	// Get session ID from cookie
+	sessionID, err := c.Cookie("session_id")
+	if err != nil || sessionID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "No session found"})
 		return
 	}
 
 	// Delete all items from cart
-	_, err := h.DB.Exec(ctx, `
+	_, err = h.DB.Exec(ctx, `
 		DELETE FROM cart 
-		WHERE user_id = $1
-	`, userID)
+		WHERE session_id = $1
+	`, sessionID)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to clear cart"})

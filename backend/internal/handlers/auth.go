@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"fmt"
-	"log"
 	"math/rand"
 	"net/http"
 	"time"
@@ -101,15 +100,11 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	err := h.DB.QueryRow(ctx, `SELECT id, email, full_name, password_hash FROM users WHERE email = $1 AND is_active = TRUE`, req.Email).
 		Scan(&id, &email, &fullName, &passwordHash)
 	if err != nil {
-		// Log DB lookup error for debugging (may be no rows or DB issue)
-		log.Printf("auth.Login: user lookup failed for email=%s: %v", req.Email, err)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
 		return
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(req.Password)); err != nil {
-		// Password mismatch
-		log.Printf("auth.Login: password mismatch for user id=%d email=%s", id, req.Email)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
 		return
 	}

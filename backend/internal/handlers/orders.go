@@ -13,6 +13,17 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+type MyOrderSummary struct {
+	ID            string    `json:"id"`
+	OrderNumber   string    `json:"order_number"`
+	ProductTitle  string    `json:"product_title"`
+	Status        string    `json:"status"`
+	Currency      string    `json:"currency"`
+	TotalPrice    float64   `json:"total_price"`
+	PaymentMethod string    `json:"payment_method"`
+	CreatedAt     time.Time `json:"created_at"`
+}
+
 type Order struct {
 	ID             string  `json:"id"`
 	OrderNumber    string  `json:"order_number"`
@@ -227,6 +238,91 @@ func (h *Handler) ListOrders(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, response)
+}
+
+func (h *Handler) ListMyOrders(c *gin.Context) {
+	val, ok := c.Get("user_id")
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID, ok := val.(int)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	var email string
+	err := h.DB.QueryRow(c, `SELECT email FROM users WHERE id = $1`, userID).Scan(&email)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load user"})
+		return
+	}
+
+	queryNew := `
+		SELECT o.id,
+		       o.order_number,
+		       COALESCE((
+		         SELECT oli.product_title
+		         FROM order_line_items oli
+		         WHERE oli.order_id = o.id
+		         ORDER BY oli.created_at ASC
+		         LIMIT 1
+		       ), '') as product_title,
+		       o.status,
+		       o.currency,
+		       o.total_price,
+		       COALESCE(o.payment_method, 'razorpay') as payment_method,
+		       o.created_at
+		FROM orders o
+		WHERE o.customer_email = $1 AND o.status = 'paid'
+		ORDER BY o.created_at DESC
+		LIMIT 200
+	`
+
+	rows, err := h.DB.Query(c, queryNew, email)
+	if err != nil {
+		// Fallback for older schema where order_line_items uses `title` and may not have created_at.
+		queryOld := `
+			SELECT o.id,
+			       o.order_number,
+			       COALESCE((
+			         SELECT oli.title
+			         FROM order_line_items oli
+			         WHERE oli.order_id = o.id
+			         ORDER BY oli.id ASC
+			         LIMIT 1
+			       ), '') as product_title,
+			       o.status,
+			       o.currency,
+			       o.total_price,
+			       COALESCE(o.payment_method, 'razorpay') as payment_method,
+			       o.created_at
+			FROM orders o
+			WHERE o.customer_email = $1 AND o.status = 'paid'
+			ORDER BY o.created_at DESC
+			LIMIT 200
+		`
+
+		rows, err = h.DB.Query(c, queryOld, email)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load orders", "details": err.Error()})
+			return
+		}
+	}
+	defer rows.Close()
+
+	items := []MyOrderSummary{}
+	for rows.Next() {
+		var o MyOrderSummary
+		if err := rows.Scan(&o.ID, &o.OrderNumber, &o.ProductTitle, &o.Status, &o.Currency, &o.TotalPrice, &o.PaymentMethod, &o.CreatedAt); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read orders"})
+			return
+		}
+		items = append(items, o)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": items})
 }
 
 func (h *Handler) CreateOrder(c *gin.Context) {

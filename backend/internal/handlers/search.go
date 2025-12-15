@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"log"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -92,7 +91,8 @@ func (h *SearchHandler) Search(c *gin.Context) {
 	// 1) products
 	products, err := search.SearchProducts(ctx, h.DB, q, limit)
 	if err != nil {
-		log.Printf("search.SearchProducts error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "search failed"})
+		return
 	}
 	if len(products) > 0 {
 		var out []gin.H
@@ -108,7 +108,8 @@ func (h *SearchHandler) Search(c *gin.Context) {
 	// 2) categories
 	cats, err := search.SearchCategories(ctx, h.DB, q, limit)
 	if err != nil {
-		log.Printf("search.SearchCategories error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "search failed"})
+		return
 	}
 	if len(cats) > 0 {
 		var out []gin.H
@@ -124,7 +125,8 @@ func (h *SearchHandler) Search(c *gin.Context) {
 	// 3) offers
 	offers, err := search.SearchOffers(ctx, h.DB, q, limit)
 	if err != nil {
-		log.Printf("search.SearchOffers error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "search failed"})
+		return
 	}
 	if len(offers) > 0 {
 		var out []gin.H
@@ -140,7 +142,8 @@ func (h *SearchHandler) Search(c *gin.Context) {
 	// 4) banners
 	banners, err := search.SearchBanners(ctx, h.DB, q, limit)
 	if err != nil {
-		log.Printf("search.SearchBanners error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "search failed"})
+		return
 	}
 	if len(banners) > 0 {
 		var out []gin.H
@@ -156,7 +159,8 @@ func (h *SearchHandler) Search(c *gin.Context) {
 	// 5) fallback
 	fallback, err := search.FallbackTwoProducts(ctx, h.DB)
 	if err != nil {
-		log.Printf("search.FallbackTwoProducts error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "search failed"})
+		return
 	}
 	var out []gin.H
 	for _, p := range fallback {
@@ -194,10 +198,12 @@ func (h *SearchHandler) Suggest(c *gin.Context) {
 
 	// For suggestions, use the same search but return with shorter cache
 	products, err := search.SearchProducts(ctx, h.DB, q, limit)
-	log.Printf("SearchProducts for query '%s': found %d products, error: %v", q, len(products), err)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "search failed"})
+		return
+	}
 	var out []gin.H
 	for _, p := range products {
-		log.Printf("Adding product to results: %s (ID: %d)", p.Title, p.ID)
 		out = append(out, gin.H{"type": "product", "id": p.ID, "title": p.Title, "slug": p.Slug, "image": p.Image, "price": p.Price, "excerpt": p.Excerpt, "link": p.Link})
 	}
 
@@ -212,9 +218,11 @@ func (h *SearchHandler) Suggest(c *gin.Context) {
 	// If still no results, add fallback
 	if len(out) == 0 {
 		fallback, err := search.FallbackTwoProducts(ctx, h.DB)
-		log.Printf("FallbackTwoProducts: found %d products, error: %v", len(fallback), err)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "search failed"})
+			return
+		}
 		for _, p := range fallback {
-			log.Printf("Adding fallback product: %s (ID: %d)", p.Title, p.ID)
 			out = append(out, gin.H{"type": "product", "id": p.ID, "title": p.Title, "slug": p.Slug, "image": p.Image, "price": p.Price, "excerpt": p.Excerpt, "link": p.Link, "note": "suggested"})
 		}
 	}

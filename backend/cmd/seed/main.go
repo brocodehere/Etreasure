@@ -105,8 +105,6 @@ func seedRolesAndAdmin(ctx context.Context, pool *pgxpool.Pool) error {
 		if err != nil {
 			return err
 		}
-
-		log.Printf("Created user: %s with role: %s (password: %s)", user.email, user.role, user.password)
 	}
 
 	// Also create the original admin@example.com for backward compatibility
@@ -136,8 +134,6 @@ func seedRolesAndAdmin(ctx context.Context, pool *pgxpool.Pool) error {
 	if err != nil {
 		return err
 	}
-
-	log.Printf("Created legacy admin: admin@example.com with role: SuperAdmin (password: %s)", password)
 
 	return nil
 }
@@ -174,15 +170,11 @@ func seedCategories(ctx context.Context, pool *pgxpool.Pool) error {
 }
 
 func seedCartAndWishlist(ctx context.Context, pool *pgxpool.Pool) error {
-	// Debug: Check customers table structure first
-	log.Printf("Checking customers table structure...")
 	var customerCount int
 	err := pool.QueryRow(ctx, "SELECT COUNT(*) FROM customers").Scan(&customerCount)
 	if err != nil {
-		log.Printf("Error checking customers count: %v", err)
 		return err
 	}
-	log.Printf("Found %d customers in customers table", customerCount)
 
 	// First, create a sample customer if it doesn't exist
 	var customerID uuid.UUID
@@ -193,20 +185,14 @@ func seedCartAndWishlist(ctx context.Context, pool *pgxpool.Pool) error {
 		RETURNING id
 	`).Scan(&customerID)
 	if err != nil {
-		log.Printf("Error creating customer: %v", err)
 		return err
 	}
-	log.Printf("Created customer with ID: %s", customerID.String())
 
-	// Debug: Check products table structure first
-	log.Printf("Checking products table structure...")
 	var productCount int
 	err = pool.QueryRow(ctx, "SELECT COUNT(*) FROM products").Scan(&productCount)
 	if err != nil {
-		log.Printf("Error checking products count: %v", err)
 		return err
 	}
-	log.Printf("Found %d products in products table", productCount)
 
 	// Try to get product IDs - check if they use id or uuid_id
 	rows, err := pool.Query(ctx, `
@@ -224,25 +210,18 @@ func seedCartAndWishlist(ctx context.Context, pool *pgxpool.Pool) error {
 	for rows.Next() {
 		var uuidID uuid.UUID
 		if err := rows.Scan(&uuidID); err != nil {
-			log.Printf("Error scanning product row: %v", err)
 			return err
 		}
 		productIDs = append(productIDs, uuidID)
-		log.Printf("Found product: uuid_id=%s", uuidID.String())
 	}
 
 	if len(productIDs) == 0 {
-		log.Println("No published products found, skipping cart/wishlist seeding")
 		return nil
 	}
 
-	// Debug: Check if product_variants table has data
 	var variantCount int
 	err = pool.QueryRow(ctx, "SELECT COUNT(*) FROM product_variants").Scan(&variantCount)
 	if err != nil {
-		log.Printf("Error checking product_variants count: %v", err)
-	} else {
-		log.Printf("Found %d variants in product_variants table", variantCount)
 	}
 
 	// Seed cart items for demo sessions
@@ -259,7 +238,6 @@ func seedCartAndWishlist(ctx context.Context, pool *pgxpool.Pool) error {
 	for _, item := range cartItems {
 		// Get a variant for this product
 		var variantID int
-		log.Printf("Looking for variant for product UUID: %s", item.productID.String())
 		err := pool.QueryRow(ctx, `
 			SELECT pv.id FROM product_variants pv
 			WHERE pv.product_id = $1::uuid 
@@ -267,10 +245,8 @@ func seedCartAndWishlist(ctx context.Context, pool *pgxpool.Pool) error {
 			LIMIT 1
 		`, item.productID.String()).Scan(&variantID)
 		if err != nil {
-			log.Printf("No variant found for product %s, error: %v", item.productID.String(), err)
 			continue
 		}
-		log.Printf("Found variant ID: %d for product %s", variantID, item.productID.String())
 
 		_, err = pool.Exec(ctx, `
 			INSERT INTO cart (session_id, product_id, variant_id, quantity, created_at, updated_at)
@@ -293,7 +269,6 @@ func seedCartAndWishlist(ctx context.Context, pool *pgxpool.Pool) error {
 		}
 	}
 
-	log.Printf("Created cart items for demo sessions and wishlist items for customer %s", customerID.String())
 	return nil
 }
 

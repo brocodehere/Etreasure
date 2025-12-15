@@ -65,26 +65,27 @@ func (h *WishlistHandler) ToggleWishlist(c *gin.Context) {
 		return
 	}
 
-	// Get authenticated user ID from middleware
-	userID, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
-		return
+	// Get session ID from cookie or create new one
+	sessionID, err := c.Cookie("session_id")
+	if err != nil || sessionID == "" {
+		// Generate new session ID
+		sessionID = fmt.Sprintf("session_%d", len(req.ProductID)+len(c.Request.RemoteAddr))
+		c.SetCookie("session_id", sessionID, 86400*30, "/", "", false, true) // 30 days
 	}
 
 	// Check if item is already in wishlist
-	var existingID int
+	var existingID any
 	err = h.DB.QueryRow(ctx, `
 		SELECT id FROM wishlist 
-		WHERE user_id = $1 AND product_id = $2::uuid
-	`, userID, req.ProductID).Scan(&existingID)
+		WHERE session_id = $1 AND product_id = $2::uuid
+	`, sessionID, req.ProductID).Scan(&existingID)
 
 	if err == nil {
 		// Remove from wishlist
 		_, err = h.DB.Exec(ctx, `
 			DELETE FROM wishlist 
-			WHERE user_id = $1 AND product_id = $2::uuid
-		`, userID, req.ProductID)
+			WHERE session_id = $1 AND product_id = $2::uuid
+		`, sessionID, req.ProductID)
 
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to remove from wishlist"})
@@ -99,9 +100,9 @@ func (h *WishlistHandler) ToggleWishlist(c *gin.Context) {
 	} else {
 		// Add to wishlist
 		_, err = h.DB.Exec(ctx, `
-			INSERT INTO wishlist (user_id, product_id, created_at)
+			INSERT INTO wishlist (session_id, product_id, created_at)
 			VALUES ($1, $2::uuid, NOW())
-		`, userID, req.ProductID)
+		`, sessionID, req.ProductID)
 
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add to wishlist"})
@@ -121,11 +122,16 @@ func (h *WishlistHandler) ToggleWishlist(c *gin.Context) {
 	}
 }
 
-// GetWishlist retrieves the authenticated user's wishlist
+// GetWishlist retrieves the user's wishlist
 func (h *WishlistHandler) GetWishlist(c *gin.Context) {
-	userID, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+	// Get session ID from cookie
+	sessionID, err := c.Cookie("session_id")
+	if err != nil || sessionID == "" {
+		// Return empty wishlist for new users
+		c.JSON(http.StatusOK, WishlistResponse{
+			Items: []WishlistItem{},
+			Count: 0,
+		})
 		return
 	}
 
@@ -144,11 +150,11 @@ func (h *WishlistHandler) GetWishlist(c *gin.Context) {
 		FROM wishlist w
 		JOIN products p ON w.product_id = p.uuid_id
 		LEFT JOIN product_variants pv ON p.uuid_id = pv.product_id
-		WHERE w.user_id = $1
+		WHERE w.session_id = $1
 		ORDER BY w.created_at DESC
 	`
 
-	rows, err := h.DB.Query(ctx, query, userID)
+	rows, err := h.DB.Query(ctx, query, sessionID)
 	if err != nil {
 		// Check if it's a table doesn't exist error
 		if strings.Contains(err.Error(), "does not exist") {
@@ -164,18 +170,20 @@ func (h *WishlistHandler) GetWishlist(c *gin.Context) {
 	var items []WishlistItem
 	for rows.Next() {
 		var item WishlistItem
-		var id int
+		var id any
 		var priceCents int
 		var currency string
 		var createdAt time.Time
 		var imagePath *string
+		var productID any
 
-		err := rows.Scan(&id, &item.ProductID, &item.Title, &priceCents, &currency, &createdAt, &imagePath)
+		err := rows.Scan(&id, &productID, &item.Title, &priceCents, &currency, &createdAt, &imagePath)
 		if err != nil {
 			continue
 		}
 
-		item.ID = fmt.Sprintf("%d", id)
+		item.ID = fmt.Sprint(id)
+		item.ProductID = fmt.Sprint(productID)
 		item.Price = float64(priceCents) / 100.0
 		item.AddedAt = createdAt.Format("2006-01-02T15:04:05Z")
 
@@ -225,18 +233,18 @@ func (h *WishlistHandler) RemoveFromWishlist(c *gin.Context) {
 
 	ctx := context.Background()
 
-	// Get authenticated user ID from middleware
-	userID, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+	// Get session ID from cookie
+	sessionID, err := c.Cookie("session_id")
+	if err != nil || sessionID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "No session found"})
 		return
 	}
 
 	// Delete item from wishlist
-	_, err := h.DB.Exec(ctx, `
+	_, err = h.DB.Exec(ctx, `
 		DELETE FROM wishlist 
-		WHERE user_id = $1 AND product_id = $2::uuid
-	`, userID, productID)
+		WHERE session_id = $1 AND product_id = $2::uuid
+	`, sessionID, productID)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to remove item from wishlist"})

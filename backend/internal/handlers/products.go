@@ -337,6 +337,42 @@ func (h *ProductsHandler) Import(c *gin.Context) {
 func (h *ProductsHandler) PublicList(c *gin.Context) {
 	ctx := c.Request.Context()
 
+	// Pagination
+	limit := 12
+	if l := strings.TrimSpace(c.Query("limit")); l != "" {
+		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 && parsed <= 100 {
+			limit = parsed
+		}
+	}
+	page := 1
+	if p := strings.TrimSpace(c.Query("page")); p != "" {
+		if parsed, err := strconv.Atoi(p); err == nil && parsed > 0 {
+			page = parsed
+		}
+	}
+	offset := (page - 1) * limit
+
+	search := strings.TrimSpace(c.Query("search"))
+	sort := strings.TrimSpace(c.Query("sort"))
+	minPriceStr := strings.TrimSpace(c.Query("min_price"))
+	maxPriceStr := strings.TrimSpace(c.Query("max_price"))
+	inStock := strings.TrimSpace(c.Query("in_stock")) == "1"
+
+	var minPriceCents *int
+	if minPriceStr != "" {
+		if parsed, err := strconv.Atoi(minPriceStr); err == nil && parsed >= 0 {
+			v := parsed * 100
+			minPriceCents = &v
+		}
+	}
+	var maxPriceCents *int
+	if maxPriceStr != "" {
+		if parsed, err := strconv.Atoi(maxPriceStr); err == nil && parsed >= 0 {
+			v := parsed * 100
+			maxPriceCents = &v
+		}
+	}
+
 	// Check for category_id (UUID) first, then category (slug)
 	categoryIDParam := strings.TrimSpace(c.Query("category_id"))
 	categorySlugParam := strings.TrimSpace(c.Query("category"))
@@ -356,21 +392,23 @@ func (h *ProductsHandler) PublicList(c *gin.Context) {
 	}
 
 	// Pick a representative variant price (lowest) and first image for listing cards.
-	var query string
+	var baseQuery string
 	args := []interface{}{}
+	where := ""
+	argN := 1
 
 	if categorySlugFilter != "" {
 		// When filtering by slug, join with categories table
-		query = `
+		baseQuery = `
 			SELECT p.uuid_id,
-				   p.slug,
-				   p.title,
-				   p.description,
-				   p.category_id,
-				   pv.price_cents,
-				   pv.currency,
-				   m.path AS image_path,
-				   p.created_at
+			       p.slug,
+			       p.title,
+			       p.description,
+			       p.category_id,
+			       pv.price_cents,
+			       pv.currency,
+			       m.path AS image_path,
+			       p.created_at
 			FROM products p
 			LEFT JOIN LATERAL (
 				SELECT price_cents, currency
@@ -393,18 +431,19 @@ func (h *ProductsHandler) PublicList(c *gin.Context) {
 			  AND c.slug = $1
 		`
 		args = append(args, categorySlugFilter)
+		argN = 2
 	} else {
 		// Regular query without category filtering or with category_id filtering
-		query = `
+		baseQuery = `
 			SELECT p.uuid_id,
-				   p.slug,
-				   p.title,
-				   p.description,
-				   p.category_id,
-				   pv.price_cents,
-				   pv.currency,
-				   m.path AS image_path,
-				   p.created_at
+			       p.slug,
+			       p.title,
+			       p.description,
+			       p.category_id,
+			       pv.price_cents,
+			       pv.currency,
+			       m.path AS image_path,
+			       p.created_at
 			FROM products p
 			LEFT JOIN LATERAL (
 				SELECT price_cents, currency
@@ -426,11 +465,53 @@ func (h *ProductsHandler) PublicList(c *gin.Context) {
 		`
 
 		if categoryFilter != nil {
-			query += " AND p.category_id = $1"
+			baseQuery += " AND p.category_id = $1"
 			args = append(args, *categoryFilter)
+			argN = 2
 		}
 	}
-	query += " ORDER BY p.created_at DESC LIMIT 100"
+
+	if search != "" {
+		where += " AND lower(p.title) LIKE $" + strconv.Itoa(argN)
+		args = append(args, "%"+strings.ToLower(search)+"%")
+		argN++
+	}
+	if minPriceCents != nil {
+		where += " AND COALESCE(pv.price_cents, 0) >= $" + strconv.Itoa(argN)
+		args = append(args, *minPriceCents)
+		argN++
+	}
+	if maxPriceCents != nil {
+		where += " AND COALESCE(pv.price_cents, 0) <= $" + strconv.Itoa(argN)
+		args = append(args, *maxPriceCents)
+		argN++
+	}
+	if inStock {
+		where += " AND EXISTS (SELECT 1 FROM product_variants v2 WHERE v2.product_id = p.uuid_id AND v2.stock_quantity > 0)"
+	}
+
+	orderBy := "p.created_at DESC"
+	switch sort {
+	case "price_asc":
+		orderBy = "pv.price_cents ASC NULLS LAST, p.created_at DESC"
+	case "price_desc":
+		orderBy = "pv.price_cents DESC NULLS LAST, p.created_at DESC"
+	case "name_asc":
+		orderBy = "p.title ASC"
+	case "name_desc":
+		orderBy = "p.title DESC"
+	default:
+		orderBy = "p.created_at DESC"
+	}
+
+	query := baseQuery + where + " ORDER BY " + orderBy + " LIMIT $" + strconv.Itoa(argN) + " OFFSET $" + strconv.Itoa(argN+1)
+	args = append(args, limit, offset)
+
+	countQuery := "SELECT COUNT(1) FROM (" + baseQuery + where + ") as q"
+	var total int
+	if err := h.DB.QueryRow(ctx, countQuery, args[:len(args)-2]...).Scan(&total); err != nil {
+		total = 0
+	}
 
 	rows, err := h.DB.Query(ctx, query, args...)
 	if err != nil {
@@ -464,15 +545,12 @@ func (h *ProductsHandler) PublicList(c *gin.Context) {
 					fallbackURL := h.ImageHelper.GetFallbackImageURL("product")
 					p.ImageURL = &fallbackURL
 				}
-
-				// Debug logging
-				log.Printf("Product %s: ImagePath=%v, ImageKey=%v, ImageURL=%v", p.Title, imagePath, p.ImageKey, p.ImageURL)
 			}
 			items = append(items, p)
 		}
 	}
 
-	c.JSON(http.StatusOK, gin.H{"items": items})
+	c.JSON(http.StatusOK, gin.H{"items": items, "total": total, "page": page, "limit": limit})
 }
 
 // PublicGet returns a single published product by slug for the storefront

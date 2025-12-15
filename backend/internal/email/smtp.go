@@ -2,7 +2,6 @@ package email
 
 import (
 	"fmt"
-	"log"
 	"net/smtp"
 	"os"
 )
@@ -38,7 +37,6 @@ func getEnv(key, defaultValue string) string {
 
 func (e *EmailService) SendOTPEmail(toEmail, otp string) error {
 	if e.config.Email == "" || e.config.Password == "" {
-		log.Printf("SMTP credentials not configured. OTP for %s: %s", toEmail, otp)
 		return nil
 	}
 
@@ -73,8 +71,6 @@ func (e *EmailService) SendOTPEmail(toEmail, otp string) error {
 	if err != nil {
 		return fmt.Errorf("failed to send email: %w", err)
 	}
-
-	log.Printf("OTP email sent successfully to %s", toEmail)
 	return nil
 }
 
