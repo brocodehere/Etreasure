@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
 import CategorySidebar from '../components/CategorySidebar';
+import ProductFilters from '../components/ProductFilters';
 import ProductGrid from '../components/ProductGrid';
 import Footer from '../components/Footer.astro';
 
@@ -88,19 +89,9 @@ const { categories, products, initialCategory, initialPage } = await getInitialD
 
   <!-- Shop Content -->
   <main class="container mx-auto px-4 py-8 md:py-12">
-    <!-- Mobile Filter Toggle -->
-    <div class="lg:hidden mb-6">
-      <button id="mobileFilterToggle" class="w-full bg-maroon text-white py-3 px-4 rounded-lg flex items-center justify-between hover:bg-maroon/90 transition-colors">
-        <span class="font-medium">Filters & Categories</span>
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-        </svg>
-      </button>
-    </div>
-
     <div class="flex flex-col lg:flex-row gap-8">
       <!-- Category Sidebar -->
-      <aside id="mobileSidebar" class="lg:w-80 lg:sticky lg:top-24 h-fit hidden lg:block">
+      <aside class="lg:w-80 lg:sticky lg:top-24 h-fit hidden lg:block">
         <CategorySidebar client:load initialCategories={categories.items} initialCategory={initialCategory} />
       </aside>
 
@@ -121,42 +112,41 @@ const { categories, products, initialCategory, initialPage } = await getInitialD
           </ol>
         </nav>
 
-        <!-- Filters Bar -->
-        <div class="w-full lg:w-3/4">
-            <!-- Product Filters -->
-            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-              <h3 class="font-playfair text-xl font-bold text-dark mb-6">Filter Products</h3>
-              
-              <!-- Categories -->
-              <div class="mb-6">
-                <h4 class="font-semibold text-dark mb-4">Categories</h4>
-                <div class="space-y-2">
-                  <label class="flex items-center space-x-2 cursor-pointer">
-                    <input type="checkbox" class="rounded border-gray-300 text-gold focus:ring-gold" />
-                    <span class="text-sm">Sarees</span>
-                  </label>
-                  <label class="flex items-center space-x-2 cursor-pointer">
-                    <input type="checkbox" class="rounded border-gray-300 text-gold focus:ring-gold" />
-                    <span class="text-sm">Kurtis</span>
-                  </label>
-                </div>
-              </div>
+        <div class="flex items-center justify-between mb-6">
+          <div class="text-sm text-gray-600">
+            {initialCategory && (
+              <span class="inline-flex items-center px-3 py-1 rounded-full bg-gold/10 text-maroon font-medium capitalize">
+                {initialCategory.replace('-', ' ')}
+              </span>
+            )}
+          </div>
+          <button id="filtersDrawerOpen" type="button" class="inline-flex items-center gap-2 px-4 py-2 bg-maroon text-white rounded-lg hover:bg-maroon/90 transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+            </svg>
+            <span class="font-medium">Filters</span>
+          </button>
+        </div>
 
-              <!-- Price Range -->
-              <div class="mb-6">
-                <h4 class="font-semibold text-dark mb-4">Price Range</h4>
-                <div class="flex items-center space-x-4">
-                  <input type="number" placeholder="Min" min="0" class="w-20 px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-gold" />
-                  <span class="text-gray-500">-</span>
-                  <input type="number" placeholder="Max" min="0" class="w-20 px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-gold" />
-                </div>
-              </div>
-
-              <!-- Apply Filters Button -->
-              <button type="button" class="w-full bg-maroon text-cream py-2 px-4 rounded-md hover:bg-maroon/90 transition-colors font-medium">
-                Apply Filters
+        <!-- Filters Drawer (mobile + desktop) -->
+        <div id="filtersDrawer" class="hidden fixed inset-0 z-50">
+          <div id="filtersDrawerBackdrop" class="absolute inset-0 bg-black/50"></div>
+          <div class="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl overflow-y-auto">
+            <div class="flex items-center justify-between p-5 border-b border-gold/10">
+              <h3 class="font-playfair text-xl font-bold text-dark">Filters</h3>
+              <button id="filtersDrawerClose" type="button" class="p-2 rounded-lg hover:bg-gray-100 transition-colors" aria-label="Close filters">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
+            <div class="p-5 space-y-6">
+              <div class="lg:hidden">
+                <CategorySidebar client:load initialCategories={categories.items} initialCategory={initialCategory} />
+              </div>
+              <ProductFilters client:load />
+            </div>
+          </div>
         </div>
         
         <!-- Product Grid -->
@@ -167,23 +157,28 @@ const { categories, products, initialCategory, initialPage } = await getInitialD
     </div>
   </main>
 
-  <!-- Mobile Sidebar Script -->
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      const toggle = document.getElementById('mobileFilterToggle');
-      const sidebar = document.getElementById('mobileSidebar');
-      
-      if (toggle && sidebar) {
-        toggle.addEventListener('click', () => {
-          sidebar.classList.toggle('hidden');
-          sidebar.classList.toggle('fixed');
-          sidebar.classList.toggle('inset-0');
-          sidebar.classList.toggle('z-50');
-          sidebar.classList.toggle('bg-white');
-          sidebar.classList.toggle('p-4');
-          sidebar.classList.toggle('overflow-y-auto');
-        });
-      }
+      const openBtn = document.getElementById('filtersDrawerOpen');
+      const drawer = document.getElementById('filtersDrawer');
+      const closeBtn = document.getElementById('filtersDrawerClose');
+      const backdrop = document.getElementById('filtersDrawerBackdrop');
+
+      const open = () => {
+        drawer?.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+      };
+      const close = () => {
+        drawer?.classList.add('hidden');
+        document.body.style.overflow = '';
+      };
+
+      openBtn?.addEventListener('click', open);
+      closeBtn?.addEventListener('click', close);
+      backdrop?.addEventListener('click', close);
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') close();
+      });
     });
   </script>
   

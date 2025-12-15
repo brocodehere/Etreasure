@@ -35,7 +35,7 @@ export interface CategoriesResponse {
 }
 
 export const API_BASE_URL = 'https://etreasure-1.onrender.com';
-const R2_BASE_URL = import.meta.env.PUBLIC_R2_BASE_URL || 'https://pub-1a3924a6c6994107be6fe9f3ed794c0a.r2.dev';
+const R2_BASE_URL = ((import.meta as any).env?.PUBLIC_R2_BASE_URL as string) || 'https://pub-1a3924a6c6994107be6fe9f3ed794c0a.r2.dev';
 
 // Authentication types
 export interface User {
@@ -142,6 +142,7 @@ async function apiRequest(url: string, options: RequestInit = {}): Promise<Respo
       method: options.method,
       headers,
       body: options.body,
+      credentials: 'include', // Include cookies for session management
     });
 
     // Handle 401 unauthorized - try to refresh token
@@ -159,6 +160,7 @@ async function apiRequest(url: string, options: RequestInit = {}): Promise<Respo
         response = await fetch(`${API_BASE_URL}${url}`, {
           ...options,
           headers: newHeaders,
+          credentials: 'include', // Include cookies for session management
         });
       } else {
         // Refresh failed, clear auth and redirect to login
@@ -268,7 +270,10 @@ export async function fetchCategories(): Promise<CategoriesResponse> {
 export async function fetchProducts(params: {
   category?: string;
   search?: string;
-  sort?: 'price_asc' | 'price_desc' | 'newest';
+  sort?: 'price_asc' | 'price_desc' | 'newest' | 'name_asc' | 'name_desc';
+  min_price?: string;
+  max_price?: string;
+  in_stock?: string;
   page?: number;
   limit?: number;
 }): Promise<ProductsResponse> {
@@ -278,6 +283,9 @@ export async function fetchProducts(params: {
     if (params.category) searchParams.set('category', params.category);
     if (params.search) searchParams.set('search', params.search);
     if (params.sort) searchParams.set('sort', params.sort);
+    if (params.min_price) searchParams.set('min_price', params.min_price);
+    if (params.max_price) searchParams.set('max_price', params.max_price);
+    if (params.in_stock) searchParams.set('in_stock', params.in_stock);
     if (params.page) searchParams.set('page', params.page.toString());
     if (params.limit) searchParams.set('limit', params.limit.toString());
     
@@ -301,20 +309,22 @@ export async function fetchProducts(params: {
   }
 }
 
-// Cart and Wishlist functions (now require authentication)
+function dispatchShopEvent(eventName: string) {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new Event(eventName));
+}
+
+// Cart and Wishlist functions (now public - no auth required)
 export const addToCart = async (productId: string, quantity = 1) => {
   try {
-    // Check if user is authenticated before making request
-    if (!isAuthenticated()) {
-      throw new Error('User not authenticated');
-    }
-    
     const response = await apiRequest('/api/cart/add', {
       method: 'POST',
       body: JSON.stringify({ product_id: productId, quantity }),
     });
-    
-    return await response.json();
+
+    const data = await response.json();
+    dispatchShopEvent('cart-updated');
+    return data;
   } catch (error) {
     throw error;
   }
@@ -322,11 +332,6 @@ export const addToCart = async (productId: string, quantity = 1) => {
 
 export const getCart = async () => {
   try {
-    // Check if user is authenticated before making request
-    if (!isAuthenticated()) {
-      throw new Error('User not authenticated');
-    }
-    
     const response = await apiRequest('/api/cart');
     return await response.json();
   } catch (error) {
@@ -339,7 +344,10 @@ export const removeFromCart = async (itemId: string) => {
     const response = await apiRequest(`/api/cart/${itemId}`, {
       method: 'DELETE',
     });
-    return await response.json();
+
+    const data = await response.json();
+    dispatchShopEvent('cart-updated');
+    return data;
   } catch (error) {
     throw error;
   }
@@ -350,7 +358,10 @@ export const clearCart = async () => {
     const response = await apiRequest('/api/cart/clear', {
       method: 'POST',
     });
-    return await response.json();
+
+    const data = await response.json();
+    dispatchShopEvent('cart-updated');
+    return data;
   } catch (error) {
     throw error;
   }
@@ -362,8 +373,10 @@ export const toggleWishlist = async (productId: string) => {
       method: 'POST',
       body: JSON.stringify({ product_id: productId }),
     });
-    
-    return await response.json();
+
+    const data = await response.json();
+    dispatchShopEvent('wishlist-updated');
+    return data;
   } catch (error) {
     throw error;
   }
@@ -383,7 +396,10 @@ export const removeFromWishlist = async (productId: string) => {
     const response = await apiRequest(`/api/wishlist/${productId}`, {
       method: 'DELETE',
     });
-    return await response.json();
+
+    const data = await response.json();
+    dispatchShopEvent('wishlist-updated');
+    return data;
   } catch (error) {
     throw error;
   }
@@ -425,7 +441,7 @@ export function debounce<T extends (...args: any[]) => any>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout;
+  let timeout: ReturnType<typeof setTimeout>;
   return (...args: Parameters<T>) => {
     clearTimeout(timeout);
     timeout = setTimeout(() => func(...args), wait);

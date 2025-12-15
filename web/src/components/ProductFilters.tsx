@@ -4,8 +4,9 @@ interface ProductFiltersProps {}
 
 const ProductFilters: React.FC<ProductFiltersProps> = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState<'newest' | 'price_asc' | 'price_desc'>('newest');
+  const [sortBy, setSortBy] = useState<'newest' | 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc'>('newest');
   const [priceRange, setPriceRange] = useState({ min: '', max: '' });
+  const [inStockOnly, setInStockOnly] = useState(false);
 
   // Local debounce function for SSR compatibility
   const debounce = <T extends (...args: any[]) => any>(
@@ -19,23 +20,21 @@ const ProductFilters: React.FC<ProductFiltersProps> = () => {
     };
   };
 
-  // Debounced search function
-  const debouncedSearch = debounce((term: string) => {
-    window.dispatchEvent(new CustomEvent('searchChange', { 
-      detail: { search: term, sortBy, priceRange } 
+  // Debounced dispatch for search typing
+  const debouncedDispatch = debounce((term: string) => {
+    window.dispatchEvent(new CustomEvent('searchChange', {
+      detail: { search: term, sortBy, priceRange, inStockOnly }
     }));
   }, 250);
 
   useEffect(() => {
-    if (searchTerm) {
-      debouncedSearch(searchTerm);
-    }
-  }, [searchTerm, debouncedSearch]);
+    debouncedDispatch(searchTerm);
+  }, [searchTerm, debouncedDispatch]);
 
   const handleSortChange = (value: string) => {
     setSortBy(value as any);
     window.dispatchEvent(new CustomEvent('searchChange', { 
-      detail: { search: searchTerm, sortBy: value, priceRange } 
+      detail: { search: searchTerm, sortBy: value, priceRange, inStockOnly } 
     }));
   };
 
@@ -43,7 +42,14 @@ const ProductFilters: React.FC<ProductFiltersProps> = () => {
     const newRange = { ...priceRange, [type]: value };
     setPriceRange(newRange);
     window.dispatchEvent(new CustomEvent('searchChange', { 
-      detail: { search: searchTerm, sortBy, priceRange: newRange } 
+      detail: { search: searchTerm, sortBy, priceRange: newRange, inStockOnly } 
+    }));
+  };
+
+  const handleStockToggle = (checked: boolean) => {
+    setInStockOnly(checked);
+    window.dispatchEvent(new CustomEvent('searchChange', {
+      detail: { search: searchTerm, sortBy, priceRange, inStockOnly: checked }
     }));
   };
 
@@ -51,16 +57,17 @@ const ProductFilters: React.FC<ProductFiltersProps> = () => {
     setSearchTerm('');
     setSortBy('newest');
     setPriceRange({ min: '', max: '' });
+    setInStockOnly(false);
     window.dispatchEvent(new CustomEvent('searchChange', { 
-      detail: { search: '', sortBy: 'newest', priceRange: { min: '', max: '' } }
+      detail: { search: '', sortBy: 'newest', priceRange: { min: '', max: '' }, inStockOnly: false }
     }));
   };
 
   return (
     <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 mb-8">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
         {/* Search Input */}
-        <div className="lg:col-span-5">
+        <div className="sm:col-span-2">
           <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-2">
             Search Products
           </label>
@@ -88,7 +95,7 @@ const ProductFilters: React.FC<ProductFiltersProps> = () => {
         </div>
 
         {/* Sort Dropdown */}
-        <div className="lg:col-span-3">
+        <div>
           <label htmlFor="sort" className="block text-sm font-medium text-gray-700 mb-2">
             Sort By
           </label>
@@ -101,11 +108,26 @@ const ProductFilters: React.FC<ProductFiltersProps> = () => {
             <option value="newest">Newest First</option>
             <option value="price_asc">Price: Low to High</option>
             <option value="price_desc">Price: High to Low</option>
+            <option value="name_asc">Name: A to Z</option>
+            <option value="name_desc">Name: Z to A</option>
           </select>
         </div>
 
+        {/* Stock */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Availability</label>
+          <label className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg">
+            <input
+              type="checkbox"
+              checked={inStockOnly}
+              onChange={(e) => handleStockToggle(e.target.checked)}
+            />
+            <span className="text-sm text-gray-700">In stock only</span>
+          </label>
+        </div>
+
         {/* Price Range */}
-        <div className="lg:col-span-3">
+        <div className="sm:col-span-2">
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Price Range
           </label>
@@ -129,10 +151,10 @@ const ProductFilters: React.FC<ProductFiltersProps> = () => {
         </div>
 
         {/* Clear Filters Button */}
-        <div className="lg:col-span-1">
+        <div className="sm:col-span-2 flex justify-end">
           <button
             onClick={handleClearFilters}
-            className="w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors duration-200 font-medium"
+            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors duration-200 font-medium"
           >
             Clear
           </button>

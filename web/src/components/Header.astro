@@ -1,15 +1,15 @@
 ---
 // Header component with dropdown menu for categories
 import SearchBar from './SearchBar.astro';
-
-const PUBLIC_API_URL = 'https://etreasure-1.onrender.com';
 ---
 
 <script>
+	window.PUBLIC_API_URL = window.PUBLIC_API_URL || 'https://etreasure-1.onrender.com';
 	// Fetch categories from API
 	async function fetchCategories() {
 		try {
-			const response = await fetch(`${PUBLIC_API_URL}/api/public/categories`);
+			const apiBase = window.PUBLIC_API_URL || 'https://etreasure-1.onrender.com';
+			const response = await fetch(`${apiBase}/api/public/categories`);
 			const data = await response.json();
 			return data.items || [];
 		} catch (error) {
@@ -240,6 +240,7 @@ const PUBLIC_API_URL = 'https://etreasure-1.onrender.com';
 </header>
 
 <script type="module">
+	const PUBLIC_API_URL = window.PUBLIC_API_URL || 'https://etreasure-1.onrender.com';
 	// Mobile menu toggle
 	const mobileMenuButton = document.querySelector('[data-mobile-menu-button]');
 	const mobileMenu = document.getElementById('mobileMenu');
@@ -298,21 +299,13 @@ const PUBLIC_API_URL = 'https://etreasure-1.onrender.com';
 		}
 	}
 
-	// Update cart count from API (only if authenticated)
+	// Update cart count from API (now public - no auth required)
 	async function updateCartCount() {
-		if (!isAuthenticated()) {
-			const cartCount = document.querySelector('[data-cart-count]');
-			if (cartCount) {
-				cartCount.textContent = '0';
-			}
-			return;
-		}
-
+		const API_BASE = window.PUBLIC_API_URL || 'https://etreasure-1.onrender.com';
 		try {
-			const token = localStorage.getItem('accessToken');
-			const response = await fetch(`${PUBLIC_API_URL}/api/cart`, {
+			const response = await fetch(`${API_BASE}/api/cart`, {
+				credentials: 'include', // Include cookies for session management
 				headers: {
-					'Authorization': `Bearer ${token}`,
 					'Content-Type': 'application/json'
 				}
 			});
@@ -321,17 +314,13 @@ const PUBLIC_API_URL = 'https://etreasure-1.onrender.com';
 				const cartData = await response.json();
 				const cartCount = document.querySelector('[data-cart-count]');
 				if (cartCount) {
-					cartCount.textContent = cartData.count || 0;
+					const count = cartData.count || cartData.items?.length || 0;
+					cartCount.textContent = count;
+				} else {
+					console.error('Cart count element not found');
 				}
-			} else if (response.status === 401) {
-				// Clear auth data on 401
-				localStorage.removeItem('accessToken');
-				localStorage.removeItem('refreshToken');
-				localStorage.removeItem('user');
-				const cartCount = document.querySelector('[data-cart-count]');
-				if (cartCount) {
-					cartCount.textContent = '0';
-				}
+			} else {
+				console.error('Cart API response not OK:', response.status);
 			}
 		} catch (error) {
 			console.error('Error updating cart count:', error);
@@ -342,21 +331,13 @@ const PUBLIC_API_URL = 'https://etreasure-1.onrender.com';
 		}
 	}
 
-	// Update wishlist count from API (only if authenticated)
+	// Update wishlist count from API (now public - no auth required)
 	async function updateWishlistCount() {
-		if (!isAuthenticated()) {
-			const wishlistCount = document.querySelector('[data-wishlist-count]');
-			if (wishlistCount) {
-				wishlistCount.textContent = '0';
-			}
-			return;
-		}
-
+		const API_BASE = window.PUBLIC_API_URL || 'https://etreasure-1.onrender.com';
 		try {
-			const token = localStorage.getItem('accessToken');
-			const response = await fetch(`${PUBLIC_API_URL}/api/wishlist`, {
+			const response = await fetch(`${API_BASE}/api/wishlist`, {
+				credentials: 'include', // Include cookies for session management
 				headers: {
-					'Authorization': `Bearer ${token}`,
 					'Content-Type': 'application/json'
 				}
 			});
@@ -365,17 +346,13 @@ const PUBLIC_API_URL = 'https://etreasure-1.onrender.com';
 				const wishlistData = await response.json();
 				const wishlistCount = document.querySelector('[data-wishlist-count]');
 				if (wishlistCount) {
-					wishlistCount.textContent = wishlistData.count || 0;
+					const count = wishlistData.count || wishlistData.items?.length || 0;
+					wishlistCount.textContent = count;
+				} else {
+					console.error('Wishlist count element not found');
 				}
-			} else if (response.status === 401) {
-				// Clear auth data on 401
-				localStorage.removeItem('accessToken');
-				localStorage.removeItem('refreshToken');
-				localStorage.removeItem('user');
-				const wishlistCount = document.querySelector('[data-wishlist-count]');
-				if (wishlistCount) {
-					wishlistCount.textContent = '0';
-				}
+			} else {
+				console.error('Wishlist API response not OK:', response.status);
 			}
 		} catch (error) {
 			console.error('Error updating wishlist count:', error);
@@ -392,9 +369,24 @@ const PUBLIC_API_URL = 'https://etreasure-1.onrender.com';
 		profileButton.addEventListener('click', handleProfileClick);
 	}
 
-	// Initial count updates
-	updateCartCount();
-	updateWishlistCount();
+	// Wait for DOM to be ready before updating counts
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', () => {
+			updateCartCount();
+			updateWishlistCount();
+		});
+	} else {
+		updateCartCount();
+		updateWishlistCount();
+	}
+
+	window.addEventListener('cart-updated', () => {
+		updateCartCount();
+	});
+
+	window.addEventListener('wishlist-updated', () => {
+		updateWishlistCount();
+	});
 
 	// Storage event listener removed since we're using API instead of localStorage
 </script>

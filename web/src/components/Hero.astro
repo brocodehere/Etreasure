@@ -61,7 +61,7 @@ async function initBanners() {
 }
 ---
 
-<script define:vars={{ slides, slideTitles, slideLinks }}>
+<script define:vars={slides, slideTitles, slideLinks}>
   document.addEventListener('DOMContentLoaded', () => {
     const scrollIndicator = document.querySelector('[data-scroll-indicator]');
     if (scrollIndicator) {
@@ -78,7 +78,6 @@ async function initBanners() {
 
     // Dynamic banner slideshow functionality
     const heroImage = document.querySelector('[data-hero-image]');
-    const heroTitle = document.querySelector('[data-hero-title]');
     const heroButton = document.querySelector('[data-hero-button]');
     
     // Initialize slides from server-side data
@@ -94,11 +93,6 @@ async function initBanners() {
           // Update content
           heroImage.src = slidesData.slides[currentSlideIndex];
           heroImage.alt = slidesData.slideTitles[currentSlideIndex] || 'Premium ethnic fashion';
-          
-          // Update title if element exists
-          if (heroTitle) {
-            heroTitle.textContent = slidesData.slideTitles[currentSlideIndex] || 'Discover Premium Ethnic Fashion';
-          }
           
           // Update button if link exists
           if (heroButton && slidesData.slideLinks[currentSlideIndex]) {
@@ -155,13 +149,6 @@ async function initBanners() {
 	<!-- Hero Content -->
 	<div class="absolute inset-0 flex items-center justify-center pointer-events-none">
 		<div class="container mx-auto px-4 text-center text-white animate-fade-in">
-			<h1 
-				data-hero-title
-				class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 drop-shadow-lg relative z-10"
-			>
-				{slideTitles[0] || 'Discover Premium Ethnic Fashion'}
-			</h1>
-			
 			{slideLinks[0] && (
 				<a 
 					data-hero-button

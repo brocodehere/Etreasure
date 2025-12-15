@@ -66,6 +66,27 @@ import Footer from '../components/Footer.astro';
 				cartCount.textContent = cartCountValue;
 			}
 
+			// Update total orders count
+			const token = localStorage.getItem('accessToken');
+			if (token) {
+				const res = await fetch('https://etreasure-1.onrender.com/api/orders/my', {
+					method: 'GET',
+					headers: {
+						'Authorization': `Bearer ${token}`,
+						'Content-Type': 'application/json'
+					},
+					credentials: 'include'
+				});
+				if (res.ok) {
+					const data = await res.json().catch(() => ({}));
+					const totalOrdersEl = document.querySelector('[data-orders-count]');
+					if (totalOrdersEl) {
+						const items = data?.data;
+						totalOrdersEl.textContent = Array.isArray(items) ? String(items.length) : '0';
+					}
+				}
+			}
+
 			// Update wishlist counter
 			const wishlistData = await getWishlist();
 			const wishlistCount = document.querySelector('.bg-gradient-to-br.from-maroon\\/10 .text-3xl[data-wishlist-count]');
@@ -265,7 +286,7 @@ import Footer from '../components/Footer.astro';
 				<!-- Quick Stats -->
 				<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
 					<div class="bg-gradient-to-br from-gold/10 to-gold/5 rounded-xl p-6 text-center">
-						<div class="text-3xl font-bold text-maroon mb-2">0</div>
+						<div class="text-3xl font-bold text-maroon mb-2" data-orders-count>0</div>
 						<p class="text-dark/70">Total Orders</p>
 					</div>
 					<div class="bg-gradient-to-br from-maroon/10 to-maroon/5 rounded-xl p-6 text-center">

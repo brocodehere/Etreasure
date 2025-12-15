@@ -25,8 +25,27 @@ const ProductGrid: React.FC<ProductGridProps> = ({
     categoryId: '',
     search: '',
     sortBy: 'newest' as const,
-    priceRange: { min: '', max: '' }
+    priceRange: { min: '', max: '' },
+    inStockOnly: false
   });
+
+  const syncUrlWithFilters = useCallback((nextFilters: typeof filters, page: number = 1) => {
+    const url = new URL(window.location.href);
+    if (nextFilters.category) url.searchParams.set('category', nextFilters.category);
+    else url.searchParams.delete('category');
+    if (nextFilters.search) url.searchParams.set('search', nextFilters.search);
+    else url.searchParams.delete('search');
+    if (nextFilters.sortBy && nextFilters.sortBy !== 'newest') url.searchParams.set('sort', nextFilters.sortBy);
+    else url.searchParams.delete('sort');
+    if (nextFilters.priceRange.min) url.searchParams.set('min_price', nextFilters.priceRange.min);
+    else url.searchParams.delete('min_price');
+    if (nextFilters.priceRange.max) url.searchParams.set('max_price', nextFilters.priceRange.max);
+    else url.searchParams.delete('max_price');
+    if (nextFilters.inStockOnly) url.searchParams.set('in_stock', '1');
+    else url.searchParams.delete('in_stock');
+    url.searchParams.set('page', String(page));
+    window.history.pushState({}, '', url.toString());
+  }, []);
 
   // Load products with filters
   const loadProducts = useCallback(async (page: number = 1) => {
@@ -44,6 +63,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({
       if (filters.sortBy !== 'newest') params.sort = filters.sortBy;
       if (filters.priceRange.min) params.min_price = filters.priceRange.min;
       if (filters.priceRange.max) params.max_price = filters.priceRange.max;
+      if (filters.inStockOnly) params.in_stock = '1';
       const data = await fetchProducts(params);
       setProducts(data.items);
       setTotal(data.total);
@@ -64,12 +84,14 @@ const ProductGrid: React.FC<ProductGridProps> = ({
       const sort = params.get('sort') as any || 'newest';
       const minPrice = params.get('min_price') || '';
       const maxPrice = params.get('max_price') || '';
+      const inStockOnly = params.get('in_stock') === '1';
       
       return {
         category,
         search,
         sortBy: sort,
-        priceRange: { min: minPrice, max: maxPrice }
+        priceRange: { min: minPrice, max: maxPrice },
+        inStockOnly
       };
     };
 
@@ -92,21 +114,30 @@ const ProductGrid: React.FC<ProductGridProps> = ({
 
     // Listen for filter changes
     const handleCategoryChange = (e: CustomEvent) => {
-            setFilters(prev => ({ 
-        ...prev, 
-        category: e.detail.category,
-        categoryId: e.detail.categoryId || ''
-      }));
+      setFilters(prev => {
+        const next = {
+          ...prev,
+          category: e.detail.category,
+          categoryId: e.detail.categoryId || ''
+        };
+        syncUrlWithFilters(next, 1);
+        return next;
+      });
     };
     
     const handleSearchChange = (e: CustomEvent) => {
-      setFilters(prev => ({ 
-        ...prev, 
-        search: e.detail.search, 
-        sortBy: e.detail.sortBy,
-        priceRange: e.detail.priceRange,
-        categoryId: prev.categoryId // Keep existing categoryId
-      }));
+      setFilters(prev => {
+        const next = {
+          ...prev,
+          search: e.detail.search,
+          sortBy: e.detail.sortBy,
+          priceRange: e.detail.priceRange,
+          inStockOnly: !!e.detail.inStockOnly,
+          categoryId: prev.categoryId
+        };
+        syncUrlWithFilters(next, 1);
+        return next;
+      });
     };
     
     // Handle browser back/forward

@@ -23,9 +23,109 @@ import Footer from '../components/Footer.astro';
 		
 		try {
 			const token = localStorage.getItem('accessToken');
-			// For now, we'll show a placeholder since orders API isn't implemented yet
-			// In a real implementation, this would fetch from /api/orders
-			showEmptyState();
+			const ordersContainer = document.getElementById('ordersContainer');
+			if (!ordersContainer) return;
+
+			ordersContainer.innerHTML = `
+				<div class="bg-white rounded-xl shadow-lg p-8">
+					<div class="flex items-center justify-center py-8">
+						<div class="animate-spin rounded-full h-10 w-10 border-b-2 border-gold"></div>
+						<span class="ml-3 text-gray-600">Loading your orders...</span>
+					</div>
+				</div>
+			`;
+
+			const res = await fetch('https://etreasure-1.onrender.com/api/orders/my', {
+				method: 'GET',
+				headers: {
+					'Authorization': `Bearer ${token}`,
+					'Content-Type': 'application/json'
+				},
+				credentials: 'include'
+			});
+
+			const payload = await res.json().catch(() => ({}));
+			if (!res.ok) {
+				if (res.status === 401) {
+					localStorage.removeItem('accessToken');
+					localStorage.removeItem('refreshToken');
+					localStorage.removeItem('user');
+					window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+					return;
+				}
+				showEmptyState();
+				return;
+			}
+
+			const items = payload?.data || [];
+			if (!Array.isArray(items) || items.length === 0) {
+				showEmptyState();
+				return;
+			}
+
+			const formatDate = (iso) => {
+				try {
+					return new Date(iso).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: '2-digit' });
+				} catch (e) {
+					return '';
+				}
+			};
+
+			const formatMoney = (value) => {
+				const n = Number(value);
+				if (Number.isNaN(n)) return String(value ?? '');
+				return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(n);
+			};
+
+			const badgeClass = (status) => {
+				const s = String(status || '').toLowerCase();
+				if (s.includes('paid') || s.includes('completed') || s.includes('delivered')) return 'bg-green-100 text-green-700';
+				if (s.includes('pending')) return 'bg-yellow-100 text-yellow-700';
+				if (s.includes('cancel')) return 'bg-red-100 text-red-700';
+				return 'bg-gray-100 text-gray-700';
+			};
+
+			ordersContainer.innerHTML = `
+				<div class="bg-white rounded-xl shadow-lg overflow-hidden">
+					<div class="p-6 border-b border-gold/10">
+						<h2 class="text-2xl font-bold text-dark">Order History</h2>
+						<p class="text-dark/60 mt-1">Your recent orders</p>
+					</div>
+					<div class="overflow-x-auto">
+						<table class="w-full text-left">
+							<thead class="bg-cream/60">
+								<tr class="text-sm text-dark/70">
+									<th class="px-6 py-4 font-semibold">Product</th>
+									<th class="px-6 py-4 font-semibold">Date</th>
+									<th class="px-6 py-4 font-semibold">Delivery</th>
+									<th class="px-6 py-4 font-semibold">Status</th>
+									<th class="px-6 py-4 font-semibold">Payment</th>
+									<th class="px-6 py-4 font-semibold text-right">Total</th>
+								</tr>
+							</thead>
+							<tbody>
+								${items.map((o) => `
+									<tr class="border-t border-gold/10 hover:bg-gold/5 transition-colors">
+										<td class="px-6 py-4">
+											<div class="font-semibold text-dark">${o.product_title || 'Product'}</div>
+											<div class="text-xs text-dark/50">Order #${o.order_number || ''}</div>
+										</td>
+										<td class="px-6 py-4 text-dark/80">${formatDate(o.created_at)}</td>
+										<td class="px-6 py-4">
+											<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">Preparing</span>
+										</td>
+										<td class="px-6 py-4">
+											<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${badgeClass(o.status)}">${o.status || 'pending'}</span>
+										</td>
+										<td class="px-6 py-4 text-dark/80">${o.payment_method || 'razorpay'}</td>
+										<td class="px-6 py-4 text-right font-semibold text-maroon">${formatMoney(o.total_price)}</td>
+									</tr>
+								`).join('')}
+							</tbody>
+						</table>
+					</div>
+				</div>
+			`;
 		} catch (error) {
 			console.error('Error loading orders:', error);
 			showEmptyState();

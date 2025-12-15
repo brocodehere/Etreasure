@@ -6,27 +6,6 @@ import Footer from '../components/Footer.astro';
 const PUBLIC_API_URL = 'https://etreasure-1.onrender.com';
 ---
 
-<script>
-	// Check authentication and redirect if not logged in
-	function checkAuth() {
-		if (typeof localStorage !== 'undefined') {
-			const token = localStorage.getItem('accessToken');
-			const user = localStorage.getItem('user');
-			if (!token || !user) {
-				window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
-				return;
-			}
-		}
-	}
-
-	// Check auth on page load
-	if (document.readyState === 'loading') {
-		document.addEventListener('DOMContentLoaded', checkAuth);
-	} else {
-		checkAuth();
-	}
-</script>
-
 <Layout title="My Wishlist - Ethnic Treasures" description="View your favorite handcrafted products saved to wishlist">
 	<Header />
 	

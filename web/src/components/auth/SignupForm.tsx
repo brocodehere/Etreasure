@@ -3,7 +3,6 @@ import PasswordStrengthIndicator from './PasswordStrengthIndicator';
 
 // Temporarily hardcoded for debugging
 const API_URL = 'https://etreasure-1.onrender.com';
-// const API_URL = import.meta.env.PUBLIC_API_URL || 'https://etreasure-1.onrender.com';
 
 export default function SignupForm() {
   const [fullName, setFullName] = useState('');

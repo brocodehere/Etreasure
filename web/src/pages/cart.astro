@@ -3,6 +3,9 @@ import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 
+// Define API URL for client-side JavaScript
+const PUBLIC_API_URL = 'https://etreasure-1.onrender.com';
+
 // Get cart data from localStorage (client-side)
 ---
 
@@ -214,29 +217,27 @@ import Footer from '../components/Footer.astro';
 	<Footer />
 
 	<script>
-	import { getCart, removeFromCart, addToCart, toggleWishlist } from '../lib/api';
-	import '../lib/toast.js';
-
-	// Check authentication and redirect if not logged in
-	function checkAuth() {
-		if (typeof localStorage !== 'undefined') {
-			const token = localStorage.getItem('accessToken');
-			const user = localStorage.getItem('user');
-			if (!token || !user) {
-				window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
-				return;
-			}
-		}
-	}
+		const PUBLIC_API_URL = 'https://etreasure-1.onrender.com';
+		import { getCart, removeFromCart, addToCart, toggleWishlist } from '../lib/api';
+		import '../lib/toast.js';
 
 	// Initialize cart functionality
 	document.addEventListener('DOMContentLoaded', () => {
-		checkAuth();
+		// Removed authentication check - cart is now public
 
 		// Razorpay payment integration
 		const razorpayBtn = document.getElementById('razorpayPayBtn');
 		if (razorpayBtn) {
 			razorpayBtn.addEventListener('click', async function () {
+				// Check if user is authenticated before proceeding to payment
+				const token = localStorage.getItem('accessToken');
+				const user = localStorage.getItem('user');
+				
+				if (!token || !user) {
+					// Redirect to login page instead of showing modal
+					window.location.href = '/login?redirect=' + encodeURIComponent('/cart');
+					return;
+				}
 				try {
 					// Get current cart data from server
 					const cartData = await getCart();
@@ -266,16 +267,17 @@ import Footer from '../components/Footer.astro';
 
 					// Calculate total using server cart data
 					const cart = cartData.items;
-					const subtotal = cart.reduce((total, item) => total + (item.price * item.quantity), 0);
-					const shipping = subtotal >= 5000 ? 0 : 100;
+					const subtotal = Number(cartData?.total ?? 0);
+					const shipping = 0;
 					const tax = 0;
-					const total = subtotal + shipping + tax;
+					const total = subtotal;
 					const amountPaise = Math.round(total * 100);
 
 					// Create order in backend and get Razorpay order id
-					const orderRes = await fetch('https://etreasure-1.onrender.com/api/orders/create-payment', {
+					const orderRes = await fetch(`${PUBLIC_API_URL}/api/orders/create-payment`, {
 						method: 'POST',
 						headers: { 'Content-Type': 'application/json' },
+						credentials: 'include',
 						body: JSON.stringify({
 							items: cart.map(item => ({ product_id: item.product_id, quantity: item.quantity })),
 							customer: { name: customerName, email, phone },
@@ -303,9 +305,10 @@ import Footer from '../components/Footer.astro';
 						},
 						handler: async function (response) {
 							try {
-								const verifyRes = await fetch('https://etreasure-1.onrender.com/api/orders/verify-payment', {
+								const verifyRes = await fetch(`${PUBLIC_API_URL}/api/orders/verify-payment`, {
 									method: 'POST',
 									headers: { 'Content-Type': 'application/json' },
+									credentials: 'include',
 									body: JSON.stringify({
 										order_id: data.order_id,
 										razorpay_order_id: response.razorpay_order_id,
@@ -329,14 +332,8 @@ import Footer from '../components/Footer.astro';
 					const rzp = new window.Razorpay(options);
 					rzp.open();
 				} catch (err) {
-					if (err.message === 'User not authenticated') {
-						showError('Please log in to proceed with payment');
-						setTimeout(() => {
-							window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
-						}, 2000);
-					} else {
-						showError(err.message || 'Payment failed. Please try again.');
-					}
+					console.error('Payment error:', err);
+					showError('Payment failed. Please try again.');
 				}
 			});
 		}
@@ -345,6 +342,19 @@ import Footer from '../components/Footer.astro';
 		async function renderCart() {
 			const cartContent = document.getElementById('cartContent');
 			const emptyCart = document.getElementById('emptyCart');
+
+			// Show loading state
+			cartContent.innerHTML = `
+				<div class="lg:col-span-2">
+					<div class="bg-white rounded-lg shadow-card p-8">
+						<div class="flex items-center justify-center py-12">
+							<div class="animate-spin rounded-full h-12 w-12 border-b-2 border-gold"></div>
+							<span class="ml-3 text-gray-600">Loading cart...</span>
+						</div>
+					</div>
+				</div>
+			`;
+			emptyCart.classList.add('hidden');
 
 			try {
 				const cartData = await getCart();
@@ -362,12 +372,10 @@ import Footer from '../components/Footer.astro';
 
 				emptyCart.classList.add('hidden');
 				const cart = cartData.items;
-
-				// Calculate totals - use API total
-				const subtotal = cart.reduce((total, item) => total + (item.price * item.quantity), 0);
-				const shipping = subtotal >= 5000 ? 0 : 100;
-				const tax = 0; // All products are tax-free
-				const total = subtotal + shipping + tax;
+				const subtotal = Number(cartData?.total ?? 0);
+				const shipping = 0;
+				const tax = 0;
+				const total = subtotal;
 
 				// Render cart items
 				let cartItemsHTML = `
@@ -409,7 +417,7 @@ import Footer from '../components/Footer.astro';
 											+
 										</button>
 									</div>
-									<span class="font-semibold text-maroon text-lg">₹${item.price * item.quantity}</span>
+									<span class="font-semibold text-maroon text-lg">₹${item.price}</span>
 								</div>
 
 								<div class="flex items-center space-x-4">
@@ -446,11 +454,11 @@ import Footer from '../components/Footer.astro';
 								</div>
 								<div class="flex justify-between text-dark/80">
 									<span>Shipping</span>
-									<span class="${shipping === 0 ? 'text-green-600' : ''}">${shipping === 0 ? 'FREE' : `₹${shipping.toFixed(2)}`}</span>
+									<span>₹0.00</span>
 								</div>
 								<div class="flex justify-between text-dark/80">
 									<span>Tax</span>
-									<span>₹${tax.toFixed(2)}</span>
+									<span>₹0.00</span>
 								</div>
 								<div class="border-t border-gold/20 pt-4">
 									<div class="flex justify-between font-semibold text-lg text-maroon">
@@ -510,17 +518,6 @@ import Footer from '../components/Footer.astro';
 				});
 			} catch (error) {
 					console.error('Error rendering cart:', error);
-					
-					// Check if it's an authentication error
-					if (error.message === 'User not authenticated') {
-						cartContent.innerHTML = '<p class="text-center text-red-500">Please log in to view your cart</p>';
-						// Redirect to login after a short delay
-						setTimeout(() => {
-							window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
-						}, 2000);
-					} else {
-						cartContent.innerHTML = '<p class="text-center text-red-500">Failed to load cart</p>';
-					}
 				}
 			}
 
@@ -572,6 +569,16 @@ import Footer from '../components/Footer.astro';
 			// Open checkout modal
 			document.addEventListener('click', (e) => {
 				if (e.target && e.target.id === 'checkoutBtn') {
+					// Check if user is authenticated before opening checkout
+					const token = localStorage.getItem('accessToken');
+					const user = localStorage.getItem('user');
+					
+					if (!token || !user) {
+						// Redirect to login page instead of showing modal
+						window.location.href = '/login?redirect=' + encodeURIComponent('/cart');
+						return;
+					}
+					
 					checkoutModal.classList.remove('hidden');
 					currentStep = 1;
 					showStep(1);

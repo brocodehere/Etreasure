@@ -17,15 +17,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       await addToCart(product.id);
       showSuccess('Product added to cart successfully!');
     } catch (error) {
-      if (error instanceof Error && error.message === 'User not authenticated') {
-        showError('Please log in to add items to cart');
-        // Redirect to login after a short delay
-        setTimeout(() => {
-          window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
-        }, 2000);
-      } else {
-        showError('Failed to add product to cart. Please try again.');
-      }
+      showError('Failed to add product to cart. Please try again.');
     } finally {
       setIsLoading(false);
     }
