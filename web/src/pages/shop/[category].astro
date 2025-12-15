@@ -368,8 +368,8 @@ categories.forEach(cat => {
 
 	
 <!-- Products data from database API -->
-	<script define:vars={{ filteredProducts }}>
-		window.allProducts = filteredProducts;
+	<script>
+		window.allProducts = {JSON.stringify(filteredProducts)};
 	</script>
 
 	<script>

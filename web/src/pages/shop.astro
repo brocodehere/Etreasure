@@ -50,15 +50,15 @@ const { categories, products, initialCategory, initialPage } = await getInitialD
   <Header />
   
   <!-- Inject initial data for React islands -->
-  <script define:vars={{categories, products, initialCategory, initialPage, PUBLIC_R2_BASE_URL}}>
-    window.__INITIAL_DATA__ = {
-      categories: categories,
-      products: products,
-      totalProducts: products.total,
+  <script>
+    window.__INITIAL_DATA__ = {JSON.stringify({
+      categories,
+      products,
+      totalProducts: products?.total,
       currentPage: initialPage,
-      initialCategory: initialCategory,
+      initialCategory,
       r2BaseUrl: PUBLIC_R2_BASE_URL
-    };
+    })};
   </script>
 
   <!-- Hero Section -->
