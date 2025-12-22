@@ -37,8 +37,16 @@ const PUBLIC_API_URL = 'https://etreasure-1.onrender.com';
 		<div class="absolute bottom-10 right-10 w-40 h-40 bg-maroon/10 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s"></div>
 		
 		<div class="container mx-auto px-4 relative z-10">
+			<!-- Loading State -->
+			<div id="loadingState" class="text-center py-16">
+				<div class="inline-flex flex-col items-center">
+					<div class="w-16 h-16 border-4 border-gold border-t-transparent rounded-full animate-spin mb-4"></div>
+					<p class="text-dark/70 text-lg">Loading your wishlist...</p>
+				</div>
+			</div>
+
 			<!-- Empty Wishlist -->
-			<div id="emptyWishlist" class="text-center py-16">
+			<div id="emptyWishlist" class="text-center py-16 hidden">
 				<svg class="w-24 h-24 text-gray-300 mx-auto mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
 				</svg>
@@ -85,12 +93,21 @@ const PUBLIC_API_URL = 'https://etreasure-1.onrender.com';
 	}
 
 	async function renderWishlist() {
+		const loadingState = document.getElementById('loadingState');
 		const emptyWishlist = document.getElementById('emptyWishlist');
 		const wishlistItems = document.getElementById('wishlistItems');
 		const wishlistGrid = wishlistItems.querySelector('.grid');
 
+		// Show loading state initially
+		loadingState.classList.remove('hidden');
+		emptyWishlist.classList.add('hidden');
+		wishlistItems.classList.add('hidden');
+
 		try {
 			const wishlistData = await getWishlist();
+
+			// Hide loading state
+			loadingState.classList.add('hidden');
 
 			if (!wishlistData || !wishlistData.items || !Array.isArray(wishlistData.items)) {
 				emptyWishlist.classList.remove('hidden');
@@ -142,6 +159,8 @@ const PUBLIC_API_URL = 'https://etreasure-1.onrender.com';
 			}
 		} catch (error) {
 			console.error('Error rendering wishlist:', error);
+			// Hide loading state and show empty state on error
+			loadingState.classList.add('hidden');
 			emptyWishlist.classList.remove('hidden');
 			wishlistItems.classList.add('hidden');
 		}

@@ -121,7 +121,7 @@ const DynamicProductGrid: React.FC = () => {
                 {formatPrice(product.price_cents, product.currency)}
               </div>
               <button
-                onClick={() => window.location.href = `/products/${product.slug}`}
+                onClick={() => window.location.href = `/product/${product.slug}`}
                 className="px-3 py-1 bg-maroon text-white text-sm rounded hover:bg-maroon/90 transition-colors"
               >
                 View Details

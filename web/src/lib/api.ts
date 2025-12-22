@@ -419,6 +419,32 @@ export interface ContentPage {
   updated_at: string;
 }
 
+// Offers management types
+export interface Offer {
+  id: string;
+  title: string;
+  description: string;
+  discount_type: string;
+  discount_value: number;
+  applies_to: string;
+  applies_to_ids: string;
+  min_order_amount: number;
+  usage_limit: number;
+  usage_count: number;
+  is_active: boolean;
+  starts_at: string;
+  ends_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OffersResponse {
+  items: Offer[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 // Fetch content page by slug
 export async function fetchContent(slug: string): Promise<ContentPage | null> {
   try {
@@ -433,6 +459,20 @@ export async function fetchContent(slug: string): Promise<ContentPage | null> {
   } catch (error) {
     console.error(`Error fetching content for slug "${slug}":`, error);
     return null;
+  }
+}
+
+// Fetch offers from database
+export async function fetchOffers(): Promise<OffersResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/public/offers`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch offers: ${response.statusText}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching offers:', error);
+    throw error;
   }
 }
 

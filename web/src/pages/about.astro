@@ -4,44 +4,45 @@ import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import { fetchContent } from '../lib/api';
 
-// Fetch about page content from API
+// Fetch all about-related content from API
 let aboutContent = {
   title: "About Ethnic Treasures",
   hero_title: "Crafting Tradition, Weaving Stories",
   hero_description: "Discover the rich heritage of Indian craftsmanship through our curated collection of handcrafted treasures",
-  our_story: "Founded in 2024, Ethnic Treasures began as a passion project to bridge traditional Indian craftsmanship with contemporary global fashion. We work directly with over 200 artisan communities across 15 states, ensuring fair wages, sustainable practices, and global recognition for their incredible work.",
-  our_mission: "To preserve and promote India's rich textile heritage while providing sustainable livelihood opportunities to artisan communities. We believe in ethical fashion, fair trade practices, and creating beautiful pieces that tell stories of tradition and craftsmanship.",
-  our_values: [
-    {
-      title: "Authentic Craftsmanship",
-      description: "Every piece is handcrafted using traditional techniques passed down through generations"
-    },
-    {
-      title: "Ethical Sourcing",
-      description: "We work directly with artisans, ensuring fair wages and sustainable working conditions"
-    },
-    {
-      title: "Cultural Preservation",
-      description: "Supporting the preservation of traditional Indian art forms and textile techniques"
-    },
-    {
-      title: "Quality Assurance",
-      description: "Each product is carefully inspected to ensure the highest quality standards"
-    }
-  ],
-  stats: [
-    { number: "200+", label: "Artisan Communities" },
-    { number: "15", label: "Indian States" },
-    { number: "5000+", label: "Handcrafted Products" },
-    { number: "10+", label: "Years of Heritage" }
-  ]
+  our_story: "",
+  our_mission: "",
+  our_values: [],
+  stats: [],
+  story_content: "",
+  artisans_content: "",
+  crafts_content: ""
 };
 
 try {
-  const contentData = await fetchContent('about');
-  if (contentData) {
-    aboutContent = { ...aboutContent, ...contentData };
+  // Fetch main about content
+  const mainContent = await fetchContent('about');
+  if (mainContent) {
+    aboutContent = { ...aboutContent, ...mainContent };
   }
+
+  // Fetch our story content
+  const storyContent = await fetchContent('our-story');
+  if (storyContent) {
+    aboutContent.story_content = storyContent.content;
+  }
+
+  // Fetch artisans content
+  const artisansContent = await fetchContent('artisans');
+  if (artisansContent) {
+    aboutContent.artisans_content = artisansContent.content;
+  }
+
+  // Fetch crafts content
+  const craftsContent = await fetchContent('crafts');
+  if (craftsContent) {
+    aboutContent.crafts_content = craftsContent.content;
+  }
+
 } catch (error) {
   console.error('Failed to fetch about content:', error);
 }
@@ -87,9 +88,17 @@ try {
         </div>
         
         <div class="bg-white/60 backdrop-blur-sm p-8 md:p-12 rounded-2xl border border-gold/20 shadow-xl">
-          <p class="text-lg md:text-xl text-dark/90 leading-relaxed text-center">
-            {aboutContent.our_story}
-          </p>
+          <div class="prose prose-lg max-w-none">
+            {aboutContent.story_content ? (
+              <div set:html={aboutContent.story_content} />
+            ) : aboutContent.our_story ? (
+              <p class="text-lg md:text-xl text-dark/90 leading-relaxed text-center">
+                {aboutContent.our_story}
+              </p>
+            ) : (
+              <p class="text-dark/90 text-center italic">Story content is being updated...</p>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -134,9 +143,13 @@ try {
         </div>
         
         <div class="bg-gradient-to-r from-maroon/5 to-gold/5 p-8 md:p-12 rounded-2xl border border-gold/20 shadow-xl">
-          <p class="text-lg md:text-xl text-dark/90 leading-relaxed text-center">
-            {aboutContent.our_mission}
-          </p>
+          {aboutContent.our_mission ? (
+            <p class="text-lg md:text-xl text-dark/90 leading-relaxed text-center">
+              {aboutContent.our_mission}
+            </p>
+          ) : (
+            <p class="text-dark/90 text-center italic">Mission content is being updated...</p>
+          )}
         </div>
       </div>
     </div>
@@ -178,7 +191,61 @@ try {
     </div>
   </section>
 
-  <!-- Call to Action Section -->
+  <!-- Our Artisans Section -->
+  <section class="py-20 bg-gradient-to-br from-cream via-white to-cream relative overflow-hidden">
+    <div class="absolute top-10 left-10 w-32 h-32 bg-gold/10 rounded-full blur-3xl animate-pulse"></div>
+    <div class="absolute bottom-10 right-10 w-40 h-40 bg-maroon/10 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s"></div>
+    
+    <div class="container mx-auto px-4 relative z-10">
+      <div class="max-w-4xl mx-auto">
+        <div class="text-center mb-16">
+          <h2 class="font-playfair text-4xl md:text-5xl font-bold text-maroon mb-6 relative inline-block">
+            Our Artisans
+            <span class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-32 h-1 bg-gradient-to-r from-transparent via-gold to-transparent animate-gold-shine"></span>
+          </h2>
+          <div class="w-32 h-1 bg-gold mx-auto mb-8 shadow-gold"></div>
+        </div>
+        
+        <div class="bg-white/60 backdrop-blur-sm p-8 md:p-12 rounded-2xl border border-gold/20 shadow-xl">
+          <div class="prose prose-lg max-w-none">
+            {aboutContent.artisans_content ? (
+              <div set:html={aboutContent.artisans_content} />
+            ) : (
+              <p class="text-dark/90 text-center italic">Artisans content is being updated...</p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Crafts & Techniques Section -->
+  <section class="py-20 bg-gradient-to-br from-cream via-white to-cream relative overflow-hidden">
+    <div class="absolute top-10 left-10 w-32 h-32 bg-gold/10 rounded-full blur-3xl animate-pulse"></div>
+    <div class="absolute bottom-10 right-10 w-40 h-40 bg-maroon/10 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s"></div>
+    
+    <div class="container mx-auto px-4 relative z-10">
+      <div class="max-w-4xl mx-auto">
+        <div class="text-center mb-16">
+          <h2 class="font-playfair text-4xl md:text-5xl font-bold text-maroon mb-6 relative inline-block">
+            Crafts & Techniques
+            <span class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-32 h-1 bg-gradient-to-r from-transparent via-gold to-transparent animate-gold-shine"></span>
+          </h2>
+          <div class="w-32 h-1 bg-gold mx-auto mb-8 shadow-gold"></div>
+        </div>
+        
+        <div class="bg-white/60 backdrop-blur-sm p-8 md:p-12 rounded-2xl border border-gold/20 shadow-xl">
+          <div class="prose prose-lg max-w-none">
+            {aboutContent.crafts_content ? (
+              <div set:html={aboutContent.crafts_content} />
+            ) : (
+              <p class="text-dark/90 text-center italic">Crafts content is being updated...</p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
   <section class="py-20 bg-gradient-to-r from-maroon to-maroon/80 relative overflow-hidden">
     <div class="absolute inset-0">
       <div class="absolute top-10 left-20 w-64 h-64 bg-gold/20 rounded-full blur-3xl animate-pulse"></div>

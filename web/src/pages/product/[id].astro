@@ -4,6 +4,28 @@ import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 
 export async function getStaticPaths() {
+  const API_URL = import.meta.env.PUBLIC_API_URL || 'https://etreasure-1.onrender.com';
+  
+  try {
+    const response = await fetch(`${API_URL}/api/products`);
+    if (response.ok) {
+      const data = await response.json();
+      const products = data.items || [];
+      
+      return products.map((product: any) => ({
+        params: { 
+          id: product.slug || product.id || product.uuid_id 
+        },
+        props: { 
+          product: product 
+        }
+      }));
+    }
+  } catch (error) {
+    console.error('Failed to fetch products for static paths:', error);
+  }
+  
+  // Fallback paths
   return [
     { params: { id: 'sample-product-1' } },
     { params: { id: 'sample-product-2' } },
@@ -12,18 +34,879 @@ export async function getStaticPaths() {
 }
 
 const { id } = Astro.params;
+const { product: staticProduct } = Astro.props;
+
+// Fetch product details (for dynamic fallback)
+let product = staticProduct;
+if (!product) {
+  const API_URL = import.meta.env.PUBLIC_API_URL || 'https://etreasure-1.onrender.com';
+  try {
+    const response = await fetch(`${API_URL}/api/products/${id}`);
+    if (response.ok) {
+      product = await response.json();
+    }
+  } catch (error) {
+    console.error('Failed to fetch product details:', error);
+  }
+}
+
+// If no product found, show 404
+if (!product) {
+  return Astro.redirect('/shop');
+}
+
+// SEO data extraction
+const productName = product.name || product.title || 'Product';
+const productDescription = product.description || `Discover ${productName} at Ethnic Treasures. Premium handcrafted ethnic wear with traditional craftsmanship.`;
+const productPrice = product.price_cents ? (product.price_cents / 100).toFixed(2) : '0.00';
+const productCurrency = product.currency || 'USD';
+const productImage = product.image_url || product.image || '/images/og-default.jpg';
+const productSlug = product.slug || product.id || product.uuid_id || id;
+const productCategory = product.category || 'Ethnic Wear';
+const productAvailability = product.stock_status === 'in_stock' ? 'InStock' : 'OutOfStock';
+
+// Generate structured data
+const productSchema = {
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "name": productName,
+  "description": productDescription,
+  "image": productImage.startsWith('http') ? productImage : new URL(productImage, Astro.url.origin).href,
+  "brand": {
+    "@type": "Brand",
+    "name": "Ethnic Treasures"
+  },
+  "category": productCategory,
+  "offers": {
+    "@type": "Offer",
+    "url": new URL(Astro.url.pathname, Astro.url.origin).href,
+    "priceCurrency": productCurrency,
+    "price": productPrice,
+    "availability": `https://schema.org/${productAvailability}`,
+    "seller": {
+      "@type": "Organization",
+      "name": "Ethnic Treasures"
+    }
+  },
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "4.5",
+    "reviewCount": "12",
+    "bestRating": "5",
+    "worstRating": "1"
+  }
+};
+
+// Breadcrumb schema
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": new URL('/', Astro.url.origin).href
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Shop",
+      "item": new URL('/shop', Astro.url.origin).href
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": productName,
+      "item": new URL(Astro.url.pathname, Astro.url.origin).href
+    }
+  ]
+};
+
+// Combine structured data
+const structuredData = [productSchema, breadcrumbSchema];
 ---
 
-<Layout title={`Product - ${id}`}>
+<Layout 
+  title={`${productName} - Ethnic Treasures`} 
+  description={productDescription}
+  keywords={`${productName}, ${productCategory}, ethnic wear, traditional clothing, handcrafted, ${product.keywords || ''}`}
+  ogImage={productImage}
+  ogType="product"
+  structuredData={structuredData}
+>
   <Header />
-  <main class="min-h-screen bg-cream flex items-center justify-center">
-    <div class="text-center">
-      <h1 class="text-4xl font-playfair font-bold text-dark mb-4">Product: {id}</h1>
-      <p class="text-lg text-dark/70 mb-8">Product details would be displayed here.</p>
-      <a href="/products" class="bg-maroon text-cream px-6 py-3 rounded-md hover:bg-maroon/90 transition-colors">
-        Browse Products
-      </a>
+  
+  <main class="container mx-auto px-4 py-8">
+    <!-- Breadcrumb -->
+    <nav class="flex items-center space-x-2 text-sm text-dark/60 mb-8">
+      <a href="/" class="hover:text-gold transition-colors duration-300">Home</a>
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+      </svg>
+      <a href="/shop" class="hover:text-gold transition-colors duration-300">Shop</a>
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+      </svg>
+      <span class="text-dark font-medium">{product.name || product.title}</span>
+    </nav>
+
+    <!-- Product Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-16">
+      <!-- Product Gallery -->
+      <div>
+        <div class="relative max-w-md mx-auto">
+          <!-- Main Image with Zoom -->
+          <div 
+            id="image-container"
+            class="relative overflow-hidden rounded-lg border border-gray-200"
+            style="height: 400px;"
+          >
+            <img 
+              id="main-image"
+              src={product.image_url || product.image} 
+              alt={product.name || product.title}
+              class="w-full h-full object-contain cursor-crosshair"
+              loading="lazy"
+            />
+            
+            <!-- Zoom Lens (Desktop only) -->
+            <div 
+              id="zoom-lens"
+              class="absolute w-24 h-24 border-2 border-gold bg-white/20 pointer-events-none opacity-0 transition-opacity duration-200 hidden lg:block"
+              style="display: none;"
+            ></div>
+          </div>
+          
+          <!-- Zoom Result (Desktop only) -->
+          <div 
+            id="zoom-result"
+            class="absolute top-0 left-full w-96 h-96 border-2 border-gray-300 rounded-lg shadow-2xl overflow-hidden pointer-events-none opacity-0 transition-opacity duration-200 z-50 hidden lg:block"
+            style="display: none; margin-left: 20px;"
+          >
+            <img 
+              id="zoom-image"
+              src={product.image_url || product.image}
+              alt={product.name || product.title}
+              class="w-full h-full object-cover"
+            />
+          </div>
+
+          <!-- Mobile/Tablet Touch Instructions -->
+          <div class="mt-4 text-center text-sm text-dark/60 lg:hidden">
+            <p>Tap image to zoom in • Pinch to zoom • Double tap to reset</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Product Information -->
+      <div>
+        <div class="space-y-6">
+          <!-- Product Title -->
+          <h1 class="text-3xl font-playfair font-bold text-dark">
+            {product.name || product.title}
+          </h1>
+
+          <!-- Price -->
+          <div class="text-2xl font-bold text-gold">
+            {product.price_cents ? (product.price_cents / 100).toFixed(2) : 'Price not available'} {product.currency || 'USD'}
+          </div>
+
+          <!-- Description -->
+          <p class="text-dark/70 leading-relaxed">
+            {product.description || 'Product description not available.'}
+          </p>
+
+          <!-- Action Buttons -->
+          <div class="flex space-x-4">
+            <!-- Add to Cart Button -->
+            <button 
+              id="add-to-cart-btn"
+              class="flex-1 bg-maroon text-cream py-3 px-6 rounded-md hover:bg-maroon/90 transition-colors font-medium"
+              onclick="handleAddToCart()"
+            >
+              Add to Cart
+            </button>
+            
+            <!-- Wishlist Button -->
+            <button 
+              id="wishlist-btn"
+              class="bg-white border-2 border-gold text-gold py-3 px-4 rounded-md hover:bg-gold hover:text-cream transition-colors"
+              onclick="handleToggleWishlist()"
+              title="Add to Wishlist"
+            >
+              <svg 
+                id="wishlist-icon"
+                class="w-6 h-6 transition-colors duration-200" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path 
+                  stroke-linecap="round" 
+                  stroke-linejoin="round" 
+                  stroke-width="2" 
+                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
-  </main>
-  <Footer />
+
+    <!-- Product Tabs -->
+    <section class="mb-16">
+      <div class="border-b border-gold/20">
+        <nav class="flex space-x-8">
+          <button 
+            x-data="{ active: true }"
+            @click="active = true; $el.classList.add('border-gold', 'text-gold'); $el.classList.remove('border-transparent', 'text-dark/60'); $el.parentElement.querySelectorAll('button').forEach(btn => { if (btn !== $el) btn.classList.remove('border-gold', 'text-gold'); btn.classList.add('border-transparent', 'text-dark/60'); })"
+            class="py-4 px-1 border-b-2 border-gold text-gold font-semibold tab-button"
+            data-tab="details"
+          >
+            Details
+          </button>
+          <button 
+            @click="$el.classList.add('border-gold', 'text-gold'); $el.classList.remove('border-transparent', 'text-dark/60'); $el.parentElement.querySelectorAll('button').forEach(btn => { if (btn !== $el) btn.classList.remove('border-gold', 'text-gold'); btn.classList.add('border-transparent', 'text-dark/60'); })"
+            class="py-4 px-1 border-b-2 border-transparent text-dark/60 hover:text-gold transition-colors duration-300 tab-button"
+            data-tab="fabric"
+          >
+            Fabric & Care
+          </button>
+          <button 
+            @click="$el.classList.add('border-gold', 'text-gold'); $el.classList.remove('border-transparent', 'text-dark/60'); $el.parentElement.querySelectorAll('button').forEach(btn => { if (btn !== $el) btn.classList.remove('border-gold', 'text-gold'); btn.classList.add('border-transparent', 'text-dark/60'); })"
+            class="py-4 px-1 border-b-2 border-transparent text-dark/60 hover:text-gold transition-colors duration-300 tab-button"
+            data-tab="shipping"
+          >
+            Shipping
+          </button>
+          <button 
+            @click="$el.classList.add('border-gold', 'text-gold'); $el.classList.remove('border-transparent', 'text-dark/60'); $el.parentElement.querySelectorAll('button').forEach(btn => { if (btn !== $el) btn.classList.remove('border-gold', 'text-gold'); btn.classList.add('border-transparent', 'text-dark/60'); })"
+            class="py-4 px-1 border-b-2 border-transparent text-dark/60 hover:text-gold transition-colors duration-300 tab-button"
+            data-tab="reviews"
+          >
+            Reviews
+          </button>
+        </nav>
+      </div>
+
+      <!-- Tab Content -->
+      <div class="py-8">
+        <!-- Details Tab -->
+        <div id="details-content" class="tab-content space-y-6">
+          <div>
+            <h3 class="font-playfair text-2xl font-semibold text-maroon mb-4">Product Details</h3>
+            <div class="prose prose-lg text-dark/90 max-w-none">
+              <p>{product.description || 'Detailed product information will be displayed here.'}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Fabric & Care Tab -->
+        <div id="fabric-content" class="tab-content space-y-6 hidden">
+          <div>
+            <h3 class="font-playfair text-2xl font-semibold text-maroon mb-4">Fabric & Care Instructions</h3>
+            <div class="space-y-4">
+              <div>
+                <h4 class="font-semibold text-lg mb-2">Fabric Composition</h4>
+                <p class="text-dark/70">Premium quality fabric with traditional craftsmanship. Each piece is carefully selected for its superior quality and durability.</p>
+              </div>
+              <div>
+                <h4 class="font-semibold text-lg mb-2">Care Instructions</h4>
+                <ul class="list-disc list-inside text-dark/70 space-y-1">
+                  <li>Dry clean recommended for best results</li>
+                  <li>Hand wash in cold water with mild detergent</li>
+                  <li>Do not bleach or use harsh chemicals</li>
+                  <li>Iron on low heat if needed</li>
+                  <li>Store in a cool, dry place</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Shipping Tab -->
+        <div id="shipping-content" class="tab-content space-y-6 hidden">
+          <div>
+            <h3 class="font-playfair text-2xl font-semibold text-maroon mb-4">Shipping & Delivery</h3>
+            <div class="space-y-4">
+              <div>
+                <h4 class="font-semibold text-lg mb-2">Shipping Options</h4>
+                <ul class="list-disc list-inside text-dark/70 space-y-1">
+                  <li>Standard Shipping: 5-7 business days</li>
+                  <li>Express Shipping: 2-3 business days</li>
+                  <li>International Shipping: 10-15 business days</li>
+                </ul>
+              </div>
+              <div>
+                <h4 class="font-semibold text-lg mb-2">Shipping Costs</h4>
+                <p class="text-dark/70">Free shipping on orders above ₹2000. Standard shipping charges apply for orders below this amount.</p>
+              </div>
+              <div>
+                <h4 class="font-semibold text-lg mb-2">Packaging</h4>
+                <p class="text-dark/70">All items are carefully packaged with premium materials to ensure safe delivery.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reviews Tab -->
+        <div id="reviews-content" class="tab-content space-y-6 hidden">
+          <div>
+            <h3 class="font-playfair text-2xl font-semibold text-maroon mb-4">Customer Reviews</h3>
+            <div class="space-y-6">
+              <div class="border-b pb-4">
+                <div class="flex items-center mb-2">
+                  <div class="flex text-gold">
+                    ★★★★★
+                  </div>
+                  <span class="ml-2 font-semibold">Sarah M.</span>
+                </div>
+                <p class="text-dark/70">Absolutely beautiful piece! The quality exceeded my expectations and the craftsmanship is outstanding.</p>
+              </div>
+              <div class="border-b pb-4">
+                <div class="flex items-center mb-2">
+                  <div class="flex text-gold">
+                    ★★★★☆
+                  </div>
+                  <span class="ml-2 font-semibold">Priya R.</span>
+                </div>
+                <p class="text-dark/70">Lovely product with excellent quality. Fast shipping and great customer service.</p>
+              </div>
+              <div class="text-center">
+                <button class="bg-maroon text-cream px-6 py-2 rounded-md hover:bg-maroon/90 transition-colors">
+                  Write a Review
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  // Import API functions
+  import { toggleWishlist } from '../../lib/api.js';
+  import '../../lib/toast.js';
+
+  // Wishlist state
+  let isWishlisted = false;
+  let currentProductId = null;
+
+  document.addEventListener('DOMContentLoaded', function() {
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    // Tab functionality
+    tabButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        const tabName = button.getAttribute('data-tab');
+        
+        // Hide all tab contents
+        tabContents.forEach(content => {
+          content.classList.add('hidden');
+        });
+        
+        // Show selected tab content
+        const selectedContent = document.getElementById(`${tabName}-content`);
+        if (selectedContent) {
+          selectedContent.classList.remove('hidden');
+        }
+        
+        // Update button styles
+        tabButtons.forEach(btn => {
+          btn.classList.remove('border-gold', 'text-gold');
+          btn.classList.add('border-transparent', 'text-dark/60');
+        });
+        button.classList.remove('border-transparent', 'text-dark/60');
+        button.classList.add('border-gold', 'text-gold');
+      });
+    });
+
+    // Image zoom functionality
+    const imageContainer = document.getElementById('image-container');
+    const mainImage = document.getElementById('main-image');
+    const zoomLens = document.getElementById('zoom-lens');
+    const zoomResult = document.getElementById('zoom-result');
+    const zoomImage = document.getElementById('zoom-image');
+
+    // Check if device is mobile/tablet
+    const isMobileOrTablet = window.innerWidth < 1024;
+
+    if (imageContainer && mainImage) {
+      let isZoomActive = false;
+      let currentScale = 1;
+      let startX = 0;
+      let lastTouchEnd = 0;
+
+      // Desktop zoom functionality
+      if (!isMobileOrTablet && zoomLens && zoomResult && zoomImage) {
+        
+        imageContainer.addEventListener('mouseenter', function() {
+          zoomLens.style.display = 'block';
+          zoomResult.style.display = 'block';
+          setTimeout(() => {
+            zoomLens.classList.remove('opacity-0');
+            zoomResult.classList.remove('opacity-0');
+          }, 10);
+          isZoomActive = true;
+        });
+
+        imageContainer.addEventListener('mouseleave', function() {
+          zoomLens.classList.add('opacity-0');
+          zoomResult.classList.add('opacity-0');
+          setTimeout(() => {
+            zoomLens.style.display = 'none';
+            zoomResult.style.display = 'none';
+          }, 200);
+          isZoomActive = false;
+        });
+
+        imageContainer.addEventListener('mousemove', function(e) {
+          if (!isZoomActive) return;
+
+          const rect = imageContainer.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+
+          // Calculate lens position
+          const lensWidth = zoomLens.offsetWidth;
+          const lensHeight = zoomLens.offsetHeight;
+          let lensX = x - lensWidth / 2;
+          let lensY = y - lensHeight / 2;
+
+          // Keep lens within container bounds
+          if (lensX < 0) lensX = 0;
+          if (lensY < 0) lensY = 0;
+          if (lensX + lensWidth > rect.width) lensX = rect.width - lensWidth;
+          if (lensY + lensHeight > rect.height) lensY = rect.height - lensHeight;
+
+          // Position lens
+          zoomLens.style.left = lensX + 'px';
+          zoomLens.style.top = lensY + 'px';
+
+          // Calculate zoom
+          const zoomFactor = 3;
+          const zoomX = (lensX / rect.width) * 100;
+          const zoomY = (lensY / rect.height) * 100;
+
+          // Apply zoom to result image
+          zoomImage.style.transform = `scale(${zoomFactor})`;
+          zoomImage.style.transformOrigin = `${zoomX}% ${zoomY}%`;
+        });
+      }
+
+      // Add to Cart functionality
+      window.handleAddToCart = async function() {
+        
+        const button = document.getElementById('add-to-cart-btn');
+        if (!button) {
+          console.error('Add to Cart button not found!');
+          return;
+        }
+        
+        // Get product slug from URL
+        const urlPath = window.location.pathname;
+        const pathParts = urlPath.split('/');
+        const productSlug = pathParts[pathParts.length - 1];
+        
+                
+        if (!productSlug || productSlug.trim() === '' || productSlug === 'undefined') {
+          console.error('Product slug not found or invalid:', productSlug);
+          alert('Unable to add product to cart. Product slug not found.');
+          return;
+        }
+
+        // Show loading state
+        const originalText = button.textContent;
+        button.textContent = 'Adding...';
+        button.disabled = true;
+
+        try {
+          const API_URL = 'https://etreasure-1.onrender.com';
+          
+          // First, fetch product data to get the UUID
+                    const productResponse = await fetch(`${API_URL}/api/products/${productSlug}`);
+          
+          if (!productResponse.ok) {
+            throw new Error(`Failed to fetch product data. Status: ${productResponse.status}`);
+          }
+          
+          const productData = await productResponse.json();
+                    
+          const productUuid = productData.id;
+                    
+          if (!productUuid) {
+            throw new Error('Product UUID not found in API response');
+          }
+          
+          // Now add to cart with the correct UUID
+          const cartResponse = await fetch(`${API_URL}/api/cart/add`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+              product_id: productUuid, 
+              quantity: 1 
+            }),
+          });
+
+
+          if (cartResponse.ok) {
+            const cartData = await cartResponse.json();
+            
+            // Show success state
+            button.textContent = 'Added to Cart!';
+            button.classList.add('bg-green-600');
+            button.classList.remove('bg-maroon');
+            
+            // Show success toast
+            showSuccess('Product added to cart successfully!');
+            
+            // Reset button after 2 seconds
+            setTimeout(() => {
+              button.textContent = originalText;
+              button.classList.remove('bg-green-600');
+              button.classList.add('bg-maroon');
+              button.disabled = false;
+            }, 2000);
+
+            // Dispatch cart update event
+            window.dispatchEvent(new CustomEvent('cart-updated'));
+            
+          } else {
+            const errorText = await cartResponse.text();
+            console.error('Cart API Error Response:', errorText);
+            throw new Error(`Failed to add product to cart. Status: ${cartResponse.status}`);
+          }
+        } catch (error) {
+          console.error('API failed, using localStorage fallback:', error);
+          showError('Failed to add product to cart. Using offline mode.');
+          
+          // Fallback to localStorage - create product object from available data
+          const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+          
+          // Try to get product data for localStorage fallback
+          let productData = null;
+          try {
+            const productResponse = await fetch(`https://etreasure-1.onrender.com/api/products/${productSlug}`);
+            if (productResponse.ok) {
+              productData = await productResponse.json();
+            }
+          } catch (e) {
+          }
+          
+          const existingItem = cart.find(item => item.id === (productData?.id || productSlug));
+          
+          if (existingItem) {
+            existingItem.quantity++;
+          } else {
+            // Create product object with fallback data
+            cart.push({
+              id: productData?.id || productSlug,
+              name: productData?.title || 'Product',
+              price: productData?.price_cents ? (productData.price_cents / 100).toFixed(2) : "0",
+              image: productData?.hero_image?.url || '',
+              slug: productSlug,
+              quantity: 1
+            });
+          }
+          
+          localStorage.setItem('cart', JSON.stringify(cart));
+          
+          // Show success state
+          button.textContent = 'Added to Cart!';
+          button.classList.add('bg-green-600');
+          button.classList.remove('bg-maroon');
+          
+          // Show success toast for localStorage fallback
+          showSuccess('Product added to cart successfully!');
+          
+          // Reset button after 2 seconds
+          setTimeout(() => {
+            button.textContent = originalText;
+            button.classList.remove('bg-green-600');
+            button.classList.add('bg-maroon');
+            button.disabled = false;
+          }, 2000);
+
+          // Dispatch cart update event
+          window.dispatchEvent(new CustomEvent('cart-updated'));
+          
+        }
+      };
+
+      // Wishlist functionality
+      window.handleToggleWishlist = async function() {
+        
+        const button = document.getElementById('wishlist-btn');
+        const icon = document.getElementById('wishlist-icon');
+        
+        if (!button || !icon) {
+          console.error('Wishlist button or icon not found!');
+          return;
+        }
+        
+        // Get product slug from URL
+        const urlPath = window.location.pathname;
+        const pathParts = urlPath.split('/');
+        const productSlug = pathParts[pathParts.length - 1];
+        
+                
+        if (!productSlug || productSlug.trim() === '' || productSlug === 'undefined') {
+          console.error('Product slug not found or invalid:', productSlug);
+          alert('Unable to update wishlist. Product slug not found.');
+          return;
+        }
+
+        // Show loading state
+        button.disabled = true;
+        const originalClasses = button.className;
+        button.classList.add('opacity-50', 'cursor-not-allowed');
+
+        try {
+          const API_URL = 'https://etreasure-1.onrender.com';
+          
+          // First, fetch product data to get the UUID
+                    const productResponse = await fetch(`${API_URL}/api/products/${productSlug}`);
+          
+          if (!productResponse.ok) {
+            throw new Error(`Failed to fetch product data. Status: ${productResponse.status}`);
+          }
+          
+          const productData = await productResponse.json();
+                    
+          const productUuid = productData.id;
+                    
+          if (!productUuid) {
+            throw new Error('Product UUID not found in API response');
+          }
+          
+          // Store current product ID for future use
+          currentProductId = productUuid;
+          
+          // Toggle wishlist with the correct UUID
+          
+          // Use the same API logic as ProductCard
+          const response = await fetch(`${API_URL}/api/wishlist/toggle`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              // Add auth token if available (from localStorage)
+              ...(localStorage.getItem('accessToken') && {
+                'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+              })
+            },
+            body: JSON.stringify({ 
+              product_id: productUuid
+            }),
+          });
+
+
+          if (response.ok) {
+            const data = await response.json();
+            
+            // Update wishlist state
+            isWishlisted = !isWishlisted;
+            
+            // Update icon appearance
+            if (isWishlisted) {
+              icon.classList.add('fill-red-500', 'text-red-500');
+              icon.classList.remove('text-gold');
+              button.classList.add('bg-red-500', 'text-white', 'border-red-500');
+              button.classList.remove('bg-white', 'border-gold', 'text-gold');
+              showSuccess('Product added to wishlist!');
+            } else {
+              icon.classList.remove('fill-red-500', 'text-red-500');
+              icon.classList.add('text-gold');
+              button.classList.remove('bg-red-500', 'text-white', 'border-red-500');
+              button.classList.add('bg-white', 'border-gold', 'text-gold');
+              showSuccess('Product removed from wishlist!');
+            }
+            
+            // Dispatch wishlist update event
+            window.dispatchEvent(new CustomEvent('wishlist-updated'));
+            
+          } else {
+            const errorText = await response.text();
+            console.error('Wishlist API Error Response:', errorText);
+            throw new Error(`Failed to update wishlist. Status: ${response.status}`);
+          }
+        } catch (error) {
+          console.error('Wishlist toggle failed:', error);
+          showError('Failed to update wishlist. Please try again.');
+        } finally {
+          // Reset button state
+          button.disabled = false;
+          button.className = originalClasses;
+        }
+      };
+
+      // Initialize wishlist state on page load
+      async function initializeWishlistState() {
+        try {
+          const urlPath = window.location.pathname;
+          const pathParts = urlPath.split('/');
+          const productSlug = pathParts[pathParts.length - 1];
+          
+          if (!productSlug || productSlug.trim() === '' || productSlug === 'undefined') {
+            return;
+          }
+
+          const API_URL = 'https://etreasure-1.onrender.com';
+          const productResponse = await fetch(`${API_URL}/api/products/${productSlug}`);
+          
+          if (!productResponse.ok) {
+            return;
+          }
+          
+          const productData = await productResponse.json();
+          const productUuid = productData.id;
+          
+          if (!productUuid) {
+            return;
+          }
+          
+          currentProductId = productUuid;
+          
+          // Check if product is in wishlist
+          const wishlistResponse = await fetch(`${API_URL}/api/wishlist`, {
+            headers: {
+              ...(localStorage.getItem('accessToken') && {
+                'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+              })
+            }
+          });
+          
+          if (wishlistResponse.ok) {
+            const wishlistData = await wishlistResponse.json();
+            if (wishlistData.items && Array.isArray(wishlistData.items)) {
+              isWishlisted = wishlistData.items.some(item => item.product_id === productUuid);
+              
+              // Update initial button state
+              const button = document.getElementById('wishlist-btn');
+              const icon = document.getElementById('wishlist-icon');
+              
+              if (button && icon && isWishlisted) {
+                icon.classList.add('fill-red-500', 'text-red-500');
+                icon.classList.remove('text-gold');
+                button.classList.add('bg-red-500', 'text-white', 'border-red-500');
+                button.classList.remove('bg-white', 'border-gold', 'text-gold');
+              }
+            }
+          }
+        } catch (error) {
+        }
+      }
+
+      // Initialize wishlist state
+      initializeWishlistState();
+
+      // Mobile/Tablet touch functionality
+      if (isMobileOrTablet) {
+        // Single tap to zoom
+        imageContainer.addEventListener('touchstart', function(e) {
+          if (e.touches.length === 1) {
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+            lastTouchEnd = Date.now();
+          }
+        });
+
+        imageContainer.addEventListener('touchend', function(e) {
+          if (e.touches.length === 0) {
+            const currentTime = Date.now();
+            const tapLength = currentTime - lastTouchEnd;
+            
+            // Check for double tap
+            if (tapLength < 300 && tapLength > 0) {
+              e.preventDefault();
+              if (currentScale === 1) {
+                // Zoom in
+                currentScale = 2;
+                mainImage.style.transform = `scale(${currentScale})`;
+                mainImage.style.transition = 'transform 0.3s ease';
+              } else {
+                // Reset zoom
+                currentScale = 1;
+                mainImage.style.transform = `scale(${currentScale})`;
+                mainImage.style.transition = 'transform 0.3s ease';
+              }
+            }
+          }
+        });
+
+        // Pinch to zoom
+        let initialDistance = 0;
+        
+        imageContainer.addEventListener('touchstart', function(e) {
+          if (e.touches.length === 2) {
+            initialDistance = Math.hypot(
+              e.touches[0].clientX - e.touches[1].clientX,
+              e.touches[0].clientY - e.touches[1].clientY
+            );
+          }
+        });
+
+        imageContainer.addEventListener('touchmove', function(e) {
+          if (e.touches.length === 2) {
+            e.preventDefault();
+            const currentDistance = Math.hypot(
+              e.touches[0].clientX - e.touches[1].clientX,
+              e.touches[0].clientY - e.touches[1].clientY
+            );
+            
+            const scale = currentDistance / initialDistance;
+            currentScale = Math.min(Math.max(1, scale), 3); // Limit between 1x and 3x
+            
+            mainImage.style.transform = `scale(${currentScale})`;
+            mainImage.style.transition = 'none';
+          }
+        });
+
+        // Pan when zoomed
+        let isPanning = false;
+        let panStartX = 0;
+        let panStartY = 0;
+        let translateX = 0;
+        let translateY = 0;
+
+        imageContainer.addEventListener('touchstart', function(e) {
+          if (e.touches.length === 1 && currentScale > 1) {
+            isPanning = true;
+            panStartX = e.touches[0].clientX - translateX;
+            panStartY = e.touches[0].clientY - translateY;
+          }
+        });
+
+        imageContainer.addEventListener('touchmove', function(e) {
+          if (isPanning && e.touches.length === 1) {
+            e.preventDefault();
+            translateX = e.touches[0].clientX - panStartX;
+            translateY = e.touches[0].clientY - panStartY;
+            
+            // Limit panning to image bounds
+            const maxTranslate = (currentScale - 1) * 100;
+            translateX = Math.max(-maxTranslate, Math.min(maxTranslate, translateX));
+            translateY = Math.max(-maxTranslate, Math.min(maxTranslate, translateY));
+            
+            mainImage.style.transform = `scale(${currentScale}) translate(${translateX}px, ${translateY}px)`;
+          }
+        });
+
+        imageContainer.addEventListener('touchend', function() {
+          isPanning = false;
+        });
+      }
+    }
+  });
+</script>
+
+</main>
+
+<Footer />
 </Layout>

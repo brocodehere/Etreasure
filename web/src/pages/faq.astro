@@ -1,0 +1,267 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+
+// SEO data
+const seo = {
+  title: "Frequently Asked Questions - Ethnic Treasures",
+  description: "Find answers to common questions about our ethnic wear, shipping, returns, and custom orders at Ethnic Treasures.",
+  keywords: "FAQ, frequently asked questions, ethnic wear, shipping, returns, custom orders, customer support",
+  ogImage: "/images/og-default.jpg",
+  ogType: "website",
+  structuredData: {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is your return policy?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "We offer a 30-day return policy for all unused items in original packaging. Please contact our customer service team to initiate a return. Refunds are processed within 5-7 business days after we receive the returned item."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How long does shipping take?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Standard shipping takes 5-7 business days within India. Express shipping takes 2-3 business days. International shipping takes 10-15 business days. You can track your order using the tracking number provided after dispatch."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Do you ship internationally?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes, we ship to over 50 countries worldwide. International shipping rates and delivery times vary by destination. Please check our shipping policy for detailed information."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How do I know my size?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "We provide detailed size charts for all our products. Each product page includes measurements in both inches and centimeters. If you're unsure, our customer service team can help you find the perfect fit."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Are your products authentic?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Absolutely! All our products are handcrafted by skilled artisans using traditional techniques. We provide authenticity certificates with our premium products and work directly with artisan communities."
+        }
+      }
+    ]
+  }
+};
+
+// Fetch FAQs from API
+const API_URL = import.meta.env.PUBLIC_API_URL || 'https://etreasure-1.onrender.com';
+let faqs = [];
+
+try {
+  const response = await fetch(`${API_URL}/api/public/content/faqs`);
+  if (response.ok) {
+    const data = await response.json();
+    faqs = data.data || [];
+  }
+} catch (error) {
+  console.error('Failed to fetch FAQs:', error);
+}
+
+// Group FAQs by category
+const faqsByCategory = faqs.reduce((acc, faq) => {
+  const category = faq.category || 'General';
+  if (!acc[category]) {
+    acc[category] = [];
+  }
+  acc[category].push(faq);
+  return acc;
+}, {});
+---
+
+<Layout 
+  title={seo.title}
+  description={seo.description}
+  keywords={seo.keywords}
+  ogImage={seo.ogImage}
+  ogType={seo.ogType}
+  structuredData={seo.structuredData}
+>
+  <Header />
+  
+  <main class="min-h-screen bg-cream">
+    <!-- Hero Section -->
+    <section class="relative bg-gradient-to-br from-dark via-maroon to-dark text-white py-20 overflow-hidden">
+      <!-- Decorative Elements -->
+      <div class="absolute inset-0 opacity-10">
+        <div class="absolute top-0 left-0 w-40 h-40 bg-gold/20 rounded-full blur-3xl -translate-x-20 -translate-y-20"></div>
+        <div class="absolute bottom-0 right-0 w-60 h-60 bg-gold/10 rounded-full blur-3xl translate-x-32 translate-y-32"></div>
+        <div class="absolute top-1/2 left-1/4 w-32 h-32 bg-white/5 rounded-full blur-2xl"></div>
+      </div>
+      
+      <div class="relative z-10 container mx-auto px-4">
+        <div class="text-center">
+          <div class="mb-6">
+            <div class="inline-flex items-center justify-center w-20 h-20 bg-white/10 backdrop-blur-sm rounded-full mb-4">
+              <svg class="w-10 h-10 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+          <h1 class="font-playfair text-4xl md:text-6xl font-bold text-gold mb-6 animate-fade-in">
+            Frequently Asked Questions
+          </h1>
+          <p class="text-xl text-white/95 max-w-3xl mx-auto leading-relaxed animate-fade-in-up">
+            Find answers to common questions about our <span class="text-gold font-semibold">handcrafted products</span>, <span class="text-gold font-semibold">shipping</span>, and <span class="text-gold font-semibold">returns</span>.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="py-20 relative">
+      <!-- Background Pattern -->
+      <div class="absolute inset-0 opacity-5">
+        <div class="absolute inset-0" style="background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd' stroke='%23d4af37' stroke-width='1'%3E%3Cpath d='M0 0h60v60H0z'/%3E%3Cpath d='M30 30h30v30H30z'/%3E%3C/g%3E%3C/svg%3E"); background-size: 60px 60px;"></div>
+      </div>
+      
+      <div class="relative z-10 container mx-auto px-4">
+        <div class="max-w-6xl mx-auto">
+          
+          {Object.entries(faqsByCategory).map(([category, categoryFaqs]) => (
+            <div class="mb-20" key={category}>
+              <div class="text-center mb-12">
+                <div class="flex items-center justify-center">
+                  <div class="h-px bg-gradient-to-r from-transparent via-gold/50 to-transparent w-32"></div>
+                  <div class="px-8">
+                    <h2 class="font-playfair text-3xl md:text-4xl font-bold text-dark bg-gradient-to-r from-gold to-maroon bg-clip-text text-transparent">
+                      {category}
+                    </h2>
+                  </div>
+                  <div class="h-px bg-gradient-to-r from-transparent via-gold/50 to-transparent w-32"></div>
+                </div>
+              </div>
+              
+              <div class="grid gap-8 md:grid-cols-1 lg:grid-cols-2">
+                {categoryFaqs.map((faq, index) => (
+                  <div class="group relative bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden border border-gold/20 hover:border-gold/60 transform hover:-translate-y-1" key={faq.id}>
+                    <!-- Question Number Badge -->
+                    <div class="absolute top-6 right-6 w-10 h-10 bg-gradient-to-br from-gold to-maroon rounded-full flex items-center justify-center text-sm font-bold text-white shadow-lg">
+                      {index + 1}
+                    </div>
+                    
+                    <details class="group">
+                      <summary class="flex items-center justify-between p-8 cursor-pointer hover:bg-gradient-to-r hover:from-gold/5 hover:to-transparent transition-all duration-300">
+                        <div class="flex items-center space-x-4">
+                          <div class="w-3 h-3 bg-gradient-to-r from-gold to-maroon rounded-full"></div>
+                          <h3 class="font-semibold text-xl text-dark pr-6">
+                            {faq.question}
+                          </h3>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                          <span class="text-gold/60 text-sm font-medium">Click to expand</span>
+                          <svg 
+                            class="w-6 h-6 text-gold flex-shrink-0 group-open:rotate-180 transition-transform duration-500" 
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24"
+                          >
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </div>
+                      </summary>
+                      
+                      <div class="px-8 pb-8 bg-gradient-to-b from-white via-gold/5 to-white">
+                        <div class="border-l-4 border-gradient-to-b from-gold to-maroon pl-6">
+                          <div class="text-dark/80 leading-relaxed space-y-3">
+                            {faq.answer.split('\n').map((paragraph, pIndex) => (
+                              <p key={pIndex} class="mb-3 last:mb-0">{paragraph}</p>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </details>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+          
+          {faqs.length === 0 && (
+            <div class="text-center py-20">
+              <div class="inline-flex items-center justify-center w-24 h-24 bg-gold/10 rounded-full mb-8">
+                <svg class="w-12 h-12 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 class="font-playfair text-3xl font-bold text-dark mb-6">
+                No FAQs Available
+              </h3>
+              <p class="text-dark/60 text-xl max-w-3xl mx-auto leading-relaxed">
+                We're updating our FAQ section. Please check back later or contact our customer support team for immediate assistance.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact CTA Section -->
+    <section class="relative bg-gradient-to-br from-dark via-maroon to-dark text-white py-20 overflow-hidden">
+      <!-- Decorative Elements -->
+      <div class="absolute inset-0 opacity-10">
+        <div class="absolute top-10 right-10 w-32 h-32 bg-gold/10 rounded-full blur-2xl"></div>
+        <div class="absolute bottom-10 left-10 w-40 h-40 bg-white/5 rounded-full blur-2xl"></div>
+      </div>
+      
+      <div class="relative z-10 container mx-auto px-4">
+        <div class="text-center">
+          <div class="mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-white/10 backdrop-blur-sm rounded-full">
+              <svg class="w-8 h-8 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </div>
+          </div>
+          <h2 class="font-playfair text-3xl md:text-4xl font-bold text-gold mb-6">
+            Still Have Questions?
+          </h2>
+          <p class="text-xl text-white/95 mb-10 max-w-3xl mx-auto leading-relaxed">
+            Our <span class="text-gold font-semibold">customer support team</span> is here to help you with any queries or concerns about our <span class="text-gold font-semibold">handcrafted products</span>.
+          </p>
+          <div class="flex flex-col sm:flex-row gap-6 justify-center">
+            <a 
+              href="/contact" 
+              class="group relative inline-flex items-center px-10 py-4 bg-gradient-to-r from-gold to-maroon text-dark font-semibold rounded-full hover:from-gold/90 hover:to-maroon/90 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-gold/25"
+            >
+              <span class="relative z-10 flex items-center">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                Contact Us
+              </span>
+              <div class="absolute inset-0 bg-gradient-to-r from-gold/20 to-maroon/20 rounded-full blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            </a>
+            <a 
+              href="tel:+919810427042" 
+              class="group relative inline-flex items-center px-10 py-4 border-2 border-gold/50 text-gold font-semibold rounded-full hover:border-gold hover:bg-gold hover:text-dark transition-all duration-300 transform hover:scale-105 shadow-lg"
+            >
+              <span class="relative z-10 flex items-center">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13 2.257a1 1 0 001.21.502l4.493 1.498a1 1 0 00.684-.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                </svg>
+                Call Us
+              </span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <Footer />
+</Layout>

@@ -1,0 +1,33 @@
+# Robots.txt for Ethnic Treasures E-commerce Site
+# Allow all search engines to crawl the site
+
+User-agent: *
+Allow: /
+
+# Disallow admin and private areas
+Disallow: /admin/
+Disallow: /account/
+Disallow: /api/
+Disallow: /cart
+Disallow: /checkout
+Disallow: /order*
+Disallow: /wishlist
+Disallow: /profile
+
+# Disallow search and filter pages to avoid duplicate content
+Disallow: /search?
+Disallow: /shop?
+Disallow: /*?page=*
+Disallow: /*?category=*
+Disallow: /*?sort=*
+Disallow: /*?filter=*
+
+# Allow specific important paths
+Allow: /shop
+Allow: /categories
+
+# Sitemap location
+Sitemap: https://ethnic-treasures.com/sitemap.xml
+
+# Crawl delay (optional, adjust based on server capacity)
+Crawl-delay: 1

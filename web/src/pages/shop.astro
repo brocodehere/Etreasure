@@ -44,9 +44,44 @@ async function getInitialData() {
 }
 
 const { categories, products, initialCategory, initialPage } = await getInitialData();
+
+// SEO data
+const pageTitle = initialCategory 
+  ? `${initialCategory.replace('-', ' ')} - Shop - Ethnic Treasures`
+  : "Shop - Ethnic Treasures";
+const pageDescription = initialCategory
+  ? `Browse our collection of ${initialCategory.replace('-', ' ')} at Ethnic Treasures. Premium handcrafted ethnic wear with traditional craftsmanship.`
+  : "Browse our collection of traditional and contemporary ethnic wear at Ethnic Treasures. Premium handcrafted products with traditional craftsmanship.";
+const pageKeywords = initialCategory
+  ? `${initialCategory.replace('-', ' ')}, ethnic wear, traditional clothing, handcrafted, cultural fashion, artisan products`
+  : "ethnic wear, traditional clothing, handcrafted, cultural fashion, artisan products, ethnic treasures";
+
+// Structured data for shop page
+const shopSchema = {
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "name": pageTitle,
+  "description": pageDescription,
+  "url": new URL(Astro.url.pathname, Astro.url.origin).href,
+  "mainEntity": {
+    "@type": "ItemList",
+    "numberOfItems": products?.total || 0,
+    "itemListElement": products?.items?.slice(0, 10).map((product: any, index: number) => ({
+      "@type": "ListItem",
+      "position": index + 1,
+      "url": new URL(`/product/${product.slug || product.id || product.uuid_id}`, Astro.url.origin).href,
+      "name": product.name || product.title
+    })) || []
+  }
+};
 ---
 
-<Layout title="Shop - Ethnic Treasures" description="Browse our collection of traditional and contemporary ethnic wear">
+<Layout 
+  title={pageTitle} 
+  description={pageDescription}
+  keywords={pageKeywords}
+  structuredData={shopSchema}
+>
   <Header />
   
   <!-- Inject initial data for React islands -->
