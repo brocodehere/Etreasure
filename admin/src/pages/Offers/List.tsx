@@ -5,7 +5,7 @@ import { api } from '../../lib/api';
 import type { Offer } from '../../types';
 
 interface ListResponse {
-  data: Offer[];
+  items: Offer[];
   next_cursor?: string;
 }
 
@@ -30,8 +30,8 @@ export function OffersListPage() {
     queryKey: ['offers'],
     queryFn: () => {
       const url = cursor ? `/offers?cursor=${cursor}&limit=${limit}` : `/offers?limit=${limit}`;
-      return api.get<{data: Offer[]}>(url).then(r => {
-        return r.data;
+      return api.get<ListResponse>(url).then(response => {
+        return response.items;
       });
     },
     staleTime: 0, // Always fresh data

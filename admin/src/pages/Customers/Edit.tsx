@@ -3,12 +3,13 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import type { Customer, Address } from '../../types';
+import { LoadingState, LoadingButton } from '../../components/LoadingSpinner';
 
 interface FormData {
   email: string;
-  first_name: string;
-  last_name: string;
-  phone: string;
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
   addresses: Omit<Address, 'id' | 'customer_id'>[];
 }
 
@@ -43,9 +44,9 @@ export function CustomerEditPage() {
 
   const [formData, setFormData] = React.useState<FormData>({
     email: '',
-    first_name: '',
-    last_name: '',
-    phone: '',
+    first_name: undefined,
+    last_name: undefined,
+    phone: undefined,
     addresses: [{ type: 'shipping', first_name: '', last_name: '', company: '', address1: '', address2: '', city: '', province: '', country: '', postal_code: '', phone: '' }],
   });
 
@@ -53,9 +54,9 @@ export function CustomerEditPage() {
     if (customer) {
       setFormData({
         email: customer.email,
-        first_name: customer.first_name || '',
-        last_name: customer.last_name || '',
-        phone: customer.phone || '',
+        first_name: customer.first_name,
+        last_name: customer.last_name,
+        phone: customer.phone,
         addresses: customer.addresses.map(addr => ({
           type: addr.type,
           first_name: addr.first_name,
@@ -64,7 +65,7 @@ export function CustomerEditPage() {
           address1: addr.address1,
           address2: addr.address2 || '',
           city: addr.city,
-          province: addr.province || '',
+          province: addr.province,
           country: addr.country,
           postal_code: addr.postal_code,
           phone: addr.phone || '',
@@ -104,9 +105,9 @@ export function CustomerEditPage() {
     e.preventDefault();
     const payload = {
       email: formData.email,
-      first_name: formData.first_name || null,
-      last_name: formData.last_name || null,
-      phone: formData.phone || null,
+      first_name: formData.first_name,
+      last_name: formData.last_name,
+      phone: formData.phone,
       addresses: formData.addresses,
     };
     if (id) {
@@ -141,7 +142,7 @@ export function CustomerEditPage() {
             <input
               name="phone"
               type="tel"
-              value={formData.phone}
+              value={formData.phone || ''}
               onChange={handleChange}
               className="w-full border rounded px-3 py-2"
             />
@@ -154,7 +155,7 @@ export function CustomerEditPage() {
             <input
               name="first_name"
               type="text"
-              value={formData.first_name}
+              value={formData.first_name || ''}
               onChange={handleChange}
               className="w-full border rounded px-3 py-2"
             />
@@ -164,7 +165,7 @@ export function CustomerEditPage() {
             <input
               name="last_name"
               type="text"
-              value={formData.last_name}
+              value={formData.last_name || ''}
               onChange={handleChange}
               className="w-full border rounded px-3 py-2"
             />
@@ -221,13 +222,14 @@ export function CustomerEditPage() {
         </div>
 
         <div className="flex gap-2">
-          <button
+          <LoadingButton
             type="submit"
-            disabled={createMutation.isPending || updateMutation.isPending}
-            className="bg-gold text-white px-4 py-2 rounded hover:bg-yellow-600 transition disabled:opacity-50"
+            isLoading={createMutation.isPending || updateMutation.isPending}
+            className="bg-gold text-white px-4 py-2 rounded hover:bg-yellow-600 transition"
+            loadingText="Saving..."
           >
-            {createMutation.isPending || updateMutation.isPending ? 'Saving...' : id ? 'Update' : 'Create'}
-          </button>
+            {id ? 'Update' : 'Create'}
+          </LoadingButton>
           <button
             type="button"
             onClick={() => navigate('/customers')}

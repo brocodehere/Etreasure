@@ -111,6 +111,7 @@ export interface Order {
   customer_email: string;
   customer_phone: string;
   status: 'pending' | 'pending_payment' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'paid' | 'just_arrived';
+  shipping_status: string;
   currency: string;
   total_price: number;
   subtotal: number;
@@ -176,10 +177,24 @@ export interface Customer {
   email: string;
   first_name?: string;
   last_name?: string;
-  phone?: string;
-  addresses: Address[];
+  full_name: string;
+  is_active: boolean;
   created_at: string;
   updated_at: string;
+  order_count: number;
+}
+
+export interface CustomerOrder {
+  id: string;
+  order_number: string;
+  status: string;
+  total_cents: number;
+  currency: string;
+  placed_at: string;
+  fulfilled_at?: string;
+  cancelled_at?: string;
+  refund_cents: number;
+  item_count: number;
 }
 
 export interface Address {

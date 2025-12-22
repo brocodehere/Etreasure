@@ -78,13 +78,18 @@ export default function AboutPageManagement() {
   // Update about page content
   const updateMutation = useMutation({
     mutationFn: async (data: Partial<ContentPage>) => {
-      return apiRequest('/api/admin/content/pages', {
-        method: 'POST',
+      // If we have an ID, update existing record, otherwise create new
+      const url = data.id ? `/api/admin/content/pages/${data.id}` : '/api/admin/content/pages';
+      const method = data.id ? 'PUT' : 'POST';
+      
+      return apiRequest(url, {
+        method,
         body: JSON.stringify(data),
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['content-page', 'about'] });
+      queryClient.invalidateQueries({ queryKey: ['content-pages'] });
       setIsEditing(false);
     },
   });

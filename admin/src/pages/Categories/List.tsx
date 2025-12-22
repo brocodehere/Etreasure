@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import { CategoryRow } from './CategoryRow';
 import { MediaSelector } from '../../components/MediaSelector';
+import { LoadingState } from '../../components/LoadingSpinner';
 
 // Category type
 type Category = {
@@ -268,7 +269,8 @@ export const CategoriesListPage: React.FC = () => {
   }, [deleteMutation]);
 
   return (
-    <div className="space-y-6">
+    <LoadingState isLoading={isLoading} error={error}>
+      <div className="space-y-6">
       {/* Success Message */}
       {showSuccess && (
         <div className="fixed top-4 right-4 z-50 animate-pulse">
@@ -392,6 +394,7 @@ export const CategoriesListPage: React.FC = () => {
           </ul>
         </div>
       )}
-    </div>
+      </div>
+    </LoadingState>
   );
 };

@@ -14,6 +14,7 @@ import { OffersListPage } from './pages/Offers/List';
 import { OfferEditPage } from './pages/Offers/Edit';
 import { OrdersListPage } from './pages/Orders/List';
 import { SimpleOrdersPage } from './pages/Orders/SimpleList';
+import { OrderDetailPage } from './pages/Orders/Detail';
 import { OrderEditPage } from './pages/Orders/Edit';
 import { CustomersListPage } from './pages/Customers/List';
 import { CustomerEditPage } from './pages/Customers/Edit';
@@ -25,7 +26,8 @@ import { UsersListPage } from './pages/Users/List';
 import { UserEditPage } from './pages/Users/Edit';
 import { AuditLogListPage } from './pages/AuditLog/List';
 import { PreviewPage } from './pages/Preview';
-import { ContentPage } from './pages/Content/ContentPage';
+import ContentManagement from './pages/Content/ContentManagement';
+import ContentEdit from './pages/Content/ContentEdit';
 import { FAQPage } from './pages/Content/FAQ';
 import AboutPageManagement from './pages/Content/AboutPage';
 
@@ -62,7 +64,11 @@ export default function App() {
           <Route path=":id" element={<ProductEditPage />} />
         </Route>
         <Route path="media" element={<MediaLibraryPage />} />
-        <Route path="categories" element={<CategoriesListPage />} />
+        <Route path="categories">
+          <Route index element={<CategoriesListPage />} />
+          <Route path="new" element={<CategoriesListPage />} />
+          <Route path=":id" element={<CategoriesListPage />} />
+        </Route>
         <Route path="banners">
           <Route index element={<BannersListPage />} />
           <Route path="new" element={<BannerEditPage />} />
@@ -76,7 +82,8 @@ export default function App() {
         <Route path="orders">
           <Route index element={<OrdersListPage />} />
           <Route path="new" element={<OrderEditPage />} />
-          <Route path=":id" element={<OrderEditPage />} />
+          <Route path=":id" element={<OrderDetailPage />} />
+          <Route path=":id/edit" element={<OrderEditPage />} />
         </Route>
         <Route path="customers">
           <Route index element={<CustomersListPage />} />
@@ -101,9 +108,11 @@ export default function App() {
         <Route path="audit-log" element={<AuditLogListPage />} />
         <Route path="preview" element={<PreviewPage />} />
         <Route path="content">
-          <Route index element={<ContentPage />} />
+          <Route index element={<ContentManagement />} />
           <Route path="faqs" element={<FAQPage />} />
           <Route path="about" element={<AboutPageManagement />} />
+          <Route path="edit/:id" element={<ContentEdit />} />
+          <Route path="new" element={<ContentEdit />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

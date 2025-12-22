@@ -2,6 +2,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import { Link } from 'react-router-dom';
+import { LoadingState } from '../../components/LoadingSpinner';
 
 type Product = {
   uuid_id: string;
@@ -30,7 +31,8 @@ export const ProductsListPage: React.FC = () => {
   });
 
   return (
-    <div className="space-y-6">
+    <LoadingState isLoading={isLoading} error={error}>
+      <div className="space-y-6">
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-playfair text-maroon">Products</h1>
@@ -46,26 +48,7 @@ export const ProductsListPage: React.FC = () => {
         </div>
       </header>
 
-      {isLoading && (
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-maroon"></div>
-          <span className="ml-2 text-dark/70">Loading products...</span>
-        </div>
-      )}
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-sm text-red-600 font-medium">Error loading products</p>
-          <p className="text-xs text-red-500 mt-1">{String((error as any)?.message || error)}</p>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="mt-2 text-xs bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200"
-          >
-            Retry
-          </button>
-        </div>
-      )}
-
+      
       {!isLoading && !error && (!data || !data.items || data.items.length === 0) && (
         <div className="bg-white border border-gold/30 rounded-lg p-8 shadow-card text-center">
           <div className="text-dark/60">
@@ -112,6 +95,7 @@ export const ProductsListPage: React.FC = () => {
           </table>
         </div>
       )}
-    </div>
+      </div>
+    </LoadingState>
   );
 };
