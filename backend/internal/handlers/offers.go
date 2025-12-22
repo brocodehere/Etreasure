@@ -58,48 +58,21 @@ type UpdateOfferRequest struct {
 }
 
 func (h *Handler) ListOffers(c *gin.Context) {
-	limit := 50
-	if l := c.Query("limit"); l != "" {
-		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 && parsed <= 200 {
-			limit = parsed
-		}
-	}
+	ctx := c.Request.Context()
 
-	cursor := c.Query("cursor")
-	var cursorTime time.Time
-	if cursor != "" {
-		if parsed, err := time.Parse(time.RFC3339Nano, cursor); err == nil {
-			cursorTime = parsed
-		}
-	}
+	// Simple query without prepared statement conflicts
+	query := `
+		SELECT id, title, description, discount_type, discount_value, applies_to, applies_to_ids,
+		       min_order_amount, usage_limit, usage_count, is_active, starts_at, ends_at, created_at, updated_at
+		FROM offers
+		WHERE is_active = true AND starts_at <= NOW() AND ends_at >= NOW()
+		ORDER BY updated_at DESC
+		LIMIT 50
+	`
 
-	var query string
-	var args []interface{}
-
-	if cursor != "" {
-		query = `
-			SELECT id, title, description, discount_type, discount_value, applies_to, applies_to_ids,
-				   min_order_amount, usage_limit, usage_count, is_active, starts_at, ends_at, created_at, updated_at
-			FROM offers
-			WHERE updated_at < $1
-			ORDER BY updated_at DESC
-			LIMIT $2
-		`
-		args = []interface{}{cursorTime, limit}
-	} else {
-		query = `
-			SELECT id, title, description, discount_type, discount_value, applies_to, applies_to_ids,
-				   min_order_amount, usage_limit, usage_count, is_active, starts_at, ends_at, created_at, updated_at
-			FROM offers
-			ORDER BY updated_at DESC
-			LIMIT $1
-		`
-		args = []interface{}{limit}
-	}
-
-	rows, err := h.DB.Query(c, query, args...)
+	rows, err := h.DB.Query(ctx, query)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch offers"})
 		return
 	}
 	defer rows.Close()
@@ -111,11 +84,11 @@ func (h *Handler) ListOffers(c *gin.Context) {
 		err := rows.Scan(
 			&o.ID, &o.Title, &o.Description, &o.DiscountType, &o.DiscountValue,
 			&o.AppliesTo, &appliesToIdsStr, &o.MinOrderAmt, &o.UsageLimit,
-			&o.UsageCount, &o.IsActive, &o.StartsAt, &o.EndsAt, &o.CreatedAt, &o.UpdatedAt,
+			&o.UsageCount, &o.IsActive, &o.StartsAt, &o.EndsAt,
+			&o.CreatedAt, &o.UpdatedAt,
 		)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
+			continue
 		}
 		if appliesToIdsStr != nil && *appliesToIdsStr != "" {
 			o.AppliesToIds = strings.Split(*appliesToIdsStr, ",")
@@ -123,16 +96,15 @@ func (h *Handler) ListOffers(c *gin.Context) {
 		offers = append(offers, o)
 	}
 
-	var nextCursor *string
-	if len(offers) == limit {
-		next := offers[len(offers)-1].UpdatedAt.Format(time.RFC3339Nano)
-		nextCursor = &next
+	response := gin.H{
+		"items":       offers,
+		"total":       len(offers),
+		"page":        1,
+		"limit":       50,
+		"next_cursor": nil,
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"data":        offers,
-		"next_cursor": nextCursor,
-	})
+	c.JSON(http.StatusOK, response)
 }
 
 func (h *Handler) CreateOffer(c *gin.Context) {

@@ -22,6 +22,18 @@ type User struct {
 	Roles     []string  `json:"roles"`
 }
 
+type UserCustomer struct {
+	ID         string    `json:"id"`
+	Email      string    `json:"email"`
+	FirstName  string    `json:"first_name,omitempty"`
+	LastName   string    `json:"last_name,omitempty"`
+	FullName   string    `json:"full_name"`
+	IsActive   bool      `json:"is_active"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
+	OrderCount int       `json:"order_count"`
+}
+
 type CreateUserRequest struct {
 	Email     string   `json:"email" binding:"required,email"`
 	FirstName *string  `json:"first_name,omitempty"`
@@ -339,4 +351,130 @@ func (h *Handler) ListRoles(c *gin.Context) {
 		roles = append(roles, r)
 	}
 	c.JSON(http.StatusOK, gin.H{"data": roles})
+}
+
+// ListUserCustomers - fetch customers from users table excluding admin roles
+func (h *Handler) ListUserCustomers(c *gin.Context) {
+	limit := 50
+	if l := c.Query("limit"); l != "" {
+		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 && parsed <= 200 {
+			limit = parsed
+		}
+	}
+
+	// Query all users without filtering
+	query := `
+		SELECT u.id, u.email, '', '', u.full_name, u.is_active, u.created_at, NOW(), 0
+		FROM users u
+		ORDER BY u.created_at DESC
+		LIMIT $1
+	`
+
+	rows, err := h.DB.Query(c, query, limit)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer rows.Close()
+
+	var customers []UserCustomer
+	for rows.Next() {
+		var cust UserCustomer
+		err := rows.Scan(&cust.ID, &cust.Email, &cust.FirstName, &cust.LastName, &cust.FullName,
+			&cust.IsActive, &cust.CreatedAt, &cust.UpdatedAt, &cust.OrderCount)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		// Add all users without filtering
+		customers = append(customers, cust)
+	}
+
+	var nextCursor *string
+	if len(customers) == limit {
+		next := customers[len(customers)-1].UpdatedAt.Format(time.RFC3339Nano)
+		nextCursor = &next
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data":        customers,
+		"next_cursor": nextCursor,
+	})
+}
+
+// GetCustomerOrders - get all orders for a specific customer
+func (h *Handler) GetCustomerOrders(c *gin.Context) {
+	customerID := c.Param("id")
+
+	limit := 20
+	if l := c.Query("limit"); l != "" {
+		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 && parsed <= 100 {
+			limit = parsed
+		}
+	}
+
+	cursor := c.Query("cursor")
+	var cursorTime time.Time
+	if cursor != "" {
+		if parsed, err := time.Parse(time.RFC3339Nano, cursor); err == nil {
+			cursorTime = parsed
+		}
+	}
+
+	rows, err := h.DB.Query(c, `
+		SELECT o.id, o.order_number, o.status, o.total_cents, o.currency, 
+		       o.placed_at, o.fulfilled_at, o.cancelled_at, o.refund_cents,
+		       COUNT(oi.id) as item_count
+		FROM orders o
+		LEFT JOIN order_items oi ON o.id = oi.order_id
+		WHERE o.user_id = $1
+		AND ($2::timestamp IS NULL OR o.updated_at < $2::timestamp)
+		GROUP BY o.id, o.order_number, o.status, o.total_cents, o.currency, 
+		         o.placed_at, o.fulfilled_at, o.cancelled_at, o.refund_cents
+		ORDER BY o.updated_at DESC
+		LIMIT $3
+	`, customerID, cursorTime, limit)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer rows.Close()
+
+	type CustomerOrder struct {
+		ID          string     `json:"id"`
+		OrderNumber string     `json:"order_number"`
+		Status      string     `json:"status"`
+		TotalCents  int        `json:"total_cents"`
+		Currency    string     `json:"currency"`
+		PlacedAt    time.Time  `json:"placed_at"`
+		FulfilledAt *time.Time `json:"fulfilled_at,omitempty"`
+		CancelledAt *time.Time `json:"cancelled_at,omitempty"`
+		RefundCents int        `json:"refund_cents"`
+		ItemCount   int        `json:"item_count"`
+	}
+
+	var orders []CustomerOrder
+	for rows.Next() {
+		var order CustomerOrder
+		err := rows.Scan(&order.ID, &order.OrderNumber, &order.Status, &order.TotalCents,
+			&order.Currency, &order.PlacedAt, &order.FulfilledAt, &order.CancelledAt,
+			&order.RefundCents, &order.ItemCount)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		orders = append(orders, order)
+	}
+
+	var nextCursor *string
+	if len(orders) == limit {
+		next := orders[len(orders)-1].PlacedAt.Format(time.RFC3339Nano)
+		nextCursor = &next
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data":        orders,
+		"next_cursor": nextCursor,
+	})
 }

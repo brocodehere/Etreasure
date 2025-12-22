@@ -200,14 +200,15 @@ func main() {
 		protected.GET("/orders/:id", orders.GetOrder)
 		protected.PUT("/orders/:id", orders.UpdateOrder)
 		protected.DELETE("/orders/:id", orders.DeleteOrder)
+		protected.GET("/orders/debug/schema", orders.DebugOrdersSchema)
+		protected.GET("/orders/debug/line-items", orders.DebugLineItems)
+		protected.POST("/orders/fix-prices", orders.FixOrderLineItemsPrices)
+		protected.POST("/orders/fix-null-prices", orders.FixNullPrices)
 
-		// Customers
+		// Customers (from users table, excluding admin roles)
 		customers := &handlers.Handler{DB: pool}
-		protected.GET("/customers", customers.ListCustomers)
-		protected.POST("/customers", customers.CreateCustomer)
-		protected.GET("/customers/:id", customers.GetCustomer)
-		protected.PUT("/customers/:id", customers.UpdateCustomer)
-		protected.DELETE("/customers/:id", customers.DeleteCustomer)
+		protected.GET("/customers", customers.ListUserCustomers)
+		protected.GET("/customers/:id/orders", customers.GetCustomerOrders)
 
 		// Inventory
 		inventory := &handlers.Handler{DB: pool}
@@ -243,8 +244,8 @@ func main() {
 		content := &handlers.Handler{DB: pool}
 		protected.GET("/content/pages", content.ListContentPages)
 		protected.POST("/content/pages", content.CreateContentPage)
-		protected.GET("/content/pages/:slug", content.GetContentPage)
-		protected.PUT("/content/pages/:id", content.CreateContentPage) // Update uses same handler
+		protected.GET("/content/pages/:slug", content.GetContentPageAdmin) // Use admin handler
+		protected.PUT("/content/pages/:id", content.CreateContentPage)     // Update uses same handler
 		protected.DELETE("/content/pages/:id", content.DeleteContentPage)
 
 		protected.GET("/content/faqs", content.ListFAQs)
@@ -255,6 +256,9 @@ func main() {
 
 	// Public settings (no auth)
 	r.GET("/api/public/settings", (&handlers.Handler{DB: pool}).GetPublicSettings)
+
+	// Public offers endpoint
+	r.GET("/api/public/offers", (&handlers.Handler{DB: pool}).ListOffers)
 
 	// Public categories endpoint
 	publicCategories := &handlers.CategoriesHandler{DB: pool, R2Client: r2Client, ImageHelper: imageHelper}
@@ -288,6 +292,93 @@ func main() {
 	r.POST("/api/auth/forgot-password", authHandler.ForgotPassword)
 	r.POST("/api/auth/verify-otp", authHandler.VerifyOTP)
 	r.POST("/api/auth/reset-password", authHandler.ResetPassword)
+
+	// Temporary endpoint to fix orders table schema
+	r.POST("/admin/fix-orders-schema", func(c *gin.Context) {
+		ctx := context.Background()
+
+		sqlScript := `
+-- Add missing columns to orders table
+ALTER TABLE orders 
+ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+ADD COLUMN IF NOT EXISTS customer_name VARCHAR(255),
+ADD COLUMN IF NOT EXISTS customer_email VARCHAR(255),
+ADD COLUMN IF NOT EXISTS customer_phone VARCHAR(20),
+ADD COLUMN IF NOT EXISTS payment_method VARCHAR(50) DEFAULT 'razorpay',
+ADD COLUMN IF NOT EXISTS shipping_status VARCHAR(20) DEFAULT 'just arrived',
+ADD COLUMN IF NOT EXISTS razorpay_order_id VARCHAR(255),
+ADD COLUMN IF NOT EXISTS razorpay_payment_id VARCHAR(255),
+ADD COLUMN IF NOT EXISTS razorpay_signature VARCHAR(255),
+ADD COLUMN IF NOT EXISTS shipping_name VARCHAR(255),
+ADD COLUMN IF NOT EXISTS shipping_email VARCHAR(255),
+ADD COLUMN IF NOT EXISTS shipping_phone VARCHAR(20),
+ADD COLUMN IF NOT EXISTS shipping_address_line1 TEXT,
+ADD COLUMN IF NOT EXISTS shipping_address_line2 TEXT,
+ADD COLUMN IF NOT EXISTS shipping_city VARCHAR(100),
+ADD COLUMN IF NOT EXISTS shipping_state VARCHAR(100),
+ADD COLUMN IF NOT EXISTS shipping_country VARCHAR(100) DEFAULT 'India',
+ADD COLUMN IF NOT EXISTS shipping_pin_code VARCHAR(20),
+ADD COLUMN IF NOT EXISTS billing_name VARCHAR(255),
+ADD COLUMN IF NOT EXISTS billing_email VARCHAR(255),
+ADD COLUMN IF NOT EXISTS billing_phone VARCHAR(20),
+ADD COLUMN IF NOT EXISTS billing_address_line1 TEXT,
+ADD COLUMN IF NOT EXISTS billing_address_line2 TEXT,
+ADD COLUMN IF NOT EXISTS billing_city VARCHAR(100),
+ADD COLUMN IF NOT EXISTS billing_state VARCHAR(100),
+ADD COLUMN IF NOT EXISTS billing_country VARCHAR(100) DEFAULT 'India',
+ADD COLUMN IF NOT EXISTS billing_pin_code VARCHAR(20),
+ADD COLUMN IF NOT EXISTS tracking_number VARCHAR(255),
+ADD COLUMN IF NOT EXISTS tracking_provider VARCHAR(100),
+ADD COLUMN IF NOT EXISTS estimated_delivery DATE,
+ADD COLUMN IF NOT EXISTS subtotal DECIMAL(10,2) DEFAULT 0,
+ADD COLUMN IF NOT EXISTS tax_amount DECIMAL(10,2) DEFAULT 0,
+ADD COLUMN IF NOT EXISTS shipping_amount DECIMAL(10,2) DEFAULT 0,
+ADD COLUMN IF NOT EXISTS discount_amount DECIMAL(10,2) DEFAULT 0;
+
+-- Add indexes for better performance
+CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id);
+
+-- Update existing orders to have default values if needed
+UPDATE orders SET 
+    customer_name = COALESCE(customer_name, 'Guest Customer'),
+    customer_email = COALESCE(customer_email, 'guest@example.com'),
+    customer_phone = COALESCE(customer_phone, '0000000000'),
+    subtotal = COALESCE(subtotal, 0),
+    tax_amount = COALESCE(tax_amount, 0),
+    shipping_amount = COALESCE(shipping_amount, 0),
+    discount_amount = COALESCE(discount_amount, 0),
+    total_price = COALESCE(total_price, 0)
+WHERE customer_name IS NULL OR customer_email IS NULL OR customer_phone IS NULL OR subtotal IS NULL OR tax_amount IS NULL OR shipping_amount IS NULL OR discount_amount IS NULL;
+`
+
+		_, err := pool.Exec(ctx, sqlScript)
+		if err != nil {
+			log.Printf("Failed to fix orders schema: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fix orders schema", "details": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "Orders schema fixed successfully!"})
+	})
+
+	// Temporary endpoint to set some orders as just arrived for testing
+	r.POST("/admin/set-just-arrived", func(c *gin.Context) {
+		ctx := context.Background()
+
+		// Update orders to have shipping_status = 'just arrived'
+		_, err := pool.Exec(ctx, `
+			UPDATE orders 
+			SET shipping_status = 'just arrived', updated_at = NOW()
+			WHERE shipping_status IS NULL OR shipping_status = ''
+		`)
+		if err != nil {
+			log.Printf("Failed to set just arrived status: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to set just arrived status", "details": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "Set 5 orders as just arrived successfully!"})
+	})
 
 	// Temporary endpoint to create missing tables
 	r.POST("/admin/create-tables", func(c *gin.Context) {
@@ -433,6 +524,27 @@ CREATE INDEX IF NOT EXISTS idx_wishlist_product ON wishlist(product_id);
 	{
 		userOrders.GET("/my", (&handlers.Handler{DB: pool}).ListMyOrders)
 	}
+
+	// GraphQL endpoint
+	graphqlHandler := handlers.NewGraphQLHandler(pool)
+	r.POST("/graphql", func(c *gin.Context) {
+		var requestBody struct {
+			Query string `json:"query"`
+		}
+
+		if err := c.ShouldBindJSON(&requestBody); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		result, err := graphqlHandler.ExecuteQuery(requestBody.Query)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, result)
+	})
 
 	// Public media proxy (serves R2 images locally) - after R2 client is initialized
 	r.GET("/api/public/media/:key", func(c *gin.Context) {

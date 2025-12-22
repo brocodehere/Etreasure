@@ -119,7 +119,7 @@ func (h *Handler) ListContentPages(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": pages})
 }
 
-// GetContentPage retrieves a specific content page by slug
+// GetContentPage retrieves a specific content page by slug (public endpoint - only active)
 func (h *Handler) GetContentPage(c *gin.Context) {
 	ctx := c.Request.Context()
 	slug := c.Param("slug")
@@ -129,6 +129,31 @@ func (h *Handler) GetContentPage(c *gin.Context) {
 		SELECT id, title, slug, content, type, is_active, meta_title, meta_description, created_at, updated_at
 		FROM content_pages
 		WHERE slug = $1 AND is_active = true
+	`
+
+	err := h.DB.QueryRow(ctx, query, slug).Scan(
+		&page.ID, &page.Title, &page.Slug, &page.Content, &page.Type, &page.IsActive,
+		&page.MetaTitle, &page.MetaDesc, &page.CreatedAt, &page.UpdatedAt,
+	)
+
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Content page not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, page)
+}
+
+// GetContentPageAdmin retrieves a specific content page by slug (admin endpoint - includes inactive)
+func (h *Handler) GetContentPageAdmin(c *gin.Context) {
+	ctx := c.Request.Context()
+	slug := c.Param("slug")
+
+	var page ContentPage
+	query := `
+		SELECT id, title, slug, content, type, is_active, meta_title, meta_description, created_at, updated_at
+		FROM content_pages
+		WHERE slug = $1
 	`
 
 	err := h.DB.QueryRow(ctx, query, slug).Scan(

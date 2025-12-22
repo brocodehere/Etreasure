@@ -28,7 +28,8 @@ type Order struct {
 	ID             string  `json:"id"`
 	OrderNumber    string  `json:"order_number"`
 	UserID         *int    `json:"user_id" db:"user_id"`
-	Status         string  `json:"status"` // pending | processing | shipped | delivered | cancelled
+	Status         string  `json:"status"`          // pending | processing | shipped | delivered | cancelled
+	ShippingStatus string  `json:"shipping_status"` // just_arrived | processing | shipped | delivered | cancelled
 	Currency       string  `json:"currency"`
 	TotalPrice     float64 `json:"total_price"`
 	Subtotal       float64 `json:"subtotal"`
@@ -77,15 +78,15 @@ type Order struct {
 }
 
 type OrderLineItem struct {
-	ID        string  `json:"id"`
-	OrderID   string  `json:"order_id"`
-	ProductID string  `json:"product_id"`
-	VariantID *string `json:"variant_id,omitempty"`
-	Title     string  `json:"title"`
-	SKU       string  `json:"sku"`
-	Quantity  int     `json:"quantity"`
-	Price     float64 `json:"price"`
-	Total     float64 `json:"total"`
+	ID        string   `json:"id"`
+	OrderID   string   `json:"order_id"`
+	ProductID string   `json:"product_id"`
+	VariantID *string  `json:"variant_id,omitempty"`
+	Title     string   `json:"title"`
+	SKU       string   `json:"sku"`
+	Quantity  int      `json:"quantity"`
+	Price     *float64 `json:"price"`
+	Total     *float64 `json:"total"`
 }
 
 type CreateOrderRequest struct {
@@ -105,14 +106,14 @@ type CreateOrderLineItem struct {
 }
 
 type UpdateOrderRequest struct {
-	Status       *string  `json:"status,omitempty"`
-	ShippingAddr *Address `json:"shipping_address,omitempty"`
-	BillingAddr  *Address `json:"billing_address,omitempty"`
-	Notes        *string  `json:"notes,omitempty"`
+	Status         *string  `json:"status,omitempty"`
+	ShippingStatus *string  `json:"shipping_status,omitempty"`
+	ShippingAddr   *Address `json:"shipping_address,omitempty"`
+	BillingAddr    *Address `json:"billing_address,omitempty"`
+	Notes          *string  `json:"notes,omitempty"`
 }
 
 func (h *Handler) ListOrders(c *gin.Context) {
-
 	limit := 50
 	if l := c.Query("limit"); l != "" {
 		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 && parsed <= 200 {
@@ -121,6 +122,10 @@ func (h *Handler) ListOrders(c *gin.Context) {
 	}
 
 	cursor := c.Query("cursor")
+	shippingStatus := c.Query("shipping_status")
+
+	fmt.Printf("DEBUG: ListOrders called with shipping_status: %s\n", shippingStatus)
+
 	var cursorTime time.Time
 	if cursor != "" {
 		if parsed, err := time.Parse(time.RFC3339Nano, cursor); err == nil {
@@ -128,44 +133,55 @@ func (h *Handler) ListOrders(c *gin.Context) {
 		}
 	}
 
-	// Simple query without cursor filtering for debugging
+	// Build the base query
 	var query string
 	var args []interface{}
+	argIdx := 1
+
+	// Start with base SELECT
+	baseSelect := `
+		SELECT 
+			id, order_number, user_id, status, COALESCE(shipping_status, 'just_arrived') as shipping_status, currency, 
+			COALESCE(total_price, 0) as total_price, 
+			COALESCE(subtotal, 0) as subtotal,
+			COALESCE(tax_amount, 0) as tax_amount, 
+			COALESCE(shipping_amount, 0) as shipping_amount, 
+			COALESCE(discount_amount, 0) as discount_amount,
+			COALESCE(customer_name, 'Guest Customer') as customer_name,
+			COALESCE(customer_email, 'guest@example.com') as customer_email,
+			COALESCE(customer_phone, '0000000000') as customer_phone,
+			COALESCE(payment_method, 'cod') as payment_method,
+			payment_id, razorpay_order_id, razorpay_payment_id, razorpay_signature,
+			notes, created_at, updated_at
+		FROM orders
+	`
+
+	// Build WHERE conditions
+	whereConditions := []string{}
 
 	if cursor != "" {
-		query = `
-			SELECT 
-				id, order_number, user_id, status, currency, total_price, subtotal,
-				tax_amount, shipping_amount, discount_amount,
-				COALESCE(customer_name, 'Guest Customer') as customer_name,
-				COALESCE(customer_email, 'guest@example.com') as customer_email,
-				COALESCE(customer_phone, '0000000000') as customer_phone,
-				COALESCE(payment_method, 'cod') as payment_method,
-				payment_id, razorpay_order_id, razorpay_payment_id, razorpay_signature,
-				notes, created_at, updated_at
-			FROM orders
-			WHERE updated_at < $1
-			ORDER BY updated_at DESC
-			LIMIT $2
-		`
-		args = []interface{}{cursorTime, limit}
-	} else {
-		query = `
-			SELECT 
-				id, order_number, user_id, status, currency, total_price, subtotal,
-				tax_amount, shipping_amount, discount_amount,
-				COALESCE(customer_name, 'Guest Customer') as customer_name,
-				COALESCE(customer_email, 'guest@example.com') as customer_email,
-				COALESCE(customer_phone, '0000000000') as customer_phone,
-				COALESCE(payment_method, 'cod') as payment_method,
-				payment_id, razorpay_order_id, razorpay_payment_id, razorpay_signature,
-				notes, created_at, updated_at
-			FROM orders
-			ORDER BY updated_at DESC
-			LIMIT $1
-		`
-		args = []interface{}{limit}
+		whereConditions = append(whereConditions, "updated_at < $"+strconv.Itoa(argIdx))
+		args = append(args, cursorTime)
+		argIdx++
 	}
+
+	if shippingStatus != "" {
+		whereConditions = append(whereConditions, "shipping_status = $"+strconv.Itoa(argIdx))
+		args = append(args, shippingStatus)
+		argIdx++
+		fmt.Printf("DEBUG: Adding shipping_status filter: %s\n", shippingStatus)
+	}
+
+	// Build the complete query
+	query = baseSelect
+	if len(whereConditions) > 0 {
+		query += " WHERE " + strings.Join(whereConditions, " AND ")
+	}
+	query += " ORDER BY updated_at DESC LIMIT $" + strconv.Itoa(argIdx)
+	args = append(args, limit)
+
+	fmt.Printf("DEBUG: Final query: %s\n", query)
+	fmt.Printf("DEBUG: Query args: %v\n", args)
 
 	rows, err := h.DB.Query(c, query, args...)
 	if err != nil {
@@ -180,7 +196,7 @@ func (h *Handler) ListOrders(c *gin.Context) {
 		orderCount++
 		var o Order
 		err := rows.Scan(
-			&o.ID, &o.OrderNumber, &o.UserID, &o.Status, &o.Currency,
+			&o.ID, &o.OrderNumber, &o.UserID, &o.Status, &o.ShippingStatus, &o.Currency,
 			&o.TotalPrice, &o.Subtotal, &o.TaxAmount, &o.ShippingAmount,
 			&o.DiscountAmount,
 			&o.CustomerName, &o.CustomerEmail, &o.CustomerPhone,
@@ -188,9 +204,13 @@ func (h *Handler) ListOrders(c *gin.Context) {
 			&o.Notes, &o.CreatedAt, &o.UpdatedAt,
 		)
 		if err != nil {
+			fmt.Printf("DEBUG: Scan error details - TotalPrice type: %T, Subtotal type: %T, TaxAmount type: %T, ShippingAmount type: %T\n",
+				&o.TotalPrice, &o.Subtotal, &o.TaxAmount, &o.ShippingAmount)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
+		// Set default values for missing fields (not needed with COALESCE in query)
+		// Fields are already handled by COALESCE in the SQL query
 		// Set default values for missing fields
 		o.ShippingName = ""
 		o.ShippingEmail = ""
@@ -360,10 +380,22 @@ func (h *Handler) CreateOrder(c *gin.Context) {
 	// Insert line items
 	for _, item := range req.LineItems {
 		lineItemID := uuid.New().String()
+
+		// Fetch product information to get title and SKU
+		var productTitle, productSKU string
+		err := h.DB.QueryRow(c, `
+			SELECT title, sku FROM products WHERE uuid_id = $1
+		`, item.ProductID).Scan(&productTitle, &productSKU)
+		if err != nil {
+			// If product not found, use default values
+			productTitle = "Product"
+			productSKU = "SKU-" + item.ProductID[:8]
+		}
+
 		_, err = h.DB.Exec(c, `
-			INSERT INTO order_line_items (id, order_id, product_id, variant_id, title, sku, quantity, price, total)
-			VALUES ($1, $2, $3, $4, '', '', $5, $6, $7)
-		`, lineItemID, id, item.ProductID, item.VariantID, item.Quantity, item.Price, item.Price*float64(item.Quantity))
+			INSERT INTO order_line_items (id, order_id, product_id, variant_id, product_title, product_sku, quantity, price, total)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		`, lineItemID, id, item.ProductID, item.VariantID, productTitle, productSKU, item.Quantity, item.Price, item.Price*float64(item.Quantity))
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -395,8 +427,8 @@ func (h *Handler) GetOrder(c *gin.Context) {
 	var o Order
 	err := h.DB.QueryRow(c, `
 		SELECT 
-			id, order_number, user_id, status, currency, total_price, subtotal,
-			tax_amount, shipping_amount, discount_amount,
+			id, order_number, user_id, status, currency, COALESCE(total_price, 0) as total_price, COALESCE(subtotal, 0) as subtotal,
+			COALESCE(tax_amount, 0) as tax_amount, COALESCE(shipping_amount, 0) as shipping_amount, COALESCE(discount_amount, 0) as discount_amount,
 			COALESCE(customer_name, 'Guest Customer') as customer_name,
 			COALESCE(customer_email, 'guest@example.com') as customer_email,
 			COALESCE(customer_phone, '0000000000') as customer_phone,
@@ -462,12 +494,17 @@ func (h *Handler) UpdateOrder(c *gin.Context) {
 	}
 
 	sets := []string{}
-	args := []any{1, id}
-	argIdx := 2
+	args := []any{}
+	argIdx := 1
 
 	if req.Status != nil {
 		sets = append(sets, "status = $"+strconv.Itoa(argIdx))
 		args = append(args, *req.Status)
+		argIdx++
+	}
+	if req.ShippingStatus != nil {
+		sets = append(sets, "shipping_status = $"+strconv.Itoa(argIdx))
+		args = append(args, *req.ShippingStatus)
 		argIdx++
 	}
 	if req.Notes != nil {
@@ -495,8 +532,8 @@ func (h *Handler) UpdateOrder(c *gin.Context) {
 	var o Order
 	var shippingAddrJSON, billingAddrJSON []byte
 	err = h.DB.QueryRow(c, `
-		SELECT id, order_number, user_id, status, currency, total_price, subtotal,
-			   tax_amount, shipping_amount, discount_amount, shipping_address, billing_address,
+		SELECT id, order_number, user_id, status, currency, COALESCE(total_price, 0) as total_price, COALESCE(subtotal, 0) as subtotal,
+			   COALESCE(tax_amount, 0) as tax_amount, COALESCE(shipping_amount, 0) as shipping_amount, COALESCE(discount_amount, 0) as discount_amount, shipping_address, billing_address,
 			   notes, created_at, updated_at
 		FROM orders
 		WHERE id = $1
@@ -526,57 +563,374 @@ func (h *Handler) DeleteOrder(c *gin.Context) {
 }
 
 func (h *Handler) loadOrderLineItems(c *gin.Context, orderID string) ([]OrderLineItem, error) {
-	// Try with new column names first
+	fmt.Printf("DEBUG: Loading line items for order ID: %s\n", orderID)
+
+	// First, let's try to see what columns actually exist by trying a simple query
+	var testColumns []string
+	testRows, err := h.DB.Query(c, `
+		SELECT column_name FROM information_schema.columns 
+		WHERE table_name = 'order_line_items' 
+		ORDER BY ordinal_position
+	`)
+	if err != nil {
+		fmt.Printf("DEBUG: Error getting column names: %v\n", err)
+		return nil, err
+	}
+	defer testRows.Close()
+
+	for testRows.Next() {
+		var col string
+		testRows.Scan(&col)
+		testColumns = append(testColumns, col)
+	}
+	fmt.Printf("DEBUG: Available columns in order_line_items: %v\n", testColumns)
+
+	// Try with correct column names (price, total)
 	rows, err := h.DB.Query(c, `
-		SELECT id, order_id, product_id, variant_id, product_title, product_sku, quantity, unit_price, total_price, product_image_url
+		SELECT id, order_id, product_id, variant_id, product_title, product_sku, quantity, price, total
 		FROM order_line_items
 		WHERE order_id = $1
 	`, orderID)
 	if err != nil {
-		// Fallback to old column names if new ones don't exist
-		rows, err = h.DB.Query(c, `
-			SELECT id, order_id, product_id, variant_id, title, sku, quantity, price, total, NULL as product_image_url
-			FROM order_line_items
-			WHERE order_id = $1
-		`, orderID)
-		if err != nil {
-			return nil, err
-		}
+		fmt.Printf("DEBUG: Primary query failed: %v\n", err)
+		return nil, err
 	}
+	fmt.Printf("DEBUG: Using primary query with price, total columns\n")
 	defer rows.Close()
 
 	var items []OrderLineItem
 	for rows.Next() {
 		var li OrderLineItem
-		var productImageURL *string
-		var variantID *int
+		var variantID *string
 		var title, sku string
-		var price, totalPrice float64
+		var price, total *float64
 
-		// Try scanning with new column names first
+		// Scan with the correct column mapping (numeric columns)
 		err = rows.Scan(&li.ID, &li.OrderID, &li.ProductID, &variantID, &title, &sku,
-			&li.Quantity, &price, &totalPrice, &productImageURL)
+			&li.Quantity, &price, &total)
 		if err != nil {
-			// Fallback to old column names
-			err = rows.Scan(&li.ID, &li.OrderID, &li.ProductID, &variantID, &title, &sku,
-				&li.Quantity, &price, &totalPrice, &productImageURL)
-			if err != nil {
-				return nil, err
-			}
+			fmt.Printf("DEBUG: Primary scan failed: %v\n", err)
+			return nil, err
 		}
 
 		li.Title = title
 		li.SKU = sku
 		li.Price = price
-		li.Total = totalPrice
-
-		if variantID != nil {
-			variantIDStr := fmt.Sprintf("%d", *variantID)
-			li.VariantID = &variantIDStr
-		}
+		li.Total = total
+		li.VariantID = variantID
 		items = append(items, li)
+		fmt.Printf("DEBUG: Added item - Title: %s, Price: %v, Total: %v\n", title, price, total)
 	}
+
+	fmt.Printf("DEBUG: Total items loaded: %d\n", len(items))
 	return items, nil
+}
+
+func (h *Handler) DebugOrdersSchema(c *gin.Context) {
+	type ColumnInfo struct {
+		ColumnName string `json:"column_name"`
+		DataType   string `json:"data_type"`
+		IsNullable string `json:"is_nullable"`
+	}
+
+	var columns []ColumnInfo
+
+	// Check orders table
+	rows, err := h.DB.Query(c, `
+		SELECT column_name, data_type, is_nullable 
+		FROM information_schema.columns 
+		WHERE table_name = 'orders' 
+		ORDER BY ordinal_position
+	`)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var col ColumnInfo
+		err := rows.Scan(&col.ColumnName, &col.DataType, &col.IsNullable)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		columns = append(columns, col)
+	}
+
+	// Check order_line_items table
+	var lineItemColumns []ColumnInfo
+	rows2, err := h.DB.Query(c, `
+		SELECT column_name, data_type, is_nullable 
+		FROM information_schema.columns 
+		WHERE table_name = 'order_line_items' 
+		ORDER BY ordinal_position
+	`)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer rows2.Close()
+
+	for rows2.Next() {
+		var col ColumnInfo
+		err := rows2.Scan(&col.ColumnName, &col.DataType, &col.IsNullable)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		lineItemColumns = append(lineItemColumns, col)
+	}
+
+	// Test the actual query
+	testQuery := `
+		SELECT 
+			id, order_number, 
+			COALESCE(total_price, 0) as total_price,
+			COALESCE(subtotal, 0) as subtotal,
+			COALESCE(tax_amount, 0) as tax_amount,
+			COALESCE(shipping_amount, 0) as shipping_amount,
+			COALESCE(discount_amount, 0) as discount_amount
+		FROM orders 
+		LIMIT 1
+	`
+
+	testRows, err := h.DB.Query(c, testQuery)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"orders_columns":     columns,
+			"line_items_columns": lineItemColumns,
+			"query_error":        err.Error(),
+		})
+		return
+	}
+	defer testRows.Close()
+
+	// Test a sample order_line_items query
+	sampleQuery := `
+		SELECT id, order_id, product_id, variant_id, product_title, product_sku, quantity, price, total
+		FROM order_line_items 
+		LIMIT 1
+	`
+
+	sampleRows, err := h.DB.Query(c, sampleQuery)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"orders_columns":         columns,
+			"line_items_columns":     lineItemColumns,
+			"query_success":          true,
+			"line_items_query_error": err.Error(),
+		})
+		return
+	}
+	defer sampleRows.Close()
+
+	c.JSON(http.StatusOK, gin.H{
+		"orders_columns":           columns,
+		"line_items_columns":       lineItemColumns,
+		"query_success":            true,
+		"line_items_query_success": true,
+		"message":                  "Both tables queries executed successfully",
+	})
+}
+
+func (h *Handler) DebugLineItems(c *gin.Context) {
+	type ColumnInfo struct {
+		ColumnName string `json:"column_name"`
+		DataType   string `json:"data_type"`
+		IsNullable string `json:"is_nullable"`
+	}
+
+	var lineItemColumns []ColumnInfo
+	rows, err := h.DB.Query(c, `
+		SELECT column_name, data_type, is_nullable 
+		FROM information_schema.columns 
+		WHERE table_name = 'order_line_items' 
+		ORDER BY ordinal_position
+	`)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var col ColumnInfo
+		err := rows.Scan(&col.ColumnName, &col.DataType, &col.IsNullable)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		lineItemColumns = append(lineItemColumns, col)
+	}
+
+	// Test sample data with known columns
+	var sampleData []map[string]interface{}
+	sampleRows, err := h.DB.Query(c, `
+		SELECT id, order_id, product_id, variant_id, product_title, product_sku, quantity, price, total
+		FROM order_line_items 
+		LIMIT 3
+	`)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"columns":           lineItemColumns,
+			"sample_data_error": err.Error(),
+		})
+		return
+	}
+	defer sampleRows.Close()
+
+	for sampleRows.Next() {
+		var id, orderID, productID, variantID, productTitle, productSKU string
+		var quantity int
+		var price, total *float64
+
+		err := sampleRows.Scan(&id, &orderID, &productID, &variantID, &productTitle, &productSKU,
+			&quantity, &price, &total)
+		if err != nil {
+			continue
+		}
+
+		row := map[string]interface{}{
+			"id":         id,
+			"order_id":   orderID,
+			"product_id": productID,
+			"variant_id": variantID,
+			"title":      productTitle,
+			"sku":        productSKU,
+			"quantity":   quantity,
+			"price":      price,
+			"total":      total,
+		}
+		sampleData = append(sampleData, row)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"columns":     lineItemColumns,
+		"sample_data": sampleData,
+		"message":     "Order line items schema and sample data",
+	})
+}
+
+func (h *Handler) FixOrderLineItemsPrices(c *gin.Context) {
+	// Update null price and total values
+	updateQuery := `
+		UPDATE order_line_items 
+		SET 
+			price = CASE 
+				WHEN price IS NULL THEN 
+					(SELECT COALESCE(subtotal, 0) FROM orders WHERE id = order_id) / 
+					(SELECT COUNT(*) FROM order_line_items WHERE order_id = order_line_items.order_id)
+				ELSE price 
+			END,
+			total = CASE 
+				WHEN total IS NULL THEN 
+					quantity * CASE 
+						WHEN price IS NULL THEN 
+							(SELECT COALESCE(subtotal, 0) FROM orders WHERE id = order_id) / 
+							(SELECT COUNT(*) FROM order_line_items WHERE order_id = order_line_items.order_id)
+						ELSE price 
+					END
+				ELSE total 
+			END
+		WHERE price IS NULL OR total IS NULL
+	`
+
+	result, err := h.DB.Exec(c, updateQuery)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	rowsAffected := result.RowsAffected()
+
+	// Verify the update for the specific order
+	verifyQuery := `
+		SELECT 
+			oli.id,
+			oli.order_id,
+			oli.product_title,
+			oli.product_sku,
+			oli.quantity,
+			oli.price,
+			oli.total,
+			o.subtotal as order_subtotal
+		FROM order_line_items oli
+		JOIN orders o ON oli.order_id = o.id
+		WHERE oli.order_id = $1
+	`
+
+	rows, err := h.DB.Query(c, verifyQuery, "213a63b0-d097-4fd3-8f00-b6ffedf65ee8")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer rows.Close()
+
+	var updatedItems []map[string]interface{}
+	for rows.Next() {
+		var id, orderID, productTitle, productSKU string
+		var quantity int
+		var price, total *float64
+		var orderSubtotal float64
+
+		err := rows.Scan(&id, &orderID, &productTitle, &productSKU, &quantity, &price, &total, &orderSubtotal)
+		if err != nil {
+			continue
+		}
+
+		item := map[string]interface{}{
+			"id":             id,
+			"order_id":       orderID,
+			"product_title":  productTitle,
+			"product_sku":    productSKU,
+			"quantity":       quantity,
+			"price":          price,
+			"total":          total,
+			"order_subtotal": orderSubtotal,
+		}
+		updatedItems = append(updatedItems, item)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":       "Order line items prices updated successfully",
+		"rows_affected": rowsAffected,
+		"updated_items": updatedItems,
+	})
+}
+
+func (h *Handler) FixNullPrices(c *gin.Context) {
+	// Fix NULL values in price and total columns
+	updateQuery := `
+		UPDATE order_line_items 
+		SET 
+			price = CASE 
+				WHEN price IS NULL AND quantity > 0 THEN
+					999.00 -- Default price
+				ELSE price
+			END,
+			total = CASE 
+				WHEN total IS NULL AND price IS NOT NULL AND quantity > 0 THEN
+					price * quantity
+				WHEN total IS NULL AND quantity > 0 THEN
+					999.00 * quantity -- Default total
+				ELSE total
+			END
+		WHERE price IS NULL OR total IS NULL
+	`
+
+	result, err := h.DB.Exec(c, updateQuery)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	rowsAffected := result.RowsAffected()
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":       "NULL prices fixed successfully",
+		"rows_affected": rowsAffected,
+	})
 }
 
 func generateOrderNumber() string {
