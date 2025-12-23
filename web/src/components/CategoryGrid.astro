@@ -96,13 +96,13 @@ function getFallbackImage(categoryName) {
     <div class="relative overflow-hidden mb-12">
       <div class="flex transition-transform duration-1000 ease-in-out" id="categorySlider">
         {displayCategories.map((category, index) => (
-          <div class="w-full md:w-1/3 flex-shrink-0 px-4">
+          <div class="w-full md:w-1/3 flex-shrink-0 px-2 md:px-4">
             <a 
               href={category.href}
               class="group relative overflow-hidden rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-700 transform hover:scale-105"
             >
               <!-- Category Card Container -->
-              <div class="relative h-72 overflow-hidden bg-white">
+              <div class="relative h-48 md:h-64 lg:h-72 overflow-hidden bg-white">
                 <!-- Image with Enhanced Effects -->
                 <div class="relative w-full h-full">
                   <picture>
@@ -120,12 +120,12 @@ function getFallbackImage(categoryName) {
                   <div class="absolute inset-0 bg-gradient-to-t from-maroon/90 via-maroon/40 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
                   
                   <!-- Hover Content -->
-                  <div class="absolute bottom-0 left-0 right-0 p-6 text-white transform translate-y-full group-hover:translate-y-0 transition-transform duration-500">
-                    <p class="text-sm md:text-base mb-3 leading-relaxed">{category.description}</p>
+                  <div class="absolute bottom-0 left-0 right-0 p-4 md:p-6 text-white transform translate-y-full group-hover:translate-y-0 transition-transform duration-500">
+                    <p class="text-xs md:text-sm lg:text-base mb-2 md:mb-3 leading-relaxed">{category.description}</p>
                     <div class="flex items-center justify-between">
-                      <span class="text-gold font-semibold text-sm md:text-base flex items-center gap-2">
+                      <span class="text-gold font-semibold text-xs md:text-sm lg:text-base flex items-center gap-2">
                         Shop Now 
-                        <svg class="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-3 h-3 md:w-4 md:h-4 transform group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                         </svg>
                       </span>
@@ -134,12 +134,12 @@ function getFallbackImage(categoryName) {
                 </div>
                 
                 <!-- Category Badge -->
-                <div class="absolute top-4 left-4 bg-gradient-to-r from-gold to-gold/80 text-maroon px-4 py-2 rounded-full font-semibold text-sm md:text-base shadow-lg backdrop-blur-sm transform group-hover:scale-110 transition-transform duration-300">
+                <div class="absolute top-2 md:top-4 left-2 md:left-4 bg-gradient-to-r from-gold to-gold/80 text-maroon px-2 py-1 md:px-4 md:py-2 rounded-full font-semibold text-xs md:text-sm lg:text-base shadow-lg backdrop-blur-sm transform group-hover:scale-110 transition-transform duration-300">
                   {category.name}
                 </div>
                 
                 <!-- Decorative Corner Accent -->
-                <div class="absolute top-2 right-2 w-8 h-8 border-t-2 border-r-2 border-gold/50 transform rotate-45 group-hover:scale-150 transition-transform duration-500"></div>
+                <div class="absolute top-1 md:top-2 right-1 md:right-2 w-4 h-4 md:w-8 md:h-8 border-t border-r border-gold/50 transform rotate-45 group-hover:scale-150 transition-transform duration-500"></div>
               </div>
               
               <!-- Card Border Effect -->
@@ -150,11 +150,11 @@ function getFallbackImage(categoryName) {
       </div>
       
       <!-- Slider Navigation Dots -->
-      {displayCategories.length > 3 && (
-        <div class="flex justify-center mt-6 space-x-2" id="sliderDots">
+      {displayCategories.length > 1 && (
+        <div class="flex justify-center mt-4 md:mt-6 space-x-1 md:space-x-2" id="sliderDots">
           {displayCategories.map((_, index) => (
             <button 
-              class={`w-2 h-2 rounded-full transition-all duration-300 ${index === 0 ? 'bg-maroon w-8' : 'bg-gray-300'}`}
+              class={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full transition-all duration-300 ${index === 0 ? 'bg-maroon w-4 md:w-8' : 'bg-gray-300'}`}
               onclick={`goToSlide(${index})`}
               data-slide={index}
             ></button>
@@ -182,8 +182,33 @@ function getFallbackImage(categoryName) {
   // Category slider functionality
   let currentSlide = 0;
   const totalSlides = totalCategories;
-  const slidesPerView = 3; // Show 3 categories at a time on desktop
+  let slidesPerView = 3; // Default for desktop
   const slideInterval = 3000; // 3 seconds
+  
+  // Function to get slides per view based on screen width
+  function getSlidesPerView() {
+    if (typeof window !== 'undefined') {
+      const width = window.innerWidth;
+      if (width < 768) { // Mobile
+        return 1;
+      } else if (width < 1024) { // Tablet
+        return 2;
+      } else { // Desktop
+        return 3;
+      }
+    }
+    return 3; // Default
+  }
+  
+  // Update slides per view on window resize
+  function updateSlidesPerView() {
+    const newSlidesPerView = getSlidesPerView();
+    if (newSlidesPerView !== slidesPerView) {
+      slidesPerView = newSlidesPerView;
+      // Reset to first slide when layout changes
+      goToSlide(0);
+    }
+  }
   
   function goToSlide(slideIndex) {
     const slider = document.getElementById('categorySlider');
@@ -195,7 +220,7 @@ function getFallbackImage(categoryName) {
     
     currentSlide = slideIndex;
     
-    // Calculate translate value
+    // Calculate translate value based on current slides per view
     const translateValue = -(currentSlide * (100 / slidesPerView));
     slider.style.transform = `translateX(${translateValue}%)`;
     
@@ -213,9 +238,15 @@ function getFallbackImage(categoryName) {
     dots.forEach((dot, index) => {
       if (index === currentSlide) {
         dot.classList.remove('bg-gray-300');
-        dot.classList.add('bg-maroon', 'w-8');
+        dot.classList.add('bg-maroon');
+        // Responsive dot width
+        if (typeof window !== 'undefined' && window.innerWidth < 768) {
+          dot.classList.add('w-4');
+        } else {
+          dot.classList.add('w-8');
+        }
       } else {
-        dot.classList.remove('bg-maroon', 'w-8');
+        dot.classList.remove('bg-maroon', 'w-4', 'w-8');
         dot.classList.add('bg-gray-300');
       }
     });
@@ -245,6 +276,9 @@ function getFallbackImage(categoryName) {
   
   // Initialize on page load
   document.addEventListener('DOMContentLoaded', () => {
+    // Update slides per view based on current screen size
+    updateSlidesPerView();
+    
     console.log('Slider initializing with totalSlides:', totalSlides, 'slidesPerView:', slidesPerView);
     
     if (totalSlides > 0) {
@@ -269,6 +303,11 @@ function getFallbackImage(categoryName) {
           console.error('Slider element not found');
         }
       }, 100);
+    }
+    
+    // Add resize listener
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', updateSlidesPerView);
     }
   });
   
