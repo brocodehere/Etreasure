@@ -5,25 +5,84 @@ import Footer from '../../components/Footer.astro';
 
 export async function getStaticPaths() {
   try {
-    // Fetch all products to get their IDs for static generation
+    // Fetch all products to get their IDs and slugs for static generation
     const API_URL = 'https://etreasure-1.onrender.com';
     const response = await fetch(`${API_URL}/api/products?limit=100`);
     
     if (!response.ok) {
-      console.error('Failed to fetch products for getStaticPaths');
       return [];
     }
     
     const data = await response.json();
     const products = data.items || [];
     
-    // Return paths for all products
-    return products.map((product) => ({
-      params: { id: product.id },
-      props: { product }
-    }));
+    // Generate paths for both ID and slug to match different URL generation methods
+    const paths = [];
+    
+    // Fetch full product details for each product to get images
+    for (const product of products) {
+      try {
+        // Get full product details including images - use slug instead of ID
+        const productResponse = await fetch(`${API_URL}/api/products/${product.slug}`);
+        if (productResponse.ok) {
+          const fullProductData = await productResponse.json();
+          
+          // Transform product data to ensure consistent structure
+          const transformedProduct = {
+            uuid_id: fullProductData.id,
+            slug: fullProductData.slug,
+            title: fullProductData.title,
+            subtitle: fullProductData.subtitle,
+            description: fullProductData.description,
+            price_cents: fullProductData.price_cents,
+            currency: fullProductData.currency,
+            availability: fullProductData.availability,
+            hero_image: fullProductData.hero_image,
+            images: fullProductData.images || [], // Use images from detailed API response
+            // Add fallback fields for compatibility
+            name: fullProductData.title,
+            image: fullProductData.hero_image?.url,
+            image_url: fullProductData.hero_image?.url,
+            published: true,
+            category: fullProductData.category,
+            stock_status: fullProductData.stock_status
+          };
+          
+          // Add path for product ID
+          if (product.id) {
+            paths.push({
+              params: { id: product.id },
+              props: { product: transformedProduct }
+            });
+          }
+          
+          // Add path for product slug (if different from ID)
+          if (product.slug && product.slug !== product.id) {
+            // Add original slug
+            paths.push({
+              params: { id: product.slug },
+              props: { product: transformedProduct }
+            });
+            
+            // Add URL-encoded slug for browsers
+            const encodedSlug = encodeURIComponent(product.slug);
+            if (encodedSlug !== product.slug) {
+              paths.push({
+                params: { id: encodedSlug },
+                props: { product: transformedProduct }
+              });
+            }
+          }
+        } else {
+          // Failed to fetch product details, continue with next product
+        }
+      } catch (error) {
+        // Failed to fetch details for product, continue with next product
+      }
+    }
+    
+    return paths;
   } catch (error) {
-    console.error('Error in getStaticPaths:', error);
     return [];
   }
 }
@@ -39,7 +98,6 @@ if (!product) {
   const API_URL = 'https://etreasure-1.onrender.com';
   const encodedId = encodeURIComponent(id);
   const fullUrl = `${API_URL}/api/products/${encodedId}?t=${Date.now()}`;
-  console.log('Full API URL:', fullUrl);
 
   try {
     const response = await fetch(fullUrl, {
@@ -48,13 +106,8 @@ if (!product) {
         'Pragma': 'no-cache'
       }
     });
-    console.log('Response status:', response.status);
     if (response.ok) {
       const data = await response.json();
-      console.log('API Response:', data); // Debug logging
-      console.log('Images array:', data.images); // Debug images specifically
-      console.log('Images array length:', data.images?.length || 0); // Debug images count
-      console.log('Images array type:', typeof data.images); // Debug images type
       // Transform the API response to match expected format
       product = {
         uuid_id: data.id,
@@ -73,12 +126,9 @@ if (!product) {
         image_url: data.hero_image?.url,
         published: true, // PublicGet only returns published products
       };
-      console.log('Transformed product data:', product); // Debug transformed data
-      console.log('Transformed images array:', product.images); // Debug transformed images
-      console.log('Transformed images length:', product.images.length); // Debug transformed images count
     }
   } catch (error) {
-    console.error('Failed to fetch product details:', error);
+    // Failed to fetch product details
   }
 }
 
@@ -232,7 +282,6 @@ const structuredData = [productSchema, breadcrumbSchema];
           <!-- Thumbnail Gallery -->
           {product.images && product.images.length > 1 && (
             <div class="mt-6 grid grid-cols-4 gap-2">
-              {console.log('Rendering thumbnails for images:', product.images)}
               {product.images.map((image, index) => (
                 <button
                   type="button"
@@ -247,7 +296,6 @@ const structuredData = [productSchema, breadcrumbSchema];
                     alt={`${product.name || product.title} - Image ${index + 1}`}
                     class="w-full h-20 object-cover"
                     loading="lazy"
-                    onError={(e) => console.error('Failed to load thumbnail:', image.url, e)}
                   />
                 </button>
               ))}
@@ -255,7 +303,6 @@ const structuredData = [productSchema, breadcrumbSchema];
           )}
           {(!product.images || product.images.length <= 1) && (
             <div class="mt-6 text-sm text-gray-500">
-              {console.log('No thumbnails to display. Images array:', product.images)}
               No additional images available
             </div>
           )}
