@@ -58,7 +58,7 @@ func (h *Handler) CreateContentPage(c *gin.Context) {
 	query := `
 		INSERT INTO content_pages (id, title, slug, content, type, is_active, meta_title, meta_description, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-		ON CONFLICT (id) DO UPDATE SET
+		ON CONFLICT (slug) DO UPDATE SET
 			title = EXCLUDED.title,
 			slug = EXCLUDED.slug,
 			content = EXCLUDED.content,
