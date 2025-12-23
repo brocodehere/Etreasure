@@ -41,8 +41,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       {/* Product Image */}
       <div className="relative h-72 overflow-hidden bg-gray-50">
         <a 
-          href={`/product/${product.slug}`}
-          className="block w-full h-full"
+          href={`/product/${product.slug || product.id}`}
+          className="block w-full h-full relative z-10"
         >
           <img
             src={product.image_url || '/images/placeholder-product.jpg'}
@@ -53,13 +53,13 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         </a>
         
         {/* Overlay on hover */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
         
         {/* Wishlist Button */}
         <button
           onClick={handleToggleWishlist}
           disabled={isLoading}
-          className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm p-3 rounded-full hover:bg-white hover:scale-110 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+          className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm p-3 rounded-full hover:bg-white hover:scale-110 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md z-20"
         >
           <svg
             className={`w-5 h-5 transition-colors duration-200 ${isWishlisted ? 'fill-red-500 text-red-500' : 'text-gray-600'}`}
@@ -77,7 +77,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         </button>
 
         {/* Quick View Badge */}
-        <div className="absolute top-4 left-4">
+        <div className="absolute top-4 left-4 z-20">
           <span className="bg-gradient-to-r from-maroon to-burgundy text-white text-xs px-3 py-1 rounded-full font-medium shadow-md">
             New Arrival
           </span>
@@ -88,7 +88,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       <div className="p-6">
         <h3 className="font-playfair text-xl font-bold text-gray-800 mb-3 line-clamp-2">
           <a 
-            href={`/product/${product.slug}`} 
+            href={`/product/${product.slug || product.id}`} 
             className="hover:text-maroon transition-colors duration-200 group-hover:text-maroon"
           >
             {product.title}
