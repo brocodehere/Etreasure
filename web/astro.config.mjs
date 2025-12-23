@@ -19,7 +19,7 @@ export default defineConfig({
 
 
   // ✅ Keep output static (best for performance + Vercel/Cloudflare)
-  output: 'server',
+  output: 'static',
 
   // ✅ Vite config (safe + minimal)
   vite: {
