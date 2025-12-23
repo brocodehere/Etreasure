@@ -4,6 +4,21 @@ import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import { fetchContent } from '../lib/api';
 
+export async function getStaticPaths() {
+  // Define all possible policy slugs
+  const policySlugs = [
+    'privacy-policy',
+    'terms-of-service', 
+    'refund-policy',
+    'shipping-policy'
+  ];
+  
+  // Return paths for all policies
+  return policySlugs.map((policy) => ({
+    params: { policy }
+  }));
+}
+
 // Get the policy slug from the URL
 const { policy } = Astro.params;
 

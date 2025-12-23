@@ -3,54 +3,83 @@ import Layout from '../../layouts/Layout.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 
+export async function getStaticPaths() {
+  try {
+    // Fetch all products to get their IDs for static generation
+    const API_URL = 'https://etreasure-1.onrender.com';
+    const response = await fetch(`${API_URL}/api/products?limit=100`);
+    
+    if (!response.ok) {
+      console.error('Failed to fetch products for getStaticPaths');
+      return [];
+    }
+    
+    const data = await response.json();
+    const products = data.items || [];
+    
+    // Return paths for all products
+    return products.map((product) => ({
+      params: { id: product.id },
+      props: { product }
+    }));
+  } catch (error) {
+    console.error('Error in getStaticPaths:', error);
+    return [];
+  }
+}
+
 const { id } = Astro.params;
 
-// Fetch product details dynamically at runtime
-let product = null;
-// Use absolute URL for server-side rendering with proper URL encoding
-const API_URL = 'https://etreasure-1.onrender.com';
-const encodedId = encodeURIComponent(id);
-const fullUrl = `${API_URL}/api/products/${encodedId}?t=${Date.now()}`;
-console.log('Full API URL:', fullUrl);
+// Get product from getStaticPaths props or fetch at runtime
+let product = Astro.props.product || null;
 
-try {
-  const response = await fetch(fullUrl, {
-    headers: {
-      'Cache-Control': 'no-cache',
-      'Pragma': 'no-cache'
+// If no product from props (development mode), fetch at runtime
+if (!product) {
+  // Use absolute URL for server-side rendering with proper URL encoding
+  const API_URL = 'https://etreasure-1.onrender.com';
+  const encodedId = encodeURIComponent(id);
+  const fullUrl = `${API_URL}/api/products/${encodedId}?t=${Date.now()}`;
+  console.log('Full API URL:', fullUrl);
+
+  try {
+    const response = await fetch(fullUrl, {
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
+    });
+    console.log('Response status:', response.status);
+    if (response.ok) {
+      const data = await response.json();
+      console.log('API Response:', data); // Debug logging
+      console.log('Images array:', data.images); // Debug images specifically
+      console.log('Images array length:', data.images?.length || 0); // Debug images count
+      console.log('Images array type:', typeof data.images); // Debug images type
+      // Transform the API response to match expected format
+      product = {
+        uuid_id: data.id,
+        slug: data.slug,
+        title: data.title,
+        subtitle: data.subtitle,
+        description: data.description,
+        price_cents: data.price_cents,
+        currency: data.currency,
+        availability: data.availability,
+        hero_image: data.hero_image,
+        images: data.images || [], // Multiple images array
+        // Add fallback fields for compatibility
+        name: data.title,
+        image: data.hero_image?.url,
+        image_url: data.hero_image?.url,
+        published: true, // PublicGet only returns published products
+      };
+      console.log('Transformed product data:', product); // Debug transformed data
+      console.log('Transformed images array:', product.images); // Debug transformed images
+      console.log('Transformed images length:', product.images.length); // Debug transformed images count
     }
-  });
-  console.log('Response status:', response.status);
-  if (response.ok) {
-    const data = await response.json();
-    console.log('API Response:', data); // Debug logging
-    console.log('Images array:', data.images); // Debug images specifically
-    console.log('Images array length:', data.images?.length || 0); // Debug images count
-    console.log('Images array type:', typeof data.images); // Debug images type
-    // Transform the API response to match expected format
-    product = {
-      uuid_id: data.id,
-      slug: data.slug,
-      title: data.title,
-      subtitle: data.subtitle,
-      description: data.description,
-      price_cents: data.price_cents,
-      currency: data.currency,
-      availability: data.availability,
-      hero_image: data.hero_image,
-      images: data.images || [], // Multiple images array
-      // Add fallback fields for compatibility
-      name: data.title,
-      image: data.hero_image?.url,
-      image_url: data.hero_image?.url,
-      published: true, // PublicGet only returns published products
-    };
-    console.log('Transformed product data:', product); // Debug transformed data
-    console.log('Transformed images array:', product.images); // Debug transformed images
-    console.log('Transformed images length:', product.images.length); // Debug transformed images count
+  } catch (error) {
+    console.error('Failed to fetch product details:', error);
   }
-} catch (error) {
-  console.error('Failed to fetch product details:', error);
 }
 
 // If no product found, redirect to shop
