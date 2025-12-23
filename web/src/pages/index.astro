@@ -1,7 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
-import Hero from '../components/Hero.astro';
+import BannerContainer from '../components/BannerContainer';
 import CategoryGrid from '../components/CategoryGrid.astro';
 // import Bestsellers from '../components/Bestsellers.astro'; // Temporarily hidden
 import InstagramFeed from '../components/InstagramFeed.astro';
@@ -43,7 +43,32 @@ const homepageSchema = {
   structuredData={homepageSchema}
 >
 	<Header />
-	<Hero />
+	<BannerContainer 
+		client:load
+		apiUrl="https://etreasure-1.onrender.com/api/public/banners" 
+		autoSlide={true}
+		slideInterval={5000}
+		fallbackBanners={[
+			{
+				id: '1',
+				image: 'https://pub-1a3924a6c6994107be6fe9f3ed794c0a.r2.dev/banner-placeholder.webp',
+				link: '/collections/luxury-jewelry',
+				alt: 'Luxury Jewelry Collection'
+			},
+			{
+				id: '2',
+				image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=1920&h=1080&fit=crop',
+				link: '/collections/diamond-rings',
+				alt: 'Exclusive Diamond Rings'
+			},
+			{
+				id: '3',
+				image: 'https://images.unsplash.com/photo-1596944924613-7a0c4a49e12c?w=1920&h=1080&fit=crop',
+				link: '/collections/watches',
+				alt: 'Premium Timepieces'
+			}
+		]}
+	/>
 	<CategoryGrid />
 	<!-- <Bestsellers /> Temporarily hidden -->
 	<InstagramFeed />

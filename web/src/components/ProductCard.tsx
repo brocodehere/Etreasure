@@ -40,12 +40,17 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     <div className="bg-white rounded-2xl shadow-lg overflow-hidden group hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-1 border border-gray-100">
       {/* Product Image */}
       <div className="relative h-72 overflow-hidden bg-gray-50">
-        <img
-          src={product.image_url || '/images/placeholder-product.jpg'}
-          alt={product.title}
-          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-          loading="lazy"
-        />
+        <a 
+          href={`/product/${product.slug}`}
+          className="block w-full h-full"
+        >
+          <img
+            src={product.image_url || '/images/placeholder-product.jpg'}
+            alt={product.title}
+            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+            loading="lazy"
+          />
+        </a>
         
         {/* Overlay on hover */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>

@@ -3,54 +3,57 @@ import Layout from '../../layouts/Layout.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 
-export async function getStaticPaths() {
-  const API_URL = import.meta.env.PUBLIC_API_URL || 'https://etreasure-1.onrender.com';
-  
-  try {
-    const response = await fetch(`${API_URL}/api/products`);
-    if (response.ok) {
-      const data = await response.json();
-      const products = data.items || [];
-      
-      return products.map((product: any) => ({
-        params: { 
-          id: product.slug || product.id || product.uuid_id 
-        },
-        props: { 
-          product: product 
-        }
-      }));
-    }
-  } catch (error) {
-    console.error('Failed to fetch products for static paths:', error);
-  }
-  
-  // Fallback paths
-  return [
-    { params: { id: 'sample-product-1' } },
-    { params: { id: 'sample-product-2' } },
-    { params: { id: 'sample-product-3' } }
-  ];
-}
-
 const { id } = Astro.params;
-const { product: staticProduct } = Astro.props;
 
-// Fetch product details (for dynamic fallback)
-let product = staticProduct;
-if (!product) {
-  const API_URL = import.meta.env.PUBLIC_API_URL || 'https://etreasure-1.onrender.com';
-  try {
-    const response = await fetch(`${API_URL}/api/products/${id}`);
-    if (response.ok) {
-      product = await response.json();
+// Fetch product details dynamically at runtime
+let product = null;
+// Use absolute URL for server-side rendering with proper URL encoding
+const API_URL = 'https://etreasure-1.onrender.com';
+const encodedId = encodeURIComponent(id);
+const fullUrl = `${API_URL}/api/products/${encodedId}?t=${Date.now()}`;
+console.log('Full API URL:', fullUrl);
+
+try {
+  const response = await fetch(fullUrl, {
+    headers: {
+      'Cache-Control': 'no-cache',
+      'Pragma': 'no-cache'
     }
-  } catch (error) {
-    console.error('Failed to fetch product details:', error);
+  });
+  console.log('Response status:', response.status);
+  if (response.ok) {
+    const data = await response.json();
+    console.log('API Response:', data); // Debug logging
+    console.log('Images array:', data.images); // Debug images specifically
+    console.log('Images array length:', data.images?.length || 0); // Debug images count
+    console.log('Images array type:', typeof data.images); // Debug images type
+    // Transform the API response to match expected format
+    product = {
+      uuid_id: data.id,
+      slug: data.slug,
+      title: data.title,
+      subtitle: data.subtitle,
+      description: data.description,
+      price_cents: data.price_cents,
+      currency: data.currency,
+      availability: data.availability,
+      hero_image: data.hero_image,
+      images: data.images || [], // Multiple images array
+      // Add fallback fields for compatibility
+      name: data.title,
+      image: data.hero_image?.url,
+      image_url: data.hero_image?.url,
+      published: true, // PublicGet only returns published products
+    };
+    console.log('Transformed product data:', product); // Debug transformed data
+    console.log('Transformed images array:', product.images); // Debug transformed images
+    console.log('Transformed images length:', product.images.length); // Debug transformed images count
   }
+} catch (error) {
+  console.error('Failed to fetch product details:', error);
 }
 
-// If no product found, show 404
+// If no product found, redirect to shop
 if (!product) {
   return Astro.redirect('/shop');
 }
@@ -164,7 +167,7 @@ const structuredData = [productSchema, breadcrumbSchema];
           >
             <img 
               id="main-image"
-              src={product.image_url || product.image} 
+              src={(product.images && product.images.length > 0) ? product.images[0].url : (product.image_url || product.image || '/images/placeholder.jpg')} 
               alt={product.name || product.title}
               class="w-full h-full object-contain cursor-crosshair"
               loading="lazy"
@@ -186,7 +189,7 @@ const structuredData = [productSchema, breadcrumbSchema];
           >
             <img 
               id="zoom-image"
-              src={product.image_url || product.image}
+              src={(product.images && product.images.length > 0) ? product.images[0].url : (product.image_url || product.image || '/images/placeholder.jpg')}
               alt={product.name || product.title}
               class="w-full h-full object-cover"
             />
@@ -196,6 +199,37 @@ const structuredData = [productSchema, breadcrumbSchema];
           <div class="mt-4 text-center text-sm text-dark/60 lg:hidden">
             <p>Tap image to zoom in • Pinch to zoom • Double tap to reset</p>
           </div>
+
+          <!-- Thumbnail Gallery -->
+          {product.images && product.images.length > 1 && (
+            <div class="mt-6 grid grid-cols-4 gap-2">
+              {console.log('Rendering thumbnails for images:', product.images)}
+              {product.images.map((image, index) => (
+                <button
+                  type="button"
+                  class={`thumbnail-btn relative overflow-hidden rounded border-2 transition-all duration-200 ${
+                    index === 0 ? 'border-gold' : 'border-gray-200 hover:border-gold/60'
+                  }`}
+                  onclick={`switchMainImage('${image.url}', ${index})`}
+                  data-image-index={index}
+                >
+                  <img 
+                    src={image.url} 
+                    alt={`${product.name || product.title} - Image ${index + 1}`}
+                    class="w-full h-20 object-cover"
+                    loading="lazy"
+                    onError={(e) => console.error('Failed to load thumbnail:', image.url, e)}
+                  />
+                </button>
+              ))}
+            </div>
+          )}
+          {(!product.images || product.images.length <= 1) && (
+            <div class="mt-6 text-sm text-gray-500">
+              {console.log('No thumbnails to display. Images array:', product.images)}
+              No additional images available
+            </div>
+          )}
         </div>
       </div>
 
@@ -399,6 +433,31 @@ const structuredData = [productSchema, breadcrumbSchema];
   document.addEventListener('DOMContentLoaded', function() {
     const tabButtons = document.querySelectorAll('.tab-button');
     const tabContents = document.querySelectorAll('.tab-content');
+
+    // Image switching function
+    window.switchMainImage = function(imageUrl, index) {
+      const mainImage = document.getElementById('main-image');
+      const zoomImage = document.getElementById('zoom-image');
+      
+      if (mainImage) {
+        mainImage.src = imageUrl;
+      }
+      if (zoomImage) {
+        zoomImage.src = imageUrl;
+      }
+      
+      // Update thumbnail active states
+      const thumbnailBtns = document.querySelectorAll('.thumbnail-btn');
+      thumbnailBtns.forEach((btn, i) => {
+        if (i === index) {
+          btn.classList.remove('border-gray-200');
+          btn.classList.add('border-gold');
+        } else {
+          btn.classList.remove('border-gold');
+          btn.classList.add('border-gray-200');
+        }
+      });
+    };
 
     // Tab functionality
     tabButtons.forEach(button => {

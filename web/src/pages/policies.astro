@@ -1,0 +1,135 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { fetchContent } from '../lib/api';
+
+// Fetch all policy content
+const policySlugs = ['privacy-policy', 'terms-of-service', 'refund-policy', 'shipping-policy'];
+let policies = [];
+
+for (const slug of policySlugs) {
+  try {
+    const policy = await fetchContent(slug);
+    if (policy && policy.is_active) {
+      policies.push(policy);
+    }
+  } catch (error) {
+    console.error(`Failed to fetch policy ${slug}:`, error);
+  }
+}
+
+// Fallback content if no policies found
+const fallbackPolicies = [
+  {
+    title: 'Disclaimer & Privacy Policy',
+    slug: 'privacy-policy',
+    content: '<p>Your privacy is important to us. This policy outlines how we collect, use, and protect your information.</p>',
+    type: 'policy'
+  },
+  {
+    title: 'Terms & Conditions',
+    slug: 'terms-of-service', 
+    content: '<p>Terms and conditions governing the use of our website and services.</p>',
+    type: 'policy'
+  },
+  {
+    title: 'Return Policy',
+    slug: 'refund-policy',
+    content: '<p>Our return policy ensures customer satisfaction with every purchase.</p>',
+    type: 'policy'
+  },
+  {
+    title: 'Shipping Policy',
+    slug: 'shipping-policy',
+    content: '<p>Information about shipping methods, timelines, and costs.</p>',
+    type: 'policy'
+  }
+];
+
+const displayPolicies = policies.length > 0 ? policies : fallbackPolicies;
+---
+
+<Layout title="Policies - Ethnic Treasures">
+  <Header />
+  
+  <main class="min-h-screen bg-light">
+    <!-- Hero Section -->
+    <section class="bg-gradient-to-r from-dark to-dark/90 text-white py-20">
+      <div class="container mx-auto px-4 text-center">
+        <h1 class="font-playfair text-4xl md:text-5xl font-bold mb-4 text-gold">Our Policies</h1>
+        <p class="text-lg text-white/90 max-w-2xl mx-auto">
+          Transparency and trust are the foundation of our relationship with customers. 
+          Read our policies to understand how we operate.
+        </p>
+      </div>
+    </section>
+
+    <!-- Policies List -->
+    <section class="py-16">
+      <div class="container mx-auto px-4">
+        <div class="max-w-4xl mx-auto">
+          <div class="grid gap-8">
+            {
+              displayPolicies.map((policy) => (
+                <div class="bg-white rounded-lg shadow-lg p-8 hover:shadow-xl transition-shadow duration-300">
+                  <div class="flex items-start justify-between mb-4">
+                    <h2 class="font-playfair text-2xl font-semibold text-dark">{policy.title}</h2>
+                    <a 
+                      href={`/${policy.slug}`} 
+                      class="bg-gold text-dark px-4 py-2 rounded-lg font-medium hover:bg-gold/90 transition-colors duration-200"
+                    >
+                      View Details
+                    </a>
+                  </div>
+                  <div class="prose prose-lg max-w-none text-gray-600">
+                    <div set:html={policy.content} />
+                  </div>
+                </div>
+              ))
+            }
+          </div>
+
+          {displayPolicies.length === 0 && (
+            <div class="text-center py-12">
+              <div class="text-gray-500">
+                <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <p class="text-xl font-semibold mb-2">No policies available</p>
+                <p class="text-sm">Please check back later or contact us for more information.</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section class="bg-gray-50 py-16">
+      <div class="container mx-auto px-4 text-center">
+        <h2 class="font-playfair text-3xl font-semibold text-dark mb-4">Have Questions?</h2>
+        <p class="text-gray-600 mb-8 max-w-2xl mx-auto">
+          If you have any questions about our policies or need clarification, 
+          please don't hesitate to reach out to our customer support team.
+        </p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+          <a 
+            href="/contact" 
+            class="bg-gold text-dark px-8 py-3 rounded-lg font-medium hover:bg-gold/90 transition-colors duration-200"
+          >
+            Contact Us
+          </a>
+          <a 
+            href="/faq" 
+            class="bg-dark text-white px-8 py-3 rounded-lg font-medium hover:bg-dark/90 transition-colors duration-200"
+          >
+            View FAQ
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <Footer />
+</Layout>
