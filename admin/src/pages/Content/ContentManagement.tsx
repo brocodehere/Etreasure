@@ -120,7 +120,7 @@ export default function ContentManagement() {
             </div>
             <div className="flex items-center space-x-4">
               <Link
-                to="/content/about/new"
+                to="/content/new"
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
               >
                 Add New Content

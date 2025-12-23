@@ -163,6 +163,7 @@ const ProductEditPageInner: React.FC = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
+  // All hooks must be called before any early returns
   const { data: prodData, isLoading: loadingProduct } = useQuery<ProductResponse>({
     queryKey: ['product', id],
     queryFn: () => {
@@ -191,6 +192,51 @@ const ProductEditPageInner: React.FC = () => {
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const payload: UpsertPayload = {
+        slug: slug || slugify(title),
+        title,
+        subtitle: subtitle || null,
+        description: description || null,
+        published,
+        publish_at: publishAt ? new Date(publishAt).toISOString() : null,
+        unpublish_at: unpublishAt ? new Date(unpublishAt).toISOString() : null,
+        variants,
+        category_id: categoryId || null,
+        images,
+      };
+      
+            
+      try {
+        if (isNew) {
+          const res = await api.post<{ uuid_id: string }>(`/products`, payload);
+          return res.uuid_id;
+        } else {
+          await api.put(`/products/${id}`, payload);
+          return Number(id);
+        }
+      } catch (err) {
+        console.error('Product save error:', err);
+        throw err;
+      }
+    },
+    onSuccess: (newId) => {
+      qc.invalidateQueries({ queryKey: ['products'] });
+      if (isNew) {
+        // Show success message first, then navigate after delay
+        showSuccessMessage('Product added successfully!');
+        setTimeout(() => {
+          navigate('/products');
+        }, 2000); // Navigate after 2 seconds
+      } else {
+        // Show success message for existing product updates
+        showSuccessMessage('Product updated successfully!');
+      }
+    },
+  });
+
+  // Effects and computed values
   useEffect(() => {
     if (prodData && id !== 'new') {
       const p = prodData.product;
@@ -282,50 +328,6 @@ const ProductEditPageInner: React.FC = () => {
       </div>
     );
   }
-
-  const saveMutation = useMutation({
-    mutationFn: async () => {
-      const payload: UpsertPayload = {
-        slug: slug || slugify(title),
-        title,
-        subtitle: subtitle || null,
-        description: description || null,
-        published,
-        publish_at: publishAt ? new Date(publishAt).toISOString() : null,
-        unpublish_at: unpublishAt ? new Date(unpublishAt).toISOString() : null,
-        variants,
-        category_id: categoryId || null,
-        images,
-      };
-      
-            
-      try {
-        if (isNew) {
-          const res = await api.post<{ uuid_id: string }>(`/products`, payload);
-          return res.uuid_id;
-        } else {
-          await api.put(`/products/${id}`, payload);
-          return Number(id);
-        }
-      } catch (err) {
-        console.error('Product save error:', err);
-        throw err;
-      }
-    },
-    onSuccess: (newId) => {
-      qc.invalidateQueries({ queryKey: ['products'] });
-      if (isNew) {
-        // Show success message first, then navigate after delay
-        showSuccessMessage('Product added successfully!');
-        setTimeout(() => {
-          navigate('/products');
-        }, 2000); // Navigate after 2 seconds
-      } else {
-        // Show success message for existing product updates
-        showSuccessMessage('Product updated successfully!');
-      }
-    },
-  });
 
   function handleCategoryChange(categoryUuid: string) {
     setCategoryId(categoryUuid);

@@ -77,6 +77,6 @@ export function getPublicImageUrl(path: string): string {
   }
   
   // Otherwise, assume it's an R2 path and use the public base URL
-  const publicBaseUrl = import.meta.env.VITE_R2_PUBLIC_BASE_URL || 'https://static.ethnictreasures.co.in';
+  const publicBaseUrl = import.meta.env.VITE_R2_PUBLIC_BASE_URL || 'https://pub-1a3924a6c6994107be6fe9f3ed794c0a.r2.dev';
   return `${publicBaseUrl}/${path}`;
 }
