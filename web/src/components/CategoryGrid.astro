@@ -2,22 +2,14 @@
 import { fetchCategories } from '../lib/api';
 
 // Fetch categories from API to get R2 images
-let featuredCategories = [];
+let allCategories = [];
 try {
   const categoriesData = await fetchCategories();
-  const allCategories = categoriesData.items || [];
-  
-  // Show only first 3 categories on homepage
-  featuredCategories = allCategories.slice(0, 3).map(category => ({
-    name: category.name,
-    image: category.image_url || getFallbackImage(category.name),
-    href: `/shop?category=${category.slug}`,
-    description: category.description || `Discover our ${category.name} collection`
-  }));
+  allCategories = categoriesData.items || [];
 } catch (error) {
   console.error('Failed to fetch categories on server:', error);
   // Fallback to static categories if API fails
-  featuredCategories = [
+  allCategories = [
     {
       name: "Hand Bags",
       image: "/images/categories/hand.webp",
@@ -35,9 +27,35 @@ try {
       image: "/images/categories/tote.webp", 
       href: "/shop?category=tote-bags",
       description: "Spacious and eco-friendly tote bags"
+    },
+    {
+      name: "Crochet Throws",
+      image: "/images/categories/enhanced_cohort.png",
+      href: "/shop?category=crochet-throws",
+      description: "Handcrafted crochet throws for cozy comfort"
+    },
+    {
+      name: "Embroidered Clutches",
+      image: "/images/categories/clutches.png",
+      href: "/shop?category=embroidered-clutches",
+      description: "Elegant embroidered clutches for special occasions"
+    },
+    {
+      name: "Baby Throw",
+      image: "/images/categories/baby.webp",
+      href: "/shop?category=baby-throw",
+      description: "Soft and gentle throws for baby comfort"
     }
   ];
 }
+
+// Transform categories to display format
+const displayCategories = allCategories.map(category => ({
+  name: category.name,
+  image: category.image_url || getFallbackImage(category.name),
+  href: `/shop?category=${category.slug}`,
+  description: category.description || `Discover our ${category.name} collection`
+}));
 
 // Fallback image function
 function getFallbackImage(categoryName) {
@@ -74,59 +92,75 @@ function getFallbackImage(categoryName) {
       </p>
     </div>
 
-    <!-- Category Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-      {featuredCategories.map((category, index) => (
-        <a 
-          href={category.href}
-          class="group relative overflow-hidden rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-700 transform hover:scale-105 animate-fade-up"
-          style={`animation-delay: ${index * 0.15}s;`}
-        >
-          <!-- Category Card Container -->
-          <div class="relative h-72 overflow-hidden bg-white">
-            <!-- Image with Enhanced Effects -->
-            <div class="relative w-full h-full">
-              <picture>
-                <source srcset={category.image} type="image/webp">
-                <source srcset={category.image.replace('.webp', '.png')} type="image/png">
-                <img 
-                  src={category.image}
-                  alt={category.name}
-                  class="w-full h-full object-cover transition-all duration-700 group-hover:scale-110 group-hover:brightness-110"
-                  loading="lazy"
-                />
-              </picture>
-              
-              <!-- Overlay Gradient -->
-              <div class="absolute inset-0 bg-gradient-to-t from-maroon/90 via-maroon/40 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
-              
-              <!-- Hover Content -->
-              <div class="absolute bottom-0 left-0 right-0 p-6 text-white transform translate-y-full group-hover:translate-y-0 transition-transform duration-500">
-                <p class="text-sm md:text-base mb-3 leading-relaxed">{category.description}</p>
-                <div class="flex items-center justify-between">
-                  <span class="text-gold font-semibold text-sm md:text-base flex items-center gap-2">
-                    Shop Now 
-                    <svg class="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                    </svg>
-                  </span>
+    <!-- Category Slider -->
+    <div class="relative overflow-hidden mb-12">
+      <div class="flex transition-transform duration-1000 ease-in-out" id="categorySlider">
+        {displayCategories.map((category, index) => (
+          <div class="w-full md:w-1/3 flex-shrink-0 px-4">
+            <a 
+              href={category.href}
+              class="group relative overflow-hidden rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-700 transform hover:scale-105"
+            >
+              <!-- Category Card Container -->
+              <div class="relative h-72 overflow-hidden bg-white">
+                <!-- Image with Enhanced Effects -->
+                <div class="relative w-full h-full">
+                  <picture>
+                    <source srcset={category.image} type="image/webp">
+                    <source srcset={category.image.replace('.webp', '.png')} type="image/png">
+                    <img 
+                      src={category.image}
+                      alt={category.name}
+                      class="w-full h-full object-cover transition-all duration-700 group-hover:scale-110 group-hover:brightness-110"
+                      loading="lazy"
+                    />
+                  </picture>
+                  
+                  <!-- Overlay Gradient -->
+                  <div class="absolute inset-0 bg-gradient-to-t from-maroon/90 via-maroon/40 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
+                  
+                  <!-- Hover Content -->
+                  <div class="absolute bottom-0 left-0 right-0 p-6 text-white transform translate-y-full group-hover:translate-y-0 transition-transform duration-500">
+                    <p class="text-sm md:text-base mb-3 leading-relaxed">{category.description}</p>
+                    <div class="flex items-center justify-between">
+                      <span class="text-gold font-semibold text-sm md:text-base flex items-center gap-2">
+                        Shop Now 
+                        <svg class="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                      </span>
+                    </div>
+                  </div>
                 </div>
+                
+                <!-- Category Badge -->
+                <div class="absolute top-4 left-4 bg-gradient-to-r from-gold to-gold/80 text-maroon px-4 py-2 rounded-full font-semibold text-sm md:text-base shadow-lg backdrop-blur-sm transform group-hover:scale-110 transition-transform duration-300">
+                  {category.name}
+                </div>
+                
+                <!-- Decorative Corner Accent -->
+                <div class="absolute top-2 right-2 w-8 h-8 border-t-2 border-r-2 border-gold/50 transform rotate-45 group-hover:scale-150 transition-transform duration-500"></div>
               </div>
-            </div>
-            
-            <!-- Category Badge -->
-            <div class="absolute top-4 left-4 bg-gradient-to-r from-gold to-gold/80 text-maroon px-4 py-2 rounded-full font-semibold text-sm md:text-base shadow-lg backdrop-blur-sm transform group-hover:scale-110 transition-transform duration-300">
-              {category.name}
-            </div>
-            
-            <!-- Decorative Corner Accent -->
-            <div class="absolute top-2 right-2 w-8 h-8 border-t-2 border-r-2 border-gold/50 transform rotate-45 group-hover:scale-150 transition-transform duration-500"></div>
+              
+              <!-- Card Border Effect -->
+              <div class="absolute inset-0 rounded-2xl border-2 border-transparent group-hover:border-gold/50 transition-all duration-500 pointer-events-none"></div>
+            </a>
           </div>
-          
-          <!-- Card Border Effect -->
-          <div class="absolute inset-0 rounded-2xl border-2 border-transparent group-hover:border-gold/50 transition-all duration-500 pointer-events-none"></div>
-        </a>
-      ))}
+        ))}
+      </div>
+      
+      <!-- Slider Navigation Dots -->
+      {displayCategories.length > 3 && (
+        <div class="flex justify-center mt-6 space-x-2" id="sliderDots">
+          {displayCategories.map((_, index) => (
+            <button 
+              class={`w-2 h-2 rounded-full transition-all duration-300 ${index === 0 ? 'bg-maroon w-8' : 'bg-gray-300'}`}
+              onclick={`goToSlide(${index})`}
+              data-slide={index}
+            ></button>
+          ))}
+        </div>
+      )}
     </div>
     
     <!-- View All Button -->
@@ -143,3 +177,101 @@ function getFallbackImage(categoryName) {
     </div>
   </div>
 </section>
+
+<script define:vars={{ totalCategories: displayCategories.length }}>
+  // Category slider functionality
+  let currentSlide = 0;
+  const totalSlides = totalCategories;
+  const slidesPerView = 3; // Show 3 categories at a time on desktop
+  const slideInterval = 3000; // 3 seconds
+  
+  function goToSlide(slideIndex) {
+    const slider = document.getElementById('categorySlider');
+    const maxSlide = Math.max(0, totalSlides - slidesPerView);
+    
+    // Ensure slideIndex is within bounds
+    if (slideIndex < 0) slideIndex = maxSlide;
+    if (slideIndex > maxSlide) slideIndex = 0;
+    
+    currentSlide = slideIndex;
+    
+    // Calculate translate value
+    const translateValue = -(currentSlide * (100 / slidesPerView));
+    slider.style.transform = `translateX(${translateValue}%)`;
+    
+    // Update dots
+    updateDots();
+  }
+  
+  function nextSlide() {
+    const maxSlide = Math.max(0, totalSlides - slidesPerView);
+    goToSlide(currentSlide >= maxSlide ? 0 : currentSlide + 1);
+  }
+  
+  function updateDots() {
+    const dots = document.querySelectorAll('#sliderDots button');
+    dots.forEach((dot, index) => {
+      if (index === currentSlide) {
+        dot.classList.remove('bg-gray-300');
+        dot.classList.add('bg-maroon', 'w-8');
+      } else {
+        dot.classList.remove('bg-maroon', 'w-8');
+        dot.classList.add('bg-gray-300');
+      }
+    });
+  }
+  
+  // Auto-slide functionality
+  let autoSlideInterval;
+  
+  function startAutoSlide() {
+    console.log('Starting auto-slide, totalSlides:', totalSlides, 'slidesPerView:', slidesPerView);
+    if (totalSlides > slidesPerView) {
+      autoSlideInterval = setInterval(() => {
+        console.log('Auto-slide triggered, currentSlide:', currentSlide);
+        nextSlide();
+      }, slideInterval);
+      console.log('Auto-slide interval set');
+    } else {
+      console.log('Auto-slide not started - not enough slides');
+    }
+  }
+  
+  function stopAutoSlide() {
+    if (autoSlideInterval) {
+      clearInterval(autoSlideInterval);
+    }
+  }
+  
+  // Initialize on page load
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log('Slider initializing with totalSlides:', totalSlides, 'slidesPerView:', slidesPerView);
+    
+    if (totalSlides > 0) {
+      // Wait a bit for DOM to be fully ready
+      setTimeout(() => {
+        const slider = document.getElementById('categorySlider');
+        console.log('Slider element found:', slider);
+        
+        if (slider) {
+          goToSlide(0);
+          startAutoSlide();
+          console.log('Auto-slide started');
+          
+          // Pause auto-slide on hover
+          const sliderContainer = document.querySelector('.relative.overflow-hidden');
+          if (sliderContainer) {
+            sliderContainer.addEventListener('mouseenter', stopAutoSlide);
+            sliderContainer.addEventListener('mouseleave', startAutoSlide);
+            console.log('Hover events attached');
+          }
+        } else {
+          console.error('Slider element not found');
+        }
+      }, 100);
+    }
+  });
+  
+  // Make function globally available for onclick handlers
+  window.goToSlide = goToSlide;
+</script>
