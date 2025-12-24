@@ -7,9 +7,6 @@ import react from '@astrojs/react';
 // https://astro.build/config
 export default defineConfig({
   integrations: [
-    node({
-      mode: 'standalone'
-    }),
     tailwind(),
     react()
   ],
@@ -23,25 +20,34 @@ export default defineConfig({
 
   // ✅ Vite config (safe + minimal)
   vite: {
-    resolve: {
-      alias: {
-        '@lib': '/src/lib',
-        '@components': '/src/components',
-      },
+  resolve: {
+    alias: {
+      '@lib': '/src/lib',
+      '@components': '/src/components',
     },
-
-    // ✅ Dev-only API proxy (ignored in build)
-    server: {
-      proxy: {
-        '/api': {
-          target: 'https://etreasure-1.onrender.com',
-          changeOrigin: true,
-          secure: false,
-        },
+  },
+  optimizeDeps: {
+    force: false,  // Changed from true to false
+    include: ['react', 'react-dom'],
+  },
+  esbuild: {
+    target: 'es2015',  // Add this line
+  },
+  build: {
+    rollupOptions: {
+      external: [],  // Add this line
+    },
+  },
+  server: {
+    proxy: {
+      '/api': {
+        target: 'https://etreasure-1.onrender.com',
+        changeOrigin: true,
+        secure: false,
       },
     },
   },
-
+},
   // ✅ Image service (safe)
   image: {
     service: {
