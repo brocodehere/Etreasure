@@ -23,8 +23,7 @@ const CategoriesGrid: React.FC<CategoriesGridProps> = ({ initialCategories = [] 
         const data = await fetchCategories();
         setCategories(data.items);
       } catch (err) {
-        console.error('Failed to fetch categories:', err);
-        setError('Failed to load categories');
+                setError('Failed to load categories');
       } finally {
         setLoading(false);
       }

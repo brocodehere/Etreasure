@@ -30,8 +30,7 @@ try {
   policyData = await fetchContent(policy);
 } catch (err) {
   error = err;
-  console.error(`Failed to fetch policy ${policy}:`, err);
-}
+  }
 
 // Fallback content for different policy types
 const fallbackContent = {

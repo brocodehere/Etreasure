@@ -25,8 +25,6 @@ const DynamicProductGrid: React.FC = () => {
         const data = await fetchProducts({ page: 1, limit: 20 });
         setProducts(data.items || []);
       } catch (err) {
-        console.error('Failed to fetch products:', err);
-        setError('Failed to load products');
       } finally {
         setLoading(false);
       }

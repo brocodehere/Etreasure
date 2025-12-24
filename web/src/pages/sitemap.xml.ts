@@ -107,8 +107,7 @@ export const GET: APIRoute = async ({ site }) => {
     }
 
   } catch (error) {
-    console.error('Error fetching dynamic data for sitemap:', error);
-    // Continue with static pages only if API fails
+        // Continue with static pages only if API fails
   }
 
   sitemap.push('</urlset>');

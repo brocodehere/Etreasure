@@ -8,7 +8,9 @@ interface BannerContainerProps {
   slideInterval?: number;
   fallbackBanners?: Array<{
     id: string;
-    image: string;
+    desktop_image_url: string;
+    laptop_image_url: string;
+    mobile_image_url: string;
     link?: string;
     alt?: string;
   }>;

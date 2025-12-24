@@ -38,8 +38,7 @@ async function getInitialData() {
     
     return { categories, products, initialCategory: category, initialPage: page };
   } catch (error) {
-    console.error('Failed to fetch initial data:', error);
-    return { categories: { items: [] }, products: { items: [], total: 0 }, initialCategory: '', initialPage: 1 };
+        return { categories: { items: [] }, products: { items: [], total: 0 }, initialCategory: '', initialPage: 1 };
   }
 }
 

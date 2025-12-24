@@ -40,7 +40,6 @@ export default function LoginForm() {
 
       window.location.href = '/account/dashboard';
     } catch (err) {
-      console.error(err);
       setError('Login failed. Please try again.');
     } finally {
       setSubmitting(false);
@@ -70,7 +69,6 @@ export default function LoginForm() {
       }
       setInfo('If this email exists, we have sent a reset code. Please check your inbox.');
     } catch (err) {
-      console.error(err);
       setError('Could not start password reset. Please try again.');
     }
   };

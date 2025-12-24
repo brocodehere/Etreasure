@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 
 interface Banner {
   id: string;
-  image: string;
+  desktop_image_url: string;
+  laptop_image_url: string;
+  mobile_image_url: string;
   link?: string;
   alt?: string;
 }
@@ -11,7 +13,9 @@ interface BannerAPIResponse {
   items: Array<{
     id: string;
     title: string;
-    image_url: string;
+    desktop_image_url: string;
+    laptop_image_url: string;
+    mobile_image_url: string;
     link_url?: string | null;
     is_active: boolean;
     sort_order: number;
@@ -61,11 +65,13 @@ const useBannerAPI = (apiUrl: string) => {
 
       // Transform API response to our component format
       const transformedBanners = data.items
-        .filter(banner => banner.is_active && banner.image_url)
+        .filter(banner => banner.is_active && (banner.desktop_image_url || banner.laptop_image_url || banner.mobile_image_url))
         .sort((a, b) => a.sort_order - b.sort_order)
         .map(banner => ({
           id: banner.id,
-          image: banner.image_url,
+          desktop_image_url: banner.desktop_image_url || '',
+          laptop_image_url: banner.laptop_image_url || '',
+          mobile_image_url: banner.mobile_image_url || '',
           link: banner.link_url || undefined,
           alt: banner.title || `Banner ${banner.id}`
         }));
@@ -74,7 +80,6 @@ const useBannerAPI = (apiUrl: string) => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
       setError(errorMessage);
-      console.error('Error fetching banners:', err);
     } finally {
       setLoading(false);
     }

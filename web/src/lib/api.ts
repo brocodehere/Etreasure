@@ -457,7 +457,6 @@ export async function fetchContent(slug: string): Promise<ContentPage | null> {
     }
     return await response.json();
   } catch (error) {
-    console.error(`Error fetching content for slug "${slug}":`, error);
     return null;
   }
 }
@@ -467,12 +466,10 @@ export async function fetchOffers(): Promise<OffersResponse> {
   try {
     const response = await fetch(`${API_BASE_URL}/api/public/offers`);
     if (!response.ok) {
-      console.warn(`Failed to fetch offers: ${response.statusText} - returning empty data`);
-      return { items: [], total: 0, page: 1, limit: 50 };
+            return { items: [], total: 0, page: 1, limit: 50 };
     }
     return await response.json();
   } catch (error) {
-    console.error('Error fetching offers:', error);
     // Return empty data instead of throwing error to prevent build failures
     return { items: [], total: 0, page: 1, limit: 50 };
   }

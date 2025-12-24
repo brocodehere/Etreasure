@@ -24,8 +24,7 @@
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Failed to subscribe: ${response.statusText}`);
-      }
+        throw new Error(errorData.error);
 
       return await response.json();
     }
@@ -57,7 +56,6 @@
           showSuccess(response.message || 'Thank you for subscribing! Check your email for confirmation.');
           newsletterForm.reset();
         } catch (error) {
-          console.error('Newsletter subscription error:', error);
           const errorMessage = error instanceof Error ? error.message : 'Failed to subscribe. Please try again.';
           showError(errorMessage);
         } finally {

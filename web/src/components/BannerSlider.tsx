@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 
 interface Banner {
   id: string;
-  image: string;
+  desktop_image_url: string;
+  laptop_image_url: string;
+  mobile_image_url: string;
   link?: string;
-  alt?: string;
 }
 
 interface BannerSliderProps {
@@ -53,7 +54,7 @@ const BannerSlider: React.FC<BannerSliderProps> = ({
 
   if (isLoading) {
     return (
-      <div className="relative w-full h-[70vh] bg-gray-200 animate-pulse">
+      <div className="relative w-full bg-gray-200 animate-pulse h-[70vh] min-h-[192px] sm:min-h-[224px] md:min-h-[256px]">
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-gray-400">Loading banners...</div>
         </div>
@@ -63,7 +64,7 @@ const BannerSlider: React.FC<BannerSliderProps> = ({
 
   if (!banners || banners.length === 0) {
     return (
-      <div className="relative w-full h-[70vh] bg-gray-100 flex items-center justify-center">
+      <div className="relative w-full bg-gray-100 flex items-center justify-center h-[70vh] min-h-[192px] sm:min-h-[224px] md:min-h-[256px]">
         <div className="text-gray-500">No banners available</div>
       </div>
     );
@@ -74,17 +75,30 @@ const BannerSlider: React.FC<BannerSliderProps> = ({
   return (
     <div className="relative w-full overflow-hidden z-10 pt-0">
       {/* Banner Container */}
-      <div className="relative w-full h-[70vh] ">
+      <div className="relative w-full h-[70vh] min-h-[192px] sm:min-h-[224px] md:min-h-[256px]">
         <div className="relative w-full h-full">
-          {/* Banner Image */}
-          <img
-            src={currentBanner.image}
-            alt={currentBanner.alt || `Banner ${currentIndex + 1}`}
-            className="w-full h-full object-cover"
-            style={{
-              objectPosition: 'center',
-            }}
-          />
+          {/* Banner Image - Responsive with different images for different screen sizes */}
+          <picture>
+            {/* Desktop image (1024px and above) */}
+            <source 
+              media="(min-width: 1024px)" 
+              srcSet={currentBanner.desktop_image_url || currentBanner.mobile_image_url || 'https://pub-1a3924a6c6994107be6fe9f3ed794c0a.r2.dev/banner-placeholder.webp'}
+            />
+            {/* Laptop image (768px to 1023px) */}
+            <source 
+              media="(min-width: 768px) and (max-width: 1023px)" 
+              srcSet={currentBanner.laptop_image_url || currentBanner.desktop_image_url || currentBanner.mobile_image_url || 'https://pub-1a3924a6c6994107be6fe9f3ed794c0a.r2.dev/banner-placeholder.webp'}
+            />
+            {/* Mobile image (below 768px) */}
+            <img
+              src={currentBanner.mobile_image_url || currentBanner.desktop_image_url || 'https://pub-1a3924a6c6994107be6fe9f3ed794c0a.r2.dev/banner-placeholder.webp'}
+              alt={`Banner ${currentIndex + 1}`}
+              className="w-full h-full object-fit"
+              style={{
+                objectPosition: 'center',
+              }}
+            />
+          </picture>
           
           {/* Optional overlay for better text visibility */}
           <div className="absolute inset-0 bg-black bg-opacity-0 pointer-events-none" />

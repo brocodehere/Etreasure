@@ -13,7 +13,6 @@ async function updateWishlistCount() {
             }
         }
     } catch (error) {
-        console.error('Error updating wishlist count:', error);
     }
 }
 
@@ -30,7 +29,6 @@ async function removeFromWishlist(productId) {
         updateWishlistCount();
         renderWishlist();
     } catch (error) {
-        console.error('Error removing from wishlist:', error);
         alert('Failed to remove from wishlist');
     }
 }
@@ -53,7 +51,6 @@ async function addToCartFromWishlist(productId, title, price, imageUrl) {
         // Show notification
         alert(`${title} added to cart!`);
     } catch (error) {
-        console.error('Error adding to cart:', error);
         alert('Failed to add to cart');
     }
 }
@@ -70,7 +67,6 @@ async function updateCartCount() {
             }
         }
     } catch (error) {
-        console.error('Error updating cart count:', error);
     }
 }
 

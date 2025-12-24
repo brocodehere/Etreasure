@@ -35,7 +35,6 @@ export async function subscribeToNewsletter(email: string): Promise<NewsletterRe
 
     return await response.json();
   } catch (error) {
-    console.error('Newsletter subscription error:', error);
     throw error;
   }
 }

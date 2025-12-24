@@ -639,7 +639,6 @@ const structuredData = [productSchema, breadcrumbSchema];
         
         const button = document.getElementById('add-to-cart-btn');
         if (!button) {
-          console.error('Add to Cart button not found!');
           return;
         }
         
@@ -715,11 +714,9 @@ const structuredData = [productSchema, breadcrumbSchema];
             
           } else {
             const errorText = await cartResponse.text();
-            console.error('Cart API Error Response:', errorText);
             throw new Error(`Failed to add product to cart. Status: ${cartResponse.status}`);
           }
         } catch (error) {
-          console.error('API failed, using localStorage fallback:', error);
           showError('Failed to add product to cart. Using offline mode.');
           
           // Fallback to localStorage - create product object from available data
@@ -782,7 +779,6 @@ const structuredData = [productSchema, breadcrumbSchema];
         const icon = document.getElementById('wishlist-icon');
         
         if (!button || !icon) {
-          console.error('Wishlist button or icon not found!');
           return;
         }
         
@@ -868,11 +864,9 @@ const structuredData = [productSchema, breadcrumbSchema];
             
           } else {
             const errorText = await response.text();
-            console.error('Wishlist API Error Response:', errorText);
             throw new Error(`Failed to update wishlist. Status: ${response.status}`);
           }
         } catch (error) {
-          console.error('Wishlist toggle failed:', error);
           showError('Failed to update wishlist. Please try again.');
         } finally {
           // Reset button state

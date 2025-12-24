@@ -50,7 +50,6 @@ export default function SignupForm() {
 
       window.location.href = '/account/dashboard';
     } catch (err) {
-      console.error(err);
       setError('Signup failed. Please try again.');
     } finally {
       setSubmitting(false);

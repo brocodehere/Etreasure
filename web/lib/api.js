@@ -21,8 +21,7 @@ export const api = {
         const data = await postJSON('/api/products/search', { query });
         return data.items ?? data;
       } catch (err) {
-        console.error('Product search failed', err);
-        return [];
+                return [];
       }
     },
   },

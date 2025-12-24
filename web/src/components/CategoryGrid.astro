@@ -7,8 +7,7 @@ try {
   const categoriesData = await fetchCategories();
   allCategories = categoriesData.items || [];
 } catch (error) {
-  console.error('Failed to fetch categories on server:', error);
-  // Fallback to static categories if API fails
+    // Fallback to static categories if API fails
   allCategories = [
     {
       name: "Hand Bags",
@@ -256,15 +255,11 @@ function getFallbackImage(categoryName) {
   let autoSlideInterval;
   
   function startAutoSlide() {
-    console.log('Starting auto-slide, totalSlides:', totalSlides, 'slidesPerView:', slidesPerView);
     if (totalSlides > slidesPerView) {
       autoSlideInterval = setInterval(() => {
-        console.log('Auto-slide triggered, currentSlide:', currentSlide);
         nextSlide();
       }, slideInterval);
-      console.log('Auto-slide interval set');
     } else {
-      console.log('Auto-slide not started - not enough slides');
     }
   }
   
@@ -279,28 +274,22 @@ function getFallbackImage(categoryName) {
     // Update slides per view based on current screen size
     updateSlidesPerView();
     
-    console.log('Slider initializing with totalSlides:', totalSlides, 'slidesPerView:', slidesPerView);
     
     if (totalSlides > 0) {
       // Wait a bit for DOM to be fully ready
       setTimeout(() => {
         const slider = document.getElementById('categorySlider');
-        console.log('Slider element found:', slider);
         
         if (slider) {
           goToSlide(0);
           startAutoSlide();
-          console.log('Auto-slide started');
           
           // Pause auto-slide on hover
           const sliderContainer = document.querySelector('.relative.overflow-hidden');
           if (sliderContainer) {
             sliderContainer.addEventListener('mouseenter', stopAutoSlide);
             sliderContainer.addEventListener('mouseleave', startAutoSlide);
-            console.log('Hover events attached');
           }
-        } else {
-          console.error('Slider element not found');
         }
       }, 100);
     }

@@ -110,8 +110,7 @@ const PUBLIC_API = import.meta.env.PUBLIC_API_URL || '';
           suggestionsDropdown && suggestionsDropdown.classList.remove('hidden');
           searchInput.setAttribute('aria-expanded', 'true');
         } catch (error) {
-          console.error('Search suggest failed:', error);
-          suggestionsDropdown && suggestionsDropdown.classList.add('hidden');
+                    suggestionsDropdown && suggestionsDropdown.classList.add('hidden');
         }
       }
 

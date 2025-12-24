@@ -1,3 +1,5 @@
+/// <reference path="../env.d.ts" />
+
 export interface Banner {
   id: string;
   title: string;
@@ -25,7 +27,6 @@ export async function fetchBanners(): Promise<BannerResponse> {
     }
     return await response.json();
   } catch (error) {
-    console.error('Error fetching banners:', error);
     // Return empty array on error to fallback to static images
     return { items: [] };
   }
