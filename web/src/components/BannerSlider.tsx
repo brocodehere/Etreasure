@@ -53,7 +53,7 @@ const BannerSlider: React.FC<BannerSliderProps> = ({
 
   if (isLoading) {
     return (
-      <div className="relative w-full h-48 sm:h-56 md:h-64 lg:h-[60vh] xl:h-[60vh] bg-gray-200 animate-pulse">
+      <div className="relative w-full h-[70vh] bg-gray-200 animate-pulse">
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-gray-400">Loading banners...</div>
         </div>
@@ -63,7 +63,7 @@ const BannerSlider: React.FC<BannerSliderProps> = ({
 
   if (!banners || banners.length === 0) {
     return (
-      <div className="relative w-full h-48 sm:h-56 md:h-64 lg:h-[60vh] xl:h-[60vh] bg-gray-100 flex items-center justify-center">
+      <div className="relative w-full h-[70vh] bg-gray-100 flex items-center justify-center">
         <div className="text-gray-500">No banners available</div>
       </div>
     );
@@ -74,7 +74,7 @@ const BannerSlider: React.FC<BannerSliderProps> = ({
   return (
     <div className="relative w-full overflow-hidden z-10 pt-0">
       {/* Banner Container */}
-      <div className="relative w-full h-48 sm:h-56 md:h-64 lg:h-[60vh] xl:h-[60vh] bg-green-500">
+      <div className="relative w-full h-[70vh] ">
         <div className="relative w-full h-full">
           {/* Banner Image */}
           <img
