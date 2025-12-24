@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -124,8 +123,6 @@ func (h *Handler) ListOrders(c *gin.Context) {
 	cursor := c.Query("cursor")
 	shippingStatus := c.Query("shipping_status")
 
-	fmt.Printf("DEBUG: ListOrders called with shipping_status: %s\n", shippingStatus)
-
 	var cursorTime time.Time
 	if cursor != "" {
 		if parsed, err := time.Parse(time.RFC3339Nano, cursor); err == nil {
@@ -169,7 +166,6 @@ func (h *Handler) ListOrders(c *gin.Context) {
 		whereConditions = append(whereConditions, "shipping_status = $"+strconv.Itoa(argIdx))
 		args = append(args, shippingStatus)
 		argIdx++
-		fmt.Printf("DEBUG: Adding shipping_status filter: %s\n", shippingStatus)
 	}
 
 	// Build the complete query
@@ -179,9 +175,6 @@ func (h *Handler) ListOrders(c *gin.Context) {
 	}
 	query += " ORDER BY updated_at DESC LIMIT $" + strconv.Itoa(argIdx)
 	args = append(args, limit)
-
-	fmt.Printf("DEBUG: Final query: %s\n", query)
-	fmt.Printf("DEBUG: Query args: %v\n", args)
 
 	rows, err := h.DB.Query(c, query, args...)
 	if err != nil {
@@ -204,8 +197,6 @@ func (h *Handler) ListOrders(c *gin.Context) {
 			&o.Notes, &o.CreatedAt, &o.UpdatedAt,
 		)
 		if err != nil {
-			fmt.Printf("DEBUG: Scan error details - TotalPrice type: %T, Subtotal type: %T, TaxAmount type: %T, ShippingAmount type: %T\n",
-				&o.TotalPrice, &o.Subtotal, &o.TaxAmount, &o.ShippingAmount)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
@@ -563,7 +554,6 @@ func (h *Handler) DeleteOrder(c *gin.Context) {
 }
 
 func (h *Handler) loadOrderLineItems(c *gin.Context, orderID string) ([]OrderLineItem, error) {
-	fmt.Printf("DEBUG: Loading line items for order ID: %s\n", orderID)
 
 	// First, let's try to see what columns actually exist by trying a simple query
 	var testColumns []string
@@ -573,7 +563,6 @@ func (h *Handler) loadOrderLineItems(c *gin.Context, orderID string) ([]OrderLin
 		ORDER BY ordinal_position
 	`)
 	if err != nil {
-		fmt.Printf("DEBUG: Error getting column names: %v\n", err)
 		return nil, err
 	}
 	defer testRows.Close()
@@ -583,7 +572,6 @@ func (h *Handler) loadOrderLineItems(c *gin.Context, orderID string) ([]OrderLin
 		testRows.Scan(&col)
 		testColumns = append(testColumns, col)
 	}
-	fmt.Printf("DEBUG: Available columns in order_line_items: %v\n", testColumns)
 
 	// Try with correct column names (price, total)
 	rows, err := h.DB.Query(c, `
@@ -592,10 +580,8 @@ func (h *Handler) loadOrderLineItems(c *gin.Context, orderID string) ([]OrderLin
 		WHERE order_id = $1
 	`, orderID)
 	if err != nil {
-		fmt.Printf("DEBUG: Primary query failed: %v\n", err)
 		return nil, err
 	}
-	fmt.Printf("DEBUG: Using primary query with price, total columns\n")
 	defer rows.Close()
 
 	var items []OrderLineItem
@@ -609,7 +595,6 @@ func (h *Handler) loadOrderLineItems(c *gin.Context, orderID string) ([]OrderLin
 		err = rows.Scan(&li.ID, &li.OrderID, &li.ProductID, &variantID, &title, &sku,
 			&li.Quantity, &price, &total)
 		if err != nil {
-			fmt.Printf("DEBUG: Primary scan failed: %v\n", err)
 			return nil, err
 		}
 
@@ -619,10 +604,8 @@ func (h *Handler) loadOrderLineItems(c *gin.Context, orderID string) ([]OrderLin
 		li.Total = total
 		li.VariantID = variantID
 		items = append(items, li)
-		fmt.Printf("DEBUG: Added item - Title: %s, Price: %v, Total: %v\n", title, price, total)
 	}
 
-	fmt.Printf("DEBUG: Total items loaded: %d\n", len(items))
 	return items, nil
 }
 

@@ -186,11 +186,11 @@ func (m *Migrator) Status(ctx context.Context) error {
 	fmt.Println("\nMigration Status:")
 	fmt.Println("================")
 	for _, migration := range m.migrations {
-		status := "Pending"
 		if applied[migration.Version] {
-			status = "Applied"
+			fmt.Printf("%s - Applied\n", migration.Version)
+		} else {
+			fmt.Printf("%s - Pending\n", migration.Version)
 		}
-		fmt.Printf("%s - %s: %s\n", migration.Version, status, migration.Description)
 	}
 	fmt.Println()
 

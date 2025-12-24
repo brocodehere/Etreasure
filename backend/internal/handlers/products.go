@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -35,7 +34,7 @@ func (h *ProductsHandler) formatImageURL(imagePath *string) *string {
 	}
 	// If it's a local path starting with /uploads/, convert to full URL
 	if strings.HasPrefix(path, "/uploads/") {
-		url := "http://localhost:8080" + path
+		url := "https://etreasure-1.onrender.com" + path
 		return &url
 	}
 	// If it's already a full URL, keep as is
@@ -593,7 +592,6 @@ func (h *ProductsHandler) PublicGet(c *gin.Context) {
 	}
 
 	// Fetch all product images
-	fmt.Printf("DEBUG: Fetching images for product UUID: %s\n", p.UUIDID)
 	rows, err := h.DB.Query(ctx, `
 		SELECT m.path, pi.sort_order
 		FROM product_images pi
@@ -602,7 +600,6 @@ func (h *ProductsHandler) PublicGet(c *gin.Context) {
 		ORDER BY pi.sort_order, pi.media_id
 	`, p.UUIDID)
 	if err != nil && err != pgx.ErrNoRows {
-		fmt.Printf("DEBUG: Database query error: %v\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load images"})
 		return
 	}
@@ -614,17 +611,14 @@ func (h *ProductsHandler) PublicGet(c *gin.Context) {
 		var path string
 		var sortOrder int
 		if err := rows.Scan(&path, &sortOrder); err != nil {
-			fmt.Printf("DEBUG: Error scanning row: %v\n", err)
 			continue
 		}
 		imageCount++
-		fmt.Printf("DEBUG: Found image - Path: %s, Sort: %d\n", path, sortOrder)
 		images = append(images, gin.H{
 			"url":        h.formatImageURL(&path),
 			"sort_order": sortOrder,
 		})
 	}
-	fmt.Printf("DEBUG: Total images found: %d\n", imageCount)
 
 	// Get hero image (first image) for backward compatibility
 	var heroURL *string
@@ -637,7 +631,6 @@ func (h *ProductsHandler) PublicGet(c *gin.Context) {
 
 	// Projection support via fields query param
 	fieldsParam := c.Query("fields")
-	fmt.Printf("DEBUG: Fields parameter: '%s'\n", fieldsParam)
 	if fieldsParam == "" {
 		response := gin.H{
 			"id":           p.UUIDID,
@@ -652,7 +645,6 @@ func (h *ProductsHandler) PublicGet(c *gin.Context) {
 			},
 			"images": images,
 		}
-		fmt.Printf("DEBUG: Full API response - Images count: %d\n", len(images))
 		c.JSON(http.StatusOK, response)
 		return
 	}
@@ -664,7 +656,6 @@ func (h *ProductsHandler) PublicGet(c *gin.Context) {
 			requested[f] = true
 		}
 	}
-	fmt.Printf("DEBUG: Requested fields: %+v\n", requested)
 
 	resp := gin.H{}
 	if requested["id"] {
@@ -700,12 +691,9 @@ func (h *ProductsHandler) PublicGet(c *gin.Context) {
 	}
 	if requested["images"] {
 		resp["images"] = images
-		fmt.Printf("DEBUG: Added images to projection response: %d\n", len(images))
 	} else {
-		fmt.Printf("DEBUG: Images field not requested in projection\n")
 	}
 
-	fmt.Printf("DEBUG: Projection response keys: %+v\n", resp)
 	c.JSON(http.StatusOK, resp)
 }
 

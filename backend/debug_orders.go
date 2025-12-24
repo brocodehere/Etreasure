@@ -37,7 +37,6 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Printf("%-20s %-15s %-8s\n", columnName, dataType, isNullable)
 	}
 
 	// Test if we can select the price fields
@@ -58,7 +57,6 @@ func main() {
 
 	rows, err = db.Query(testQuery)
 	if err != nil {
-		fmt.Printf("ERROR: %v\n", err)
 		return
 	}
 	defer rows.Close()
@@ -70,10 +68,8 @@ func main() {
 		var totalPrice, subtotal, taxAmount, shippingAmount, discountAmount float64
 		err := rows.Scan(&id, &orderNumber, &totalPrice, &subtotal, &taxAmount, &shippingAmount, &discountAmount)
 		if err != nil {
-			fmt.Printf("Scan ERROR: %v\n", err)
 			return
 		}
-		fmt.Printf("ID: %s, Total: %.2f, Subtotal: %.2f\n", id, totalPrice, subtotal)
 		break
 	}
 }

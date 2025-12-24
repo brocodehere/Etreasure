@@ -25,37 +25,45 @@ type CreateNewsletterSubscriberRequest struct {
 }
 
 type Banner struct {
-	ID        uuid.UUID  `json:"id"`
-	Title     string     `json:"title"`
-	ImageKey  string     `json:"image_key"`
-	ImageURL  string     `json:"image_url"`
-	LinkURL   *string    `json:"link_url,omitempty"`
-	IsActive  bool       `json:"is_active"`
-	SortOrder int        `json:"sort_order"`
-	StartsAt  *time.Time `json:"starts_at,omitempty"`
-	EndsAt    *time.Time `json:"ends_at,omitempty"`
-	CreatedAt time.Time  `json:"created_at"`
-	UpdatedAt time.Time  `json:"updated_at"`
+	ID              uuid.UUID  `json:"id"`
+	Title           string     `json:"title"`
+	DesktopImageKey string     `json:"desktop_image_key"`
+	DesktopImageURL string     `json:"desktop_image_url"`
+	LaptopImageKey  string     `json:"laptop_image_key"`
+	LaptopImageURL  string     `json:"laptop_image_url"`
+	MobileImageKey  string     `json:"mobile_image_key"`
+	MobileImageURL  string     `json:"mobile_image_url"`
+	LinkURL         *string    `json:"link_url,omitempty"`
+	IsActive        bool       `json:"is_active"`
+	SortOrder       int        `json:"sort_order"`
+	StartsAt        *time.Time `json:"starts_at,omitempty"`
+	EndsAt          *time.Time `json:"ends_at,omitempty"`
+	CreatedAt       time.Time  `json:"created_at"`
+	UpdatedAt       time.Time  `json:"updated_at"`
 }
 
 type CreateBannerRequest struct {
-	Title     string     `json:"title" binding:"required"`
-	ImageURL  string     `json:"image_url" binding:"required"`
-	LinkURL   *string    `json:"link_url,omitempty"`
-	IsActive  bool       `json:"is_active"`
-	SortOrder int        `json:"sort_order"`
-	StartsAt  *time.Time `json:"starts_at,omitempty"`
-	EndsAt    *time.Time `json:"ends_at,omitempty"`
+	Title           string     `json:"title" binding:"required"`
+	DesktopImageURL string     `json:"desktop_image_url" binding:"required"`
+	LaptopImageURL  string     `json:"laptop_image_url"`
+	MobileImageURL  string     `json:"mobile_image_url"`
+	LinkURL         *string    `json:"link_url,omitempty"`
+	IsActive        bool       `json:"is_active"`
+	SortOrder       int        `json:"sort_order"`
+	StartsAt        *time.Time `json:"starts_at,omitempty"`
+	EndsAt          *time.Time `json:"ends_at,omitempty"`
 }
 
 type UpdateBannerRequest struct {
-	Title     *string    `json:"title"`
-	ImageURL  *string    `json:"image_url"`
-	LinkURL   *string    `json:"link_url"`
-	IsActive  *bool      `json:"is_active"`
-	SortOrder *int       `json:"sort_order"`
-	StartsAt  *time.Time `json:"starts_at"`
-	EndsAt    *time.Time `json:"ends_at"`
+	Title           *string    `json:"title"`
+	DesktopImageURL *string    `json:"desktop_image_url"`
+	LaptopImageURL  *string    `json:"laptop_image_url"`
+	MobileImageURL  *string    `json:"mobile_image_url"`
+	LinkURL         *string    `json:"link_url"`
+	IsActive        *bool      `json:"is_active"`
+	SortOrder       *int       `json:"sort_order"`
+	StartsAt        *time.Time `json:"starts_at"`
+	EndsAt          *time.Time `json:"ends_at"`
 }
 
 // ListPublicBanners returns active banners for the storefront
@@ -63,7 +71,8 @@ func (h *Handler) ListPublicBanners(c *gin.Context) {
 	now := time.Now().UTC()
 
 	query := `
-		SELECT id, title, image_url, link_url, is_active, sort_order, starts_at, ends_at, created_at, updated_at
+		SELECT id, title, link_url, is_active, sort_order, starts_at, ends_at, created_at, updated_at,
+		       desktop_image_url, laptop_image_url, mobile_image_url
 		FROM banners
 		WHERE is_active = true 
 			AND (starts_at IS NULL OR starts_at <= $1)
@@ -82,26 +91,31 @@ func (h *Handler) ListPublicBanners(c *gin.Context) {
 	var banners []Banner
 	for rows.Next() {
 		var b Banner
-		var imageKey string
-		err := rows.Scan(&b.ID, &b.Title, &imageKey, &b.LinkURL, &b.IsActive, &b.SortOrder, &b.StartsAt, &b.EndsAt, &b.CreatedAt, &b.UpdatedAt)
+		var desktopImageURL, laptopImageURL, mobileImageURL *string
+		err := rows.Scan(&b.ID, &b.Title, &b.LinkURL, &b.IsActive, &b.SortOrder, &b.StartsAt, &b.EndsAt, &b.CreatedAt, &b.UpdatedAt,
+			&desktopImageURL, &laptopImageURL, &mobileImageURL)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 
-		// Set image key and format image URL using ImageHelper
-		b.ImageKey = imageKey
-		if h.ImageHelper != nil {
-			formattedURL := h.ImageHelper.FormatImageURL(&imageKey)
-			if formattedURL != nil && *formattedURL != "" {
-				b.ImageURL = *formattedURL
-			} else {
-				// Use fallback image for banners
-				b.ImageURL = h.ImageHelper.GetFallbackImageURL("banner")
-			}
+		// Set image URLs with fallbacks
+		if desktopImageURL != nil && *desktopImageURL != "" {
+			b.DesktopImageURL = *desktopImageURL
 		} else {
-			// Fallback to static placeholder if no ImageHelper
-			b.ImageURL = "https://pub-1a3924a6c6994107be6fe9f3ed794c0a.r2.dev/banner-placeholder.webp"
+			b.DesktopImageURL = "https://pub-1a3924a6c6994107be6fe9f3ed794c0a.r2.dev/banner-placeholder.webp"
+		}
+
+		if laptopImageURL != nil && *laptopImageURL != "" {
+			b.LaptopImageURL = *laptopImageURL
+		} else {
+			b.LaptopImageURL = b.DesktopImageURL // Fallback to desktop
+		}
+
+		if mobileImageURL != nil && *mobileImageURL != "" {
+			b.MobileImageURL = *mobileImageURL
+		} else {
+			b.MobileImageURL = b.DesktopImageURL // Fallback to desktop
 		}
 
 		banners = append(banners, b)
@@ -158,7 +172,8 @@ func (h *Handler) ListBanners(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	query := `
-		SELECT id, title, image_url, link_url, is_active, sort_order, starts_at, ends_at, created_at, updated_at
+		SELECT id, title, link_url, is_active, sort_order, starts_at, ends_at, created_at, updated_at,
+		       desktop_image_url, laptop_image_url, mobile_image_url
 		FROM banners
 		ORDER BY sort_order ASC, created_at DESC
 	`
@@ -173,26 +188,31 @@ func (h *Handler) ListBanners(c *gin.Context) {
 	var banners []Banner
 	for rows.Next() {
 		var b Banner
-		var imageKey string
-		err := rows.Scan(&b.ID, &b.Title, &imageKey, &b.LinkURL, &b.IsActive, &b.SortOrder, &b.StartsAt, &b.EndsAt, &b.CreatedAt, &b.UpdatedAt)
+		var desktopImageURL, laptopImageURL, mobileImageURL *string
+		err := rows.Scan(&b.ID, &b.Title, &b.LinkURL, &b.IsActive, &b.SortOrder, &b.StartsAt, &b.EndsAt, &b.CreatedAt, &b.UpdatedAt,
+			&desktopImageURL, &laptopImageURL, &mobileImageURL)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 
-		// Set image key and format image URL using ImageHelper
-		b.ImageKey = imageKey
-		if h.ImageHelper != nil {
-			formattedURL := h.ImageHelper.FormatImageURL(&imageKey)
-			if formattedURL != nil && *formattedURL != "" {
-				b.ImageURL = *formattedURL
-			} else {
-				// Use fallback image for banners
-				b.ImageURL = h.ImageHelper.GetFallbackImageURL("banner")
-			}
+		// Set image URLs with fallbacks
+		if desktopImageURL != nil && *desktopImageURL != "" {
+			b.DesktopImageURL = *desktopImageURL
 		} else {
-			// Fallback to static placeholder if no ImageHelper
-			b.ImageURL = "https://pub-1a3924a6c6994107be6fe9f3ed794c0a.r2.dev/banner-placeholder.webp"
+			b.DesktopImageURL = "https://pub-1a3924a6c6994107be6fe9f3ed794c0a.r2.dev/banner-placeholder.webp"
+		}
+
+		if laptopImageURL != nil && *laptopImageURL != "" {
+			b.LaptopImageURL = *laptopImageURL
+		} else {
+			b.LaptopImageURL = b.DesktopImageURL // Fallback to desktop
+		}
+
+		if mobileImageURL != nil && *mobileImageURL != "" {
+			b.MobileImageURL = *mobileImageURL
+		} else {
+			b.MobileImageURL = b.DesktopImageURL // Fallback to desktop
 		}
 
 		banners = append(banners, b)
@@ -216,16 +236,18 @@ func (h *Handler) CreateBanner(c *gin.Context) {
 	bannerID := uuid.New()
 
 	query := `
-		INSERT INTO banners (id, title, image_url, link_url, is_active, sort_order, starts_at, ends_at, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-		RETURNING id, title, image_url, link_url, is_active, sort_order, starts_at, ends_at, created_at, updated_at
+		INSERT INTO banners (id, title, desktop_image_url, laptop_image_url, mobile_image_url, link_url, is_active, sort_order, starts_at, ends_at, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+		RETURNING id, title, desktop_image_url, laptop_image_url, mobile_image_url, link_url, is_active, sort_order, starts_at, ends_at, created_at, updated_at
 	`
 
 	var banner Banner
 	err := h.DB.QueryRow(ctx, query,
 		bannerID,
 		req.Title,
-		req.ImageURL,
+		req.DesktopImageURL,
+		req.LaptopImageURL,
+		req.MobileImageURL,
 		req.LinkURL,
 		req.IsActive,
 		req.SortOrder,
@@ -236,7 +258,9 @@ func (h *Handler) CreateBanner(c *gin.Context) {
 	).Scan(
 		&banner.ID,
 		&banner.Title,
-		&banner.ImageKey,
+		&banner.DesktopImageURL,
+		&banner.LaptopImageURL,
+		&banner.MobileImageURL,
 		&banner.LinkURL,
 		&banner.IsActive,
 		&banner.SortOrder,
@@ -249,18 +273,6 @@ func (h *Handler) CreateBanner(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create banner: " + err.Error()})
 		return
-	}
-
-	// Format image URL
-	if h.ImageHelper != nil {
-		formattedURL := h.ImageHelper.FormatImageURL(&banner.ImageKey)
-		if formattedURL != nil && *formattedURL != "" {
-			banner.ImageURL = *formattedURL
-		} else {
-			banner.ImageURL = h.ImageHelper.GetFallbackImageURL("banner")
-		}
-	} else {
-		banner.ImageURL = "https://pub-1a3924a6c6994107be6fe9f3ed794c0a.r2.dev/banner-placeholder.webp"
 	}
 
 	c.JSON(http.StatusCreated, banner)
@@ -277,16 +289,19 @@ func (h *Handler) GetBanner(c *gin.Context) {
 	}
 
 	query := `
-		SELECT id, title, image_url, link_url, is_active, sort_order, starts_at, ends_at, created_at, updated_at
+		SELECT id, title, desktop_image_url, laptop_image_url, mobile_image_url, link_url, is_active, sort_order, starts_at, ends_at, created_at, updated_at
 		FROM banners
 		WHERE id = $1
 	`
 
 	var banner Banner
+	var desktopImageURL, laptopImageURL, mobileImageURL *string
 	err = h.DB.QueryRow(ctx, query, idStr).Scan(
 		&banner.ID,
 		&banner.Title,
-		&banner.ImageKey,
+		&desktopImageURL,
+		&laptopImageURL,
+		&mobileImageURL,
 		&banner.LinkURL,
 		&banner.IsActive,
 		&banner.SortOrder,
@@ -301,16 +316,23 @@ func (h *Handler) GetBanner(c *gin.Context) {
 		return
 	}
 
-	// Format image URL
-	if h.ImageHelper != nil {
-		formattedURL := h.ImageHelper.FormatImageURL(&banner.ImageKey)
-		if formattedURL != nil && *formattedURL != "" {
-			banner.ImageURL = *formattedURL
-		} else {
-			banner.ImageURL = h.ImageHelper.GetFallbackImageURL("banner")
-		}
+	// Set image URLs with fallbacks
+	if desktopImageURL != nil && *desktopImageURL != "" {
+		banner.DesktopImageURL = *desktopImageURL
 	} else {
-		banner.ImageURL = "https://pub-1a3924a6c6994107be6fe9f3ed794c0a.r2.dev/banner-placeholder.webp"
+		banner.DesktopImageURL = "https://pub-1a3924a6c6994107be6fe9f3ed794c0a.r2.dev/banner-placeholder.webp"
+	}
+
+	if laptopImageURL != nil && *laptopImageURL != "" {
+		banner.LaptopImageURL = *laptopImageURL
+	} else {
+		banner.LaptopImageURL = banner.DesktopImageURL // Fallback to desktop
+	}
+
+	if mobileImageURL != nil && *mobileImageURL != "" {
+		banner.MobileImageURL = *mobileImageURL
+	} else {
+		banner.MobileImageURL = banner.DesktopImageURL // Fallback to desktop
 	}
 
 	c.JSON(http.StatusOK, banner)
@@ -342,9 +364,19 @@ func (h *Handler) UpdateBanner(c *gin.Context) {
 		args = append(args, *req.Title)
 		argIndex++
 	}
-	if req.ImageURL != nil {
-		setParts = append(setParts, fmt.Sprintf("image_url = $%d", argIndex))
-		args = append(args, *req.ImageURL)
+	if req.DesktopImageURL != nil {
+		setParts = append(setParts, fmt.Sprintf("desktop_image_url = $%d", argIndex))
+		args = append(args, *req.DesktopImageURL)
+		argIndex++
+	}
+	if req.LaptopImageURL != nil {
+		setParts = append(setParts, fmt.Sprintf("laptop_image_url = $%d", argIndex))
+		args = append(args, *req.LaptopImageURL)
+		argIndex++
+	}
+	if req.MobileImageURL != nil {
+		setParts = append(setParts, fmt.Sprintf("mobile_image_url = $%d", argIndex))
+		args = append(args, *req.MobileImageURL)
 		argIndex++
 	}
 	if req.LinkURL != nil {
@@ -388,14 +420,17 @@ func (h *Handler) UpdateBanner(c *gin.Context) {
 		UPDATE banners
 		SET %s
 		WHERE id = $%d
-		RETURNING id, title, image_url, link_url, is_active, sort_order, starts_at, ends_at, created_at, updated_at
+		RETURNING id, title, desktop_image_url, laptop_image_url, mobile_image_url, link_url, is_active, sort_order, starts_at, ends_at, created_at, updated_at
 	`, strings.Join(setParts, ", "), argIndex)
 
 	var banner Banner
+	var desktopImageURL, laptopImageURL, mobileImageURL *string
 	err = h.DB.QueryRow(ctx, query, args...).Scan(
 		&banner.ID,
 		&banner.Title,
-		&banner.ImageKey,
+		&desktopImageURL,
+		&laptopImageURL,
+		&mobileImageURL,
 		&banner.LinkURL,
 		&banner.IsActive,
 		&banner.SortOrder,
@@ -410,16 +445,23 @@ func (h *Handler) UpdateBanner(c *gin.Context) {
 		return
 	}
 
-	// Format image URL
-	if h.ImageHelper != nil {
-		formattedURL := h.ImageHelper.FormatImageURL(&banner.ImageKey)
-		if formattedURL != nil && *formattedURL != "" {
-			banner.ImageURL = *formattedURL
-		} else {
-			banner.ImageURL = h.ImageHelper.GetFallbackImageURL("banner")
-		}
+	// Set image URLs with fallbacks
+	if desktopImageURL != nil && *desktopImageURL != "" {
+		banner.DesktopImageURL = *desktopImageURL
 	} else {
-		banner.ImageURL = "https://pub-1a3924a6c6994107be6fe9f3ed794c0a.r2.dev/banner-placeholder.webp"
+		banner.DesktopImageURL = "https://pub-1a3924a6c6994107be6fe9f3ed794c0a.r2.dev/banner-placeholder.webp"
+	}
+
+	if laptopImageURL != nil && *laptopImageURL != "" {
+		banner.LaptopImageURL = *laptopImageURL
+	} else {
+		banner.LaptopImageURL = banner.DesktopImageURL // Fallback to desktop
+	}
+
+	if mobileImageURL != nil && *mobileImageURL != "" {
+		banner.MobileImageURL = *mobileImageURL
+	} else {
+		banner.MobileImageURL = banner.DesktopImageURL // Fallback to desktop
 	}
 
 	c.JSON(http.StatusOK, banner)
@@ -435,9 +477,9 @@ func (h *Handler) DeleteBanner(c *gin.Context) {
 		return
 	}
 
-	// First, get the banner to extract image URL for R2 deletion
-	var imageURL string
-	err = h.DB.QueryRow(ctx, `SELECT image_url FROM banners WHERE id=$1`, idStr).Scan(&imageURL)
+	// First, get the banner to extract image URLs for R2 deletion
+	var desktopImageURL, laptopImageURL, mobileImageURL *string
+	err = h.DB.QueryRow(ctx, `SELECT desktop_image_url, laptop_image_url, mobile_image_url FROM banners WHERE id=$1`, idStr).Scan(&desktopImageURL, &laptopImageURL, &mobileImageURL)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "banner not found"})
 		return
@@ -450,10 +492,13 @@ func (h *Handler) DeleteBanner(c *gin.Context) {
 		return
 	}
 
-	// Delete image from R2 if it's an R2 path
-	if h.R2Client != nil && (strings.HasPrefix(imageURL, "product/") || strings.HasPrefix(imageURL, "banner/") || strings.HasPrefix(imageURL, "category/")) {
-		if err := h.R2Client.DeleteObject(ctx, imageURL); err != nil {
-			log.Printf("Warning: Failed to delete from R2: %v", err)
+	// Delete images from R2 if they are R2 paths
+	imageURLs := []*string{desktopImageURL, laptopImageURL, mobileImageURL}
+	for _, imageURL := range imageURLs {
+		if imageURL != nil && h.R2Client != nil && (strings.HasPrefix(*imageURL, "product/") || strings.HasPrefix(*imageURL, "banner/") || strings.HasPrefix(*imageURL, "category/")) {
+			if err := h.R2Client.DeleteObject(ctx, *imageURL); err != nil {
+				log.Printf("Warning: Failed to delete from R2: %v", err)
+			}
 		}
 	}
 

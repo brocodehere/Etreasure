@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"log"
 	"os"
 
@@ -54,7 +53,6 @@ func main() {
 	}
 
 	rowsAffected, _ := result.RowsAffected()
-	fmt.Printf("Updated %d wishlist records to use session_id\n", rowsAffected)
 
 	// Verify the update
 	var count int
@@ -65,7 +63,4 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("Found %d wishlist records with session_id 'demo-session-127.0.0.1'\n", count)
-
-	fmt.Println("Wishlist table successfully updated to support session_id!")
 }
