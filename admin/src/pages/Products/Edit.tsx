@@ -19,9 +19,7 @@ class ErrorBoundary extends React.Component<
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('ProductEditPage Error:', error, errorInfo);
-  }
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {}
 
   render() {
     if (this.state.hasError) {
@@ -85,6 +83,8 @@ type UpsertPayload = {
   published: boolean;
   publish_at?: string | null;
   unpublish_at?: string | null;
+  seo_title?: string | null;
+  seo_description?: string | null;
   variants: Variant[];
   images: ImageLink[];
 };
@@ -100,6 +100,8 @@ type ProductResponse = {
     published: boolean;
     publish_at?: string | null;
     unpublish_at?: string | null;
+    seo_title?: string | null;
+    seo_description?: string | null;
   };
   variants: Array<{
     sku: string;
@@ -155,6 +157,8 @@ const ProductEditPageInner: React.FC = () => {
   const [published, setPublished] = useState(false);
   const [publishAt, setPublishAt] = useState<string | ''>('');
   const [unpublishAt, setUnpublishAt] = useState<string | ''>('');
+  const [seoTitle, setSeoTitle] = useState('');
+  const [seoDescription, setSeoDescription] = useState('');
   const [variants, setVariants] = useState<Variant[]>([
     { sku: '', title: 'Default', price_cents: 0, compare_at_price_cents: undefined, currency: 'INR', stock_quantity: 0 },
   ]);
@@ -202,6 +206,8 @@ const ProductEditPageInner: React.FC = () => {
         published,
         publish_at: publishAt ? new Date(publishAt).toISOString() : null,
         unpublish_at: unpublishAt ? new Date(unpublishAt).toISOString() : null,
+        seo_title: seoTitle || null,
+        seo_description: seoDescription || null,
         variants,
         category_id: categoryId || null,
         images,
@@ -217,7 +223,6 @@ const ProductEditPageInner: React.FC = () => {
           return Number(id);
         }
       } catch (err) {
-        console.error('Product save error:', err);
         throw err;
       }
     },
@@ -247,6 +252,8 @@ const ProductEditPageInner: React.FC = () => {
       setPublished(p.published);
       setPublishAt(p.publish_at || '');
       setUnpublishAt(p.unpublish_at || '');
+      setSeoTitle(p.seo_title || '');
+      setSeoDescription(p.seo_description || '');
       setVariants(
         (prodData.variants || []).map((v) => ({
           sku: v.sku || '',
@@ -406,6 +413,33 @@ const ProductEditPageInner: React.FC = () => {
               <div>
                 <label className="block text-sm font-medium mb-1">Description</label>
                 <textarea value={description} onChange={(e) => setDescription(e.target.value)} className="w-full rounded-md border border-gold/40 bg-cream/60 px-3 py-2 text-sm" rows={5} />
+              </div>
+
+              <div className="border-t pt-4">
+                <h3 className="text-lg font-semibold mb-3">SEO Settings</h3>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">SEO Title</label>
+                    <input 
+                      value={seoTitle} 
+                      onChange={(e) => setSeoTitle(e.target.value)} 
+                      placeholder="Custom SEO title for search engines"
+                      className="w-full rounded-md border border-gold/40 bg-cream/60 px-3 py-2 text-sm" 
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Optional: Custom title for search engines (60 characters recommended)</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">SEO Description</label>
+                    <textarea 
+                      value={seoDescription} 
+                      onChange={(e) => setSeoDescription(e.target.value)} 
+                      placeholder="Custom SEO description for search engines"
+                      className="w-full rounded-md border border-gold/40 bg-cream/60 px-3 py-2 text-sm" 
+                      rows={3}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Optional: Description for search engines (160 characters recommended)</p>
+                  </div>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

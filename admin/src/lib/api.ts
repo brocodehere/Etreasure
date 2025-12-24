@@ -1,6 +1,6 @@
 import { getAccessToken } from './auth';
 
-const BASE_URL = `${import.meta.env.VITE_API_URL || 'https://etreasure-1.onrender.com'}/api/admin`;
+const BASE_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin`;
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const headers: Record<string, string> = {

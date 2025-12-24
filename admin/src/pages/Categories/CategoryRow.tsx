@@ -19,7 +19,6 @@ export const CategoryRow: React.FC<{ cat: Category; children?: Category[]; onDel
     try {
       onDelete(cat.uuid_id);
     } catch (err) {
-      console.error('Error deleting category:', err);
     }
   }, [cat.uuid_id, onDelete]);
 
@@ -27,7 +26,6 @@ export const CategoryRow: React.FC<{ cat: Category; children?: Category[]; onDel
     try {
       onDelete(childId);
     } catch (err) {
-      console.error('Error deleting child category:', err);
     }
   }, [onDelete]);
 
@@ -37,7 +35,7 @@ export const CategoryRow: React.FC<{ cat: Category; children?: Category[]; onDel
         <div className="flex items-center space-x-3">
           {(cat.image_url || cat.image_path) && (
             <img 
-              src={cat.image_url || getPublicImageUrl(cat.image_path)}
+              src={cat.image_url || getPublicImageUrl(cat.image_path || '')}
               alt={cat.name}
               className="w-8 h-8 object-cover rounded"
             />

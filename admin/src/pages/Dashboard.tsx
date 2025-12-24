@@ -40,8 +40,7 @@ export const DashboardPage: React.FC = () => {
       // Refetch the orders to get updated data
       refetchOrders();
     } catch (error) {
-      console.error('Error updating shipping status:', error);
-    }
+          }
   };
 
   // Extract stats from GraphQL response

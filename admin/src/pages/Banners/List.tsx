@@ -97,13 +97,39 @@ export function BannersListPage() {
                       {banner.starts_at && <span>Starts: {new Date(banner.starts_at).toLocaleDateString()}</span>}
                       {banner.ends_at && <span>Ends: {new Date(banner.ends_at).toLocaleDateString()}</span>}
                     </div>
-                    {banner.image_url && (
-                      <img
-                        src={banner.image_url}
-                        alt={banner.title}
-                        className="mt-3 h-20 w-auto rounded border"
-                      />
-                    )}
+                    {/* Display multiple banner images */}
+                    <div className="mt-3 space-y-2">
+                      {banner.desktop_image_url && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-500 font-medium">Desktop:</span>
+                          <img
+                            src={banner.desktop_image_url}
+                            alt={`${banner.title} - Desktop`}
+                            className="h-16 w-auto rounded border"
+                          />
+                        </div>
+                      )}
+                      {banner.laptop_image_url && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-500 font-medium">Laptop:</span>
+                          <img
+                            src={banner.laptop_image_url}
+                            alt={`${banner.title} - Laptop`}
+                            className="h-16 w-auto rounded border"
+                          />
+                        </div>
+                      )}
+                      {banner.mobile_image_url && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-500 font-medium">Mobile:</span>
+                          <img
+                            src={banner.mobile_image_url}
+                            alt={`${banner.title} - Mobile`}
+                            className="h-16 w-auto rounded border"
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="flex gap-2">
                     <Link

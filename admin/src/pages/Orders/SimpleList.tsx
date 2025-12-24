@@ -34,7 +34,6 @@ export function SimpleOrdersPage() {
       return api.get<{data: Order[]}>(`/orders?limit=${limit}`).then((r: any) => {
         return r.data;
       }).catch((err) => {
-        console.error('Simple Orders API error:', err);
         throw err;
       });
     },
@@ -50,7 +49,6 @@ export function SimpleOrdersPage() {
       
       <div className="mb-4 p-4 bg-gray-100 rounded">
         <p>Loading: {isLoading ? 'true' : 'false'}</p>
-        <p>Error: {error ? (error as Error).message : 'none'}</p>
         <p>Data length: {data?.data?.length || 0}</p>
         <p>Raw data: {JSON.stringify(data, null, 2)}</p>
       </div>

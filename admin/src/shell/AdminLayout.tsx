@@ -38,7 +38,6 @@ export const AdminLayout: React.FC = () => {
         const response = await api.get<User>('/me');
         return response;
       } catch (err) {
-        console.error('Error fetching user:', err);
         throw err;
       }
     },

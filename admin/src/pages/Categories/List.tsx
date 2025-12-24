@@ -93,7 +93,6 @@ export const CategoriesListPage: React.FC = () => {
         const result = await api.post('/categories', payload);
                 return result;
       } catch (error) {
-        console.error('API call failed:', error);
         throw error;
       }
     },
@@ -122,7 +121,6 @@ export const CategoriesListPage: React.FC = () => {
       return { previous };
     },
     onError: (_err, _variables, context: any) => {
-      console.error('Mutation error:', _err);
       // rollback
       if (context?.previous) {
         qc.setQueryData(['categories'], context.previous);
@@ -263,7 +261,6 @@ export const CategoriesListPage: React.FC = () => {
     try {
       deleteMutation.mutate(id);
     } catch (err) {
-      console.error('Error deleting category:', err);
       alert('Failed to delete category. Please try again.');
     }
   }, [deleteMutation]);

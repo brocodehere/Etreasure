@@ -4,7 +4,7 @@ import { getAccessToken } from './auth';
 
 // HTTP link to the GraphQL endpoint
 const httpLink = createHttpLink({
-  uri: `${import.meta.env.VITE_API_URL || 'https://etreasure-1.onrender.com'}/graphql`,
+  uri: `${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/graphql`,
 });
 
 // Auth link to add the token to headers

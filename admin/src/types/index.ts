@@ -75,7 +75,9 @@ export interface Media {
 export interface Banner {
   id: string;
   title: string;
-  image_url: string;
+  desktop_image_url: string;
+  laptop_image_url: string;
+  mobile_image_url: string;
   link_url?: string;
   is_active: boolean;
   sort_order: number;

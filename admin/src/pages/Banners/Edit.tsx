@@ -7,7 +7,9 @@ import type { Banner } from '../../types';
 
 interface FormData {
   title: string;
-  image_url: string;
+  desktop_image_url: string;
+  laptop_image_url: string;
+  mobile_image_url: string;
   link_url: string;
   is_active: boolean;
   sort_order: number;
@@ -42,15 +44,16 @@ export function BannerEditPage() {
   const createMutation = useMutation({
     mutationFn: (payload: {
       title: string;
-      image_url: string;
+      desktop_image_url: string;
+      laptop_image_url: string;
+      mobile_image_url: string;
       link_url?: string | null;
       is_active: boolean;
       sort_order: number;
       starts_at?: string | null;
       ends_at?: string | null;
     }) => api.post<Banner>('/banners', payload).catch(err => {
-      console.error('Banner creation error:', err);
-      throw err;
+            throw err;
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['banners'] });
@@ -77,7 +80,9 @@ export function BannerEditPage() {
 
   const [formData, setFormData] = React.useState<FormData>({
     title: '',
-    image_url: '',
+    desktop_image_url: '',
+    laptop_image_url: '',
+    mobile_image_url: '',
     link_url: '',
     is_active: true,
     sort_order: 0,
@@ -89,7 +94,9 @@ export function BannerEditPage() {
     if (banner) {
       setFormData({
         title: banner.title,
-        image_url: banner.image_url,
+        desktop_image_url: banner.desktop_image_url || '',
+        laptop_image_url: banner.laptop_image_url || '',
+        mobile_image_url: banner.mobile_image_url || '',
         link_url: banner.link_url || '',
         is_active: banner.is_active,
         sort_order: banner.sort_order,
@@ -115,11 +122,17 @@ export function BannerEditPage() {
       alert('Title is required');
       return;
     }
-    // Image URL is now optional - can be set via upload or manual input
+    // At least one image URL is required
+    if (!formData.desktop_image_url.trim() && !formData.laptop_image_url.trim() && !formData.mobile_image_url.trim()) {
+      alert('At least one image URL is required');
+      return;
+    }
     
     const payload = {
       title: formData.title.trim(),
-      image_url: formData.image_url.trim(),
+      desktop_image_url: formData.desktop_image_url.trim(),
+      laptop_image_url: formData.laptop_image_url.trim(),
+      mobile_image_url: formData.mobile_image_url.trim(),
       link_url: formData.link_url.trim() || undefined,
       is_active: formData.is_active,
       sort_order: Number(formData.sort_order) || 0,
@@ -167,39 +180,102 @@ export function BannerEditPage() {
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Banner Image</label>
-          <ImageUploader 
-            type="banner"
-            onUploaded={(result) => {
-              setFormData(prev => ({ ...prev, image_url: result.url }));
-            }}
-          />
-          {formData.image_url && (
-            <div className="mt-2">
-              <img 
-                src={formData.image_url} 
-                alt="Banner preview" 
-                className="h-20 w-auto border rounded"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = 'none';
-                }}
-              />
-            </div>
-          )}
-        </div>
+        <div className="space-y-6">
+          {/* Desktop Image Upload */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Desktop Image (1024px and above)</label>
+            <ImageUploader 
+              type="banner"
+              onUploaded={(result) => {
+                setFormData(prev => ({ ...prev, desktop_image_url: result.url }));
+              }}
+            />
+            {formData.desktop_image_url && (
+              <div className="mt-2">
+                <img 
+                  src={formData.desktop_image_url} 
+                  alt="Desktop banner preview" 
+                  className="h-20 w-auto border rounded"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                  }}
+                />
+              </div>
+            )}
+            <input
+              name="desktop_image_url"
+              type="url"
+              value={formData.desktop_image_url}
+              onChange={handleChange}
+              placeholder="https://example.com/desktop-image.jpg"
+              className="w-full border rounded px-3 py-2 mt-2"
+            />
+          </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Or enter Image URL manually</label>
-          <input
-            name="image_url"
-            type="url"
-            value={formData.image_url}
-            onChange={handleChange}
-            placeholder="https://example.com/image.jpg"
-            className="w-full border rounded px-3 py-2"
-          />
+          {/* Laptop Image Upload */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Laptop Image (768px - 1023px)</label>
+            <ImageUploader 
+              type="banner"
+              onUploaded={(result) => {
+                setFormData(prev => ({ ...prev, laptop_image_url: result.url }));
+              }}
+            />
+            {formData.laptop_image_url && (
+              <div className="mt-2">
+                <img 
+                  src={formData.laptop_image_url} 
+                  alt="Laptop banner preview" 
+                  className="h-20 w-auto border rounded"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                  }}
+                />
+              </div>
+            )}
+            <input
+              name="laptop_image_url"
+              type="url"
+              value={formData.laptop_image_url}
+              onChange={handleChange}
+              placeholder="https://example.com/laptop-image.jpg"
+              className="w-full border rounded px-3 py-2 mt-2"
+            />
+          </div>
+
+          {/* Mobile Image Upload */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Mobile Image (below 768px)</label>
+            <ImageUploader 
+              type="banner"
+              onUploaded={(result) => {
+                setFormData(prev => ({ ...prev, mobile_image_url: result.url }));
+              }}
+            />
+            {formData.mobile_image_url && (
+              <div className="mt-2">
+                <img 
+                  src={formData.mobile_image_url} 
+                  alt="Mobile banner preview" 
+                  className="h-20 w-auto border rounded"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                  }}
+                />
+              </div>
+            )}
+            <input
+              name="mobile_image_url"
+              type="url"
+              value={formData.mobile_image_url}
+              onChange={handleChange}
+              placeholder="https://example.com/mobile-image.jpg"
+              className="w-full border rounded px-3 py-2 mt-2"
+            />
+          </div>
         </div>
 
         <div>

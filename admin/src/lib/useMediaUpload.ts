@@ -23,7 +23,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://etreasure-1.onrender.com'}/api/admin${path}`, {
+  const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin${path}`, {
     ...options,
     headers,
   });
@@ -66,7 +66,7 @@ export function getPublicImageUrl(path: string): string {
   }
   
   // If it's a localhost proxy URL (new format), return as-is
-  const apiBaseUrl = import.meta.env.VITE_API_URL || 'https://etreasure-1.onrender.com';
+  const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
   if (path.startsWith(`${apiBaseUrl}/api/public/media/`)) {
     return path;
   }
