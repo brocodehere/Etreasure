@@ -78,7 +78,7 @@ func main() {
 	devMode := os.Getenv("DEV") == "true"
 	if devMode {
 		r.Use(cors.New(cors.Config{
-			AllowOrigins:     []string{"http://localhost:4321", "http://127.0.0.1:4321", "http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5174", "http://127.0.0.1:5174"},
+			AllowOrigins:     []string{"http://localhost:4321", "http://127.0.0.1:4321", "http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5174", "http://127.0.0.1:5174", "https://ethnictreasures.co.in"},
 			AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 			AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 			ExposeHeaders:    []string{"Content-Length"},
@@ -86,7 +86,7 @@ func main() {
 		}))
 	} else {
 		// Get allowed origins from environment or use defaults
-		allowedOrigins := []string{"http://localhost:4321", "http://localhost:3000", "http://127.0.0.1:4321", "http://localhost:5174", "http://127.0.0.1:5174"}
+		allowedOrigins := []string{"http://localhost:4321", "http://localhost:3000", "http://127.0.0.1:4321", "http://localhost:5174", "http://127.0.0.1:5174", "https://ethnictreasures.co.in"}
 
 		// Add production frontend URLs from environment
 		if adminURL := os.Getenv("ADMIN_FRONTEND_URL"); adminURL != "" {
