@@ -54,13 +54,13 @@ export const AdminLayout: React.FC = () => {
   const displayName = user?.name || user?.email || 'Admin';
 
   return (
-    <div className="app-shell">
-      <aside className="app-sidebar">
-        <div className="px-6 py-4 border-b border-gold/40">
+    <div className="app-shell h-screen overflow-hidden">
+      <aside className="app-sidebar h-full flex flex-col">
+        <div className="px-6 py-4 border-b border-gold/40 flex-shrink-0">
           <div className="text-lg font-playfair tracking-wide">Etreasure Admin</div>
         </div>
         <nav className="flex-1 overflow-y-auto px-2 py-4 space-y-1">
-          {navItems.map((item) => (
+          {navItems.slice(0, -1).map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
@@ -76,9 +76,23 @@ export const AdminLayout: React.FC = () => {
               {item.label}
             </NavLink>
           ))}
+          {/* Audit Log - Last navigation item */}
+          <NavLink
+            to="/audit-log"
+            className={({ isActive }) =>
+              `block px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                isActive
+                  ? 'app-link-active'
+                  : 'text-cream/80 hover:bg-maroon/60 hover:text-cream'
+              }`
+            }
+            aria-label="Audit Log"
+          >
+            Audit Log
+          </NavLink>
         </nav>
-        {/* Logout Button */}
-        <div className="px-2 py-2 border-t border-gold/40">
+        {/* Logout Button - Fixed at bottom */}
+        <div className="px-2 py-2 border-t border-gold/40 flex-shrink-0">
           <button
             onClick={handleLogout}
             className="w-full block px-3 py-2 rounded-md text-sm font-medium transition-colors text-red-400 hover:bg-red-900/20 hover:text-red-300"
@@ -87,8 +101,8 @@ export const AdminLayout: React.FC = () => {
           </button>
         </div>
       </aside>
-      <div className="flex flex-col flex-1">
-        <header className="app-header">
+      <div className="flex flex-col flex-1 h-full overflow-hidden" style={{ marginLeft: '17px' }}>
+        <header className="app-header flex-shrink-0">
           <div className="flex items-center gap-2">
             <span className="text-sm uppercase tracking-wide text-maroon">
               {isLoading ? 'Loading...' : primaryRole}
@@ -98,7 +112,7 @@ export const AdminLayout: React.FC = () => {
             {isLoading ? 'Loading...' : `Signed in as ${displayName}`}
           </div>
         </header>
-        <main className="app-main">
+        <main className="flex-1 overflow-y-auto">
           <Outlet />
         </main>
       </div>

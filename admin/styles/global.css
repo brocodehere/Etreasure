@@ -14,19 +14,19 @@ body {
 }
 
 .app-shell {
-  @apply min-h-screen flex bg-cream text-dark;
+  @apply h-screen flex bg-cream text-dark overflow-hidden;
 }
 
 .app-sidebar {
-  @apply w-64 bg-dark text-cream flex flex-col border-r border-gold/40;
+  @apply w-64 bg-dark text-cream flex flex-col border-r border-gold/40 flex-shrink-0;
 }
 
 .app-header {
-  @apply h-16 flex items-center justify-between px-6 border-b border-gold/30 bg-cream/80 backdrop-blur;
+  @apply h-16 flex items-center justify-between px-6 border-b border-gold/30 bg-cream/80 backdrop-blur flex-shrink-0;
 }
 
 .app-main {
-  @apply flex-1 p-6 overflow-y-auto;
+  @apply flex-1 overflow-y-auto p-6;
 }
 
 .app-link-active {
