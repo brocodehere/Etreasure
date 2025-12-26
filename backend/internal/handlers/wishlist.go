@@ -12,6 +12,23 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// Helper function to check if user is authenticated
+func isAuthenticated(c *gin.Context) bool {
+	token := c.GetHeader("Authorization")
+	return token != "" && strings.HasPrefix(token, "Bearer ")
+}
+
+// Helper function to get user ID from token
+func getUserID(c *gin.Context) string {
+	token := c.GetHeader("Authorization")
+	if token != "" && strings.HasPrefix(token, "Bearer ") {
+		// Extract user ID from token (simplified - in real app you'd decode JWT)
+		// For now, return empty string to force session-based approach
+		return ""
+	}
+	return ""
+}
+
 type WishlistHandler struct {
 	DB          *pgxpool.Pool
 	ImageHelper *storage.ImageURLHelper
@@ -51,7 +68,7 @@ func (h *WishlistHandler) ToggleWishlist(c *gin.Context) {
 	var currency string
 	var imageURL string
 	err := h.DB.QueryRow(ctx, `
-		SELECT p.title, pv.price_cents, pv.currency, 
+		SELECT p.title, COALESCE(pv.price_cents, 0) as price_cents, COALESCE(pv.currency, 'INR') as currency, 
 		       (SELECT m.path FROM product_images pi JOIN media m ON pi.media_id = m.id WHERE pi.product_id = p.uuid_id ORDER BY pi.sort_order LIMIT 1) as image_url
 		FROM products p
 		LEFT JOIN product_variants pv ON p.uuid_id = pv.product_id
@@ -73,7 +90,7 @@ func (h *WishlistHandler) ToggleWishlist(c *gin.Context) {
 		c.SetCookie("session_id", sessionID, 86400*30, "/", "", false, true) // 30 days
 	}
 
-	// Check if item is already in wishlist
+	// Check if item is already in wishlist (using session_id for guest users)
 	var existingID any
 	err = h.DB.QueryRow(ctx, `
 		SELECT id FROM wishlist 
@@ -105,7 +122,7 @@ func (h *WishlistHandler) ToggleWishlist(c *gin.Context) {
 		`, sessionID, req.ProductID)
 
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add to wishlist"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add to wishlist", "details": err.Error()})
 			return
 		}
 
@@ -124,7 +141,7 @@ func (h *WishlistHandler) ToggleWishlist(c *gin.Context) {
 
 // GetWishlist retrieves the user's wishlist
 func (h *WishlistHandler) GetWishlist(c *gin.Context) {
-	// Get session ID from cookie
+	// Get session ID from cookie (for consistency with toggle)
 	sessionID, err := c.Cookie("session_id")
 	if err != nil || sessionID == "" {
 		// Return empty wishlist for new users
@@ -137,14 +154,14 @@ func (h *WishlistHandler) GetWishlist(c *gin.Context) {
 
 	ctx := context.Background()
 
-	// Query with proper JOIN to get wishlist items with product details
+	// Query with proper JOIN to get wishlist items with product details (using session_id)
 	query := `
 		SELECT 
 			w.id,
-			w.product_id,
+			w.product_id::text,
 			p.title,
 			COALESCE(pv.price_cents, 0) as price_cents,
-			COALESCE(pv.currency, 'USD') as currency,
+			COALESCE(pv.currency, 'INR') as currency,
 			w.created_at,
 			(SELECT m.path FROM product_images pi JOIN media m ON pi.media_id = m.id WHERE pi.product_id = p.uuid_id ORDER BY pi.sort_order LIMIT 1) as image_url
 		FROM wishlist w
@@ -175,7 +192,7 @@ func (h *WishlistHandler) GetWishlist(c *gin.Context) {
 		var currency string
 		var createdAt time.Time
 		var imagePath *string
-		var productID any
+		var productID string
 
 		err := rows.Scan(&id, &productID, &item.Title, &priceCents, &currency, &createdAt, &imagePath)
 		if err != nil {
@@ -183,7 +200,7 @@ func (h *WishlistHandler) GetWishlist(c *gin.Context) {
 		}
 
 		item.ID = fmt.Sprint(id)
-		item.ProductID = fmt.Sprint(productID)
+		item.ProductID = productID
 		item.Price = float64(priceCents) / 100.0
 		item.AddedAt = createdAt.Format("2006-01-02T15:04:05Z")
 

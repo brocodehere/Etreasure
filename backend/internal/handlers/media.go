@@ -236,12 +236,13 @@ func (h *MediaHandler) List(c *gin.Context) {
 			after = n
 		}
 	}
-	rows, err := h.DB.Query(ctx, `SELECT id, path, mime_type, file_size_bytes, width, height, created_at FROM media WHERE id > $1 ORDER BY created_at DESC, id DESC LIMIT $2`, after, first+1)
+	rows, err := h.DB.Query(ctx, `SELECT id, path, mime_type, file_size_bytes, width, height, created_at FROM media WHERE id > $1 ORDER BY created_at DESC, id DESC LIMIT $2`, after, first)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "query failed"})
 		return
 	}
 	defer rows.Close()
+
 	type item struct {
 		ID        int       `json:"id"`
 		Path      string    `json:"path"`
@@ -280,11 +281,9 @@ func (h *MediaHandler) List(c *gin.Context) {
 		items = append(items, it)
 	}
 	var nextCursor *int
-	if len(items) > first {
-		last := items[first]
-		items = items[:first]
-		nc := last.ID
-		nextCursor = &nc
+	if len(items) > 0 {
+		last := items[len(items)-1]
+		nextCursor = &last.ID
 	}
 	c.JSON(http.StatusOK, gin.H{"items": items, "nextCursor": nextCursor})
 }

@@ -135,7 +135,7 @@ func (h *CartHandler) GetCart(c *gin.Context) {
 	query := `
 		SELECT 
 			c.id,
-			c.product_id,
+			c.product_id::text,
 			p.title,
 			pv.price_cents,
 			pv.currency,
@@ -164,23 +164,26 @@ func (h *CartHandler) GetCart(c *gin.Context) {
 	defer rows.Close()
 
 	items := make([]CartItem, 0)
-	var total float64
-	var count int
-
+	total := 0.0
+	count := 0
 	for rows.Next() {
 		var item CartItem
-		var id int
+		var id any
 		var priceCents int
 		var currency string
+		var quantity int
 		var imagePath *string
+		var productID string
 
-		err := rows.Scan(&id, &item.ProductID, &item.Title, &priceCents, &currency, &item.Quantity, &imagePath)
+		err := rows.Scan(&id, &productID, &item.Title, &priceCents, &currency, &quantity, &imagePath)
 		if err != nil {
 			continue
 		}
 
-		item.ID = fmt.Sprintf("%d", id)
+		item.ID = fmt.Sprint(id)
+		item.ProductID = productID
 		item.Price = float64(priceCents) / 100.0
+		item.Quantity = quantity
 
 		// Construct proper image URL using ImageHelper
 		if h.ImageHelper != nil {
