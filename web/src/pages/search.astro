@@ -9,6 +9,17 @@ const q = url.searchParams.get('q') || '';
 let results = [];
 let took = 0;
 
+// R2 base URL for images
+const R2_BASE_URL = 'https://pub-1a3924a6c6994107be6fe9f3ed794c0a.r2.dev';
+
+// Helper function to build full image URLs
+const getImageUrl = (imagePath: string) => {
+  if (!imagePath) return '';
+  if (imagePath.startsWith('http')) return imagePath;
+  // Use R2 base URL directly like shop page products API
+  return `https://pub-1a3924a6c6994107be6fe9f3ed794c0a.r2.dev/${imagePath}`;
+};
+
 // Fetch search results from API
 if (q && q.length >= 1) {
   const apiUrl = `https://etreasure-1.onrender.com/api/search?q=${encodeURIComponent(q)}&limit=20`;
@@ -92,7 +103,7 @@ const formatPrice = (price: number) => {
               <div class="relative w-full aspect-square bg-gray-100 overflow-hidden">
                 {item.image ? (
                   <img
-                    src={item.image}
+                    src={getImageUrl(item.image)}
                     alt={item.title}
                     class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                     loading="lazy"
