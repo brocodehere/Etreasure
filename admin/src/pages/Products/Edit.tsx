@@ -191,8 +191,8 @@ const ProductEditPageInner: React.FC = () => {
   });
 
   const { data: media } = useQuery<MediaListResponse>({
-    queryKey: ['media', { first: 20 }],
-    queryFn: () => api.get<MediaListResponse>(`/media?first=20`),
+    queryKey: ['media'],
+    queryFn: () => api.get<MediaListResponse>(`/media`),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
@@ -544,7 +544,7 @@ const ProductEditPageInner: React.FC = () => {
                 </div>
               ) : (
                 <>
-                  <div className="grid grid-cols-3 gap-2 max-h-64 overflow-y-auto">
+                  <div className="grid grid-cols-4 gap-2 max-h-96 overflow-y-auto">
                     {(media?.items || []).map((m) => (
                       <button key={m.id} type="button" onClick={() => addImage(m.id)} className="group border border-gold/30 rounded overflow-hidden">
                         <img src={getPublicImageUrl(m.url || m.path)} alt={m.path} className="w-full h-20 object-cover group-hover:opacity-80" />
