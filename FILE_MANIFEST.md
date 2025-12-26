@@ -204,8 +204,8 @@ Entry Points:
 ### Configuration Files
 ```
 .env:
-  VITE_API_URL=http://localhost:8080
-  PUBLIC_API_URL=http://localhost:8080
+  VITE_API_URL=https://etreasure-1.onrender.com
+  PUBLIC_API_URL=https://etreasure-1.onrender.com
 ```
 
 ### Database Requirements

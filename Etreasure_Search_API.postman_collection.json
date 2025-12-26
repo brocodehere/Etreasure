@@ -21,7 +21,7 @@
               }
             ],
             "url": {
-              "raw": "http://localhost:8080/api/search?q=silk&category=&min_price=&max_price=&sort=relevance&limit=20",
+              "raw": "https://etreasure-1.onrender.com/api/search?q=silk&category=&min_price=&max_price=&sort=relevance&limit=20",
               "protocol": "http",
               "host": ["localhost"],
               "port": "8080",
@@ -84,7 +84,7 @@
               }
             ],
             "url": {
-              "raw": "http://localhost:8080/api/search?q=saree&min_price=50000&max_price=200000&sort=price_asc&limit=20",
+              "raw": "https://etreasure-1.onrender.com/api/search?q=saree&min_price=50000&max_price=200000&sort=price_asc&limit=20",
               "protocol": "http",
               "host": ["localhost"],
               "port": "8080",
@@ -130,7 +130,7 @@
               }
             ],
             "url": {
-              "raw": "http://localhost:8080/api/search?q=saree&category=1&sort=relevance&limit=20",
+              "raw": "https://etreasure-1.onrender.com/api/search?q=saree&category=1&sort=relevance&limit=20",
               "protocol": "http",
               "host": ["localhost"],
               "port": "8080",
@@ -171,7 +171,7 @@
               }
             ],
             "url": {
-              "raw": "http://localhost:8080/api/search?q=saree&cursor=eyJpZCI6IDE0MywgInNjb3JlIjogMC44NX0=&limit=20",
+              "raw": "https://etreasure-1.onrender.com/api/search?q=saree&cursor=eyJpZCI6IDE0MywgInNjb3JlIjogMC44NX0=&limit=20",
               "protocol": "http",
               "host": ["localhost"],
               "port": "8080",
@@ -213,7 +213,7 @@
               }
             ],
             "url": {
-              "raw": "http://localhost:8080/api/search/suggest?q=bana&limit=8",
+              "raw": "https://etreasure-1.onrender.com/api/search/suggest?q=bana&limit=8",
               "protocol": "http",
               "host": ["localhost"],
               "port": "8080",
@@ -247,7 +247,7 @@
               }
             ],
             "url": {
-              "raw": "http://localhost:8080/api/search/suggest?q=saree&limit=10",
+              "raw": "https://etreasure-1.onrender.com/api/search/suggest?q=saree&limit=10",
               "protocol": "http",
               "host": ["localhost"],
               "port": "8080",
@@ -284,7 +284,7 @@
               }
             ],
             "url": {
-              "raw": "http://localhost:8080/api/search/facets?q=saree",
+              "raw": "https://etreasure-1.onrender.com/api/search/facets?q=saree",
               "protocol": "http",
               "host": ["localhost"],
               "port": "8080",
@@ -313,7 +313,7 @@
               }
             ],
             "url": {
-              "raw": "http://localhost:8080/api/search/facets",
+              "raw": "https://etreasure-1.onrender.com/api/search/facets",
               "protocol": "http",
               "host": ["localhost"],
               "port": "8080",
@@ -347,7 +347,7 @@
               }
             ],
             "url": {
-              "raw": "http://localhost:8080/api/admin/search/reindex",
+              "raw": "https://etreasure-1.onrender.com/api/admin/search/reindex",
               "protocol": "http",
               "host": ["localhost"],
               "port": "8080",
@@ -369,7 +369,7 @@
               }
             ],
             "url": {
-              "raw": "http://localhost:8080/api/search/health",
+              "raw": "https://etreasure-1.onrender.com/api/search/health",
               "protocol": "http",
               "host": ["localhost"],
               "port": "8080",

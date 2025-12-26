@@ -29,7 +29,7 @@ go run cmd/api/main.go
 
 ### 3. Test Search
 ```bash
-curl "http://localhost:8080/api/search?q=saree&limit=5"
+curl "https://etreasure-1.onrender.com/api/search?q=saree&limit=5"
 ```
 
 ### 4. Start Frontend
@@ -183,8 +183,8 @@ k6 run backend/tests/load-test.js
 
 ### Environment Variables
 ```bash
-VITE_API_URL=http://localhost:8080      # Frontend API URL
-PUBLIC_API_URL=http://localhost:8080    # Astro API URL
+VITE_API_URL=https://etreasure-1.onrender.com      # Frontend API URL
+PUBLIC_API_URL=https://etreasure-1.onrender.com    # Astro API URL
 DATABASE_URL=postgres://...             # If not default
 ```
 
@@ -251,7 +251,7 @@ psql etreasure -c "SELECT COUNT(*) FROM products WHERE published=TRUE;"
 psql etreasure -c "SELECT search_vector FROM products LIMIT 1;"
 
 # 3. Reindex
-curl -X POST http://localhost:8080/api/admin/search/reindex -H "Authorization: Bearer $JWT"
+curl -X POST https://etreasure-1.onrender.com/api/admin/search/reindex -H "Authorization: Bearer $JWT"
 ```
 
 ### Search is slow
@@ -319,7 +319,7 @@ CREATE EXTENSION IF NOT EXISTS unaccent;
 ### Pre-deployment Checklist
 - [ ] Run migration: `go run cmd/migrate/main.go`
 - [ ] Verify extensions: `psql -c "\dx" | grep pg_trgm`
-- [ ] Test search endpoint: `curl http://localhost:8080/api/search?q=test`
+- [ ] Test search endpoint: `curl https://etreasure-1.onrender.com/api/search?q=test`
 - [ ] Run unit tests: `go test ./internal/search -v`
 - [ ] Check API response times (should be <200ms)
 - [ ] Set environment variables
@@ -367,7 +367,7 @@ CREATE EXTENSION IF NOT EXISTS unaccent;
 
 ### Search with Filters
 ```bash
-curl "http://localhost:8080/api/search?q=silk%20saree&category=1&min_price=50000&max_price=200000&sort=relevance&limit=20"
+curl "https://etreasure-1.onrender.com/api/search?q=silk%20saree&category=1&min_price=50000&max_price=200000&sort=relevance&limit=20"
 ```
 
 **Response:**
@@ -389,7 +389,7 @@ curl "http://localhost:8080/api/search?q=silk%20saree&category=1&min_price=50000
 
 ### Autocomplete
 ```bash
-curl "http://localhost:8080/api/search/suggest?q=bana&limit=8"
+curl "https://etreasure-1.onrender.com/api/search/suggest?q=bana&limit=8"
 ```
 
 **Response:**

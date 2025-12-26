@@ -25,18 +25,18 @@ cd backend
 go run cmd/api/main.go
 ```
 
-Server runs on `http://localhost:8080`
+Server runs on `https://etreasure-1.onrender.com`
 
 ### 3. Test Search Endpoints
 ```bash
 # Test full-text search
-curl "http://localhost:8080/api/search?q=saree&limit=5"
+curl "https://etreasure-1.onrender.com/api/search?q=saree&limit=5"
 
 # Test suggestions
-curl "http://localhost:8080/api/search/suggest?q=ban&limit=8"
+curl "https://etreasure-1.onrender.com/api/search/suggest?q=ban&limit=8"
 
 # Check health
-curl "http://localhost:8080/api/search/health"
+curl "https://etreasure-1.onrender.com/api/search/health"
 ```
 
 ### 4. Run Frontend
@@ -58,8 +58,8 @@ Add to `.env` or `.env.local`:
 
 ```bash
 # Backend
-VITE_API_URL=http://localhost:8080      # API URL for frontend
-PUBLIC_API_URL=http://localhost:8080    # Public API URL (Astro)
+VITE_API_URL=https://etreasure-1.onrender.com      # API URL for frontend
+PUBLIC_API_URL=https://etreasure-1.onrender.com    # Public API URL (Astro)
 
 # Database (if not using default)
 DATABASE_URL=postgres://user:pass@localhost:5432/etreasure
@@ -107,7 +107,7 @@ CREATE EXTENSION IF NOT EXISTS unaccent;
 ### Search returns no results
 ```bash
 # Trigger full reindex
-curl -X POST http://localhost:8080/api/admin/search/reindex \
+curl -X POST https://etreasure-1.onrender.com/api/admin/search/reindex \
   -H "Authorization: Bearer $ADMIN_JWT"
 ```
 

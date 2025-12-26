@@ -210,7 +210,7 @@ Use Postman collection: [`Etreasure_Search_API.postman_collection.json`](./Etrea
 
 - [ ] Read: [`SEARCH_SETUP.md`](./SEARCH_SETUP.md)
 - [ ] Run migration: `go run cmd/migrate/main.go`
-- [ ] Test API: `curl http://localhost:8080/api/search?q=test`
+- [ ] Test API: `curl https://etreasure-1.onrender.com/api/search?q=test`
 - [ ] Run tests: `go test ./internal/search -v`
 - [ ] Set environment variables
 - [ ] Configure cron for reindex (optional)
