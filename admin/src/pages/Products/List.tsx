@@ -1,5 +1,5 @@
 import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import { Link } from 'react-router-dom';
 import { LoadingState } from '../../components/LoadingSpinner';
@@ -19,6 +19,8 @@ type ProductsResponse = {
 };
 
 export const ProductsListPage: React.FC = () => {
+  const qc = useQueryClient();
+  
   const { data, isLoading, error } = useQuery<ProductsResponse>({
     queryKey: ['products', { first: 20 }],
     queryFn: () => api.get<ProductsResponse>('/products?first=20'),
@@ -29,6 +31,19 @@ export const ProductsListPage: React.FC = () => {
     },
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: (productId: string) => api.delete(`/products/${productId}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['products'] });
+    },
+  });
+
+  const handleDelete = (productId: string, productTitle: string) => {
+    if (window.confirm(`Are you sure you want to delete "${productTitle}"? This action cannot be undone.`)) {
+      deleteMutation.mutate(productId);
+    }
+  };
 
   return (
     <LoadingState isLoading={isLoading} error={error}>
@@ -87,7 +102,16 @@ export const ProductsListPage: React.FC = () => {
                   <td className="px-4 py-2">{p.slug}</td>
                   <td className="px-4 py-2">{p.published ? 'Yes' : 'No'}</td>
                   <td className="px-4 py-2">
-                    <Link to={`/products/${p.uuid_id}`} className="text-maroon hover:underline">Edit</Link>
+                    <div className="flex items-center gap-2">
+                      <Link to={`/products/${p.uuid_id}`} className="text-maroon hover:underline">Edit</Link>
+                      <button
+                        onClick={() => handleDelete(p.uuid_id, p.title)}
+                        disabled={deleteMutation.isPending}
+                        className="text-red-600 hover:text-red-800 disabled:opacity-50"
+                      >
+                        {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
