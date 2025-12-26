@@ -1,24 +1,25 @@
 import type { FC } from 'react';
+import { addToCart as addToCartAPI } from '../../lib/api';
 
 interface Props {
-  id: number;
+  id: string;
   name: string;
   price: number;
   image?: string;
 }
 
 const AddToCartButton: FC<Props> = ({ id, name, price, image }) => {
-  const addToCart = () => {
-    const raw = localStorage.getItem('cart');
-    const cart = raw ? JSON.parse(raw) : [];
-    const existing = cart.find((item: any) => item.id === id);
-    if (existing) {
-      existing.quantity += 1;
-    } else {
-      cart.push({ id, name, price, image, quantity: 1 });
+  const addToCart = async () => {
+    try {
+      await addToCartAPI(id, 1);
+      // Dispatch event to update cart count in header
+      window.dispatchEvent(new Event('cart-updated'));
+      // Show success message
+      alert('Product added to cart successfully!');
+    } catch (error) {
+      console.error('Failed to add to cart:', error);
+      alert('Failed to add product to cart. Please try again.');
     }
-    localStorage.setItem('cart', JSON.stringify(cart));
-    window.dispatchEvent(new StorageEvent('storage', { key: 'cart', newValue: JSON.stringify(cart) }));
   };
 
   return (

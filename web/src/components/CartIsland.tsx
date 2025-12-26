@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { getCart, removeFromCart, addToCart } from '../lib/api';
 
 interface CartItem {
-  id: number;
-  name: string;
-  price: string;
-  image: string;
+  id: string;
+  product_id: string;
+  title: string;
+  price: number;
   quantity: number;
-  size: string;
+  image_url: string;
 }
 
 interface CartIslandProps {
@@ -15,43 +16,49 @@ interface CartIslandProps {
 }
 
 const CartIsland: React.FC<CartIslandProps> = ({ isOpen, onClose }) => {
-  const [cartItems, setCartItems] = useState<CartItem[]>([
-    {
-      id: 1,
-      name: "Handcrafted Leather Hand Bag",
-      price: "3500",
-      image: "/images/products/hand-bag.avif",
-      quantity: 1,
-      size: "Standard"
-    },
-    {
-      id: 2,
-      name: "Canvas Tote Bag",
-      price: "1200",
-      image: "/images/products/tote-bag.avif",
-      quantity: 2,
-      size: "One Size"
-    }
-  ]);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const updateQuantity = (id: number, change: number) => {
-    setCartItems(items =>
-      items.map(item =>
-        item.id === id
-          ? { ...item, quantity: Math.max(1, Math.min(10, item.quantity + change)) }
-          : item
-      )
-    );
+  useEffect(() => {
+    if (isOpen) {
+      loadCart();
+    }
+  }, [isOpen]);
+
+  const loadCart = async () => {
+    setLoading(true);
+    try {
+      const cartData = await getCart();
+      setCartItems(cartData.items || []);
+    } catch (error) {
+      console.error('Failed to load cart:', error);
+      setCartItems([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const removeItem = (id: number) => {
-    setCartItems(items => items.filter(item => item.id !== id));
+  const updateQuantity = async (productId: string, change: number) => {
+    try {
+      await addToCart(productId, change);
+      await loadCart(); // Reload cart to get updated data
+    } catch (error) {
+      console.error('Failed to update quantity:', error);
+    }
+  };
+
+  const removeItem = async (itemId: string) => {
+    try {
+      await removeFromCart(itemId);
+      await loadCart(); // Reload cart to get updated data
+    } catch (error) {
+      console.error('Failed to remove item:', error);
+    }
   };
 
   const calculateSubtotal = () => {
     return cartItems.reduce((total, item) => {
-      const price = parseInt(item.price);
-      return total + (price * item.quantity);
+      return total + (item.price * item.quantity);
     }, 0);
   };
 
@@ -93,7 +100,12 @@ const CartIsland: React.FC<CartIslandProps> = ({ isOpen, onClose }) => {
           </div>
 
           <div className="flex-1 overflow-y-auto p-6">
-            {cartItems.length === 0 ? (
+            {loading ? (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold mx-auto mb-4"></div>
+                <p className="text-dark/80">Loading cart...</p>
+              </div>
+            ) : cartItems.length === 0 ? (
               <div className="text-center py-12">
                 <div className="w-20 h-20 bg-cream rounded-full flex items-center justify-center mx-auto mb-4">
                   <svg className="w-10 h-10 text-maroon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -110,24 +122,24 @@ const CartIsland: React.FC<CartIslandProps> = ({ isOpen, onClose }) => {
                 {cartItems.map((item) => (
                   <div key={item.id} className="flex space-x-4 bg-cream p-4 rounded-lg">
                     <img
-                      src={item.image}
-                      alt={item.name}
+                      src={item.image_url}
+                      alt={item.title}
                       className="w-20 h-20 object-cover rounded-lg"
                     />
                     <div className="flex-1">
-                      <h3 className="font-semibold text-dark mb-1">{item.name}</h3>
-                      <p className="text-sm text-dark/60 mb-2">Size: {item.size}</p>
+                      <h3 className="font-semibold text-dark mb-1">{item.title}</h3>
+                      <p className="text-sm text-dark/60 mb-2">SKU: {item.product_id}</p>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
                           <button
-                            onClick={() => updateQuantity(item.id, -1)}
+                            onClick={() => updateQuantity(item.product_id, -1)}
                             className="w-8 h-8 bg-white border border-gold/30 rounded-full flex items-center justify-center hover:bg-gold hover:text-white transition-colors duration-300"
                           >
                             -
                           </button>
                           <span className="font-semibold w-8 text-center">{item.quantity}</span>
                           <button
-                            onClick={() => updateQuantity(item.id, 1)}
+                            onClick={() => updateQuantity(item.product_id, 1)}
                             className="w-8 h-8 bg-white border border-gold/30 rounded-full flex items-center justify-center hover:bg-gold hover:text-white transition-colors duration-300"
                           >
                             +
