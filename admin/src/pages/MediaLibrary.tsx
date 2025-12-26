@@ -31,8 +31,8 @@ type MediaListResponse = {
 export const MediaLibraryPage: React.FC = () => {
   const qc = useQueryClient();
   const { data, isLoading, error } = useQuery<MediaListResponse>({
-    queryKey: ['media', { first: 50 }],
-    queryFn: () => api.get<MediaListResponse>(`/media?first=50`),
+    queryKey: ['media'],
+    queryFn: () => api.get<MediaListResponse>('/media'),
   });
 
   async function handleDelete(id: number) {
