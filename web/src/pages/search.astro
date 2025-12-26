@@ -6,33 +6,6 @@ import Footer from '../components/Footer.astro';
 // Get search query from URL
 const url = new URL(Astro.request.url);
 const q = url.searchParams.get('q') || '';
-let results = [];
-let took = 0;
-
-// R2 base URL for images
-const R2_BASE_URL = 'https://pub-1a3924a6c6994107be6fe9f3ed794c0a.r2.dev';
-
-// Helper function to build full image URLs
-const getImageUrl = (imagePath: string) => {
-  if (!imagePath) return '';
-  if (imagePath.startsWith('http')) return imagePath;
-  // Use R2 base URL directly like shop page products API
-  return `https://pub-1a3924a6c6994107be6fe9f3ed794c0a.r2.dev/${imagePath}`;
-};
-
-// Fetch search results from API
-if (q && q.length >= 1) {
-  const apiUrl = `https://etreasure-1.onrender.com/api/search?q=${encodeURIComponent(q)}&limit=20`;
-  try {
-    const start = Date.now();
-    const res = await fetch(apiUrl);
-    const json = await res.json();
-    results = json.results || [];
-    took = Date.now() - start;
-  } catch (e) {
-    results = [];
-  }
-}
 
 // Format price in INR
 const formatPrice = (price: number) => {
@@ -47,120 +20,196 @@ const formatPrice = (price: number) => {
 <Layout title={q ? `Search Results for "${q}"` : 'Search Products'} description={q ? `Search results for "${q}" in Ethnic Treasures collection` : 'Search our collection of handcrafted treasures'}>
   <Header />
   
-  <main class="container mx-auto px-4 py-12">
+  <main class="container mx-auto px-4 py-12" client:load>
     <!-- Search Header -->
     <div class="mb-12">
-      {q ? (
-        <>
-          <h1 class="text-4xl font-playfair font-bold text-dark mb-2">
-            Search Results for "<span class="text-gold">{q}</span>"
-          </h1>
-          <p class="text-dark/60">
-            {results.length === 0
-              ? 'No products found - showing suggested products'
-              : `${results.length} product${results.length !== 1 ? 's' : ''} found`}
-          </p>
-          <p class="text-sm text-dark/40">Search took {took}ms</p>
-        </>
-      ) : (
-        <h1 class="text-4xl font-playfair font-bold text-dark">Search Products</h1>
-      )}
+      <h1 id="searchTitle" class="text-4xl font-playfair font-bold text-dark mb-2">
+        Search Products
+      </h1>
+      <p id="searchSubtitle" class="text-dark/60">
+        Use the search bar in the header to find products.
+      </p>
+      <p id="searchStats" class="text-sm text-dark/40 hidden">Search took 0ms</p>
     </div>
 
-    {!q && (
-      <div class="bg-maroon/10 border border-maroon/20 rounded-lg p-8 text-center">
-        <svg class="w-16 h-16 mx-auto text-maroon/50 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
-        <p class="text-dark/60 text-lg mb-2">Use the search bar in the header to find products.</p>
-        <p class="text-dark/40">Search for bags, throws, crafts, and more!</p>
-      </div>
-    )}
-
-    {q && (
+    <!-- Search Results Container -->
+    <div id="searchResults" class="hidden">
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {results.length === 0 ? (
-          <div class="col-span-full bg-gray-50 rounded-lg p-12 text-center">
-            <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <h3 class="text-lg font-semibold text-dark mb-2">No products found for "{q}"</h3>
-            <p class="text-dark/60 mb-4">Try different keywords or browse our suggested products below.</p>
-            <a href="/shop" class="inline-flex items-center gap-2 bg-gold text-maroon px-6 py-2 rounded-full font-semibold hover:bg-gold/90 transition-colors">
-              Browse All Products
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-              </svg>
-            </a>
-          </div>
-        ) : (
-          results.map((item) => (
-            <a
-              href={item.link || `/shop?category=${item.slug}`}
-              class="group bg-white rounded-lg overflow-hidden border border-gold/10 hover:border-gold/30 transition-all hover:shadow-lg"
-            >
+        <!-- Results will be populated here -->
+      </div>
+    </div>
+
+    <!-- No Results Message -->
+    <div id="noResults" class="hidden bg-gray-50 rounded-lg p-12 text-center">
+      <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <h3 class="text-lg font-semibold text-dark mb-2">No products found</h3>
+      <p class="text-dark/60 mb-4">Try different keywords or browse our suggested products below.</p>
+      <a href="/shop" class="inline-flex items-center gap-2 bg-gold text-maroon px-6 py-2 rounded-full font-semibold hover:bg-gold/90 transition-colors">
+        Browse All Products
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+        </svg>
+      </a>
+    </div>
+
+    <!-- Initial Search Prompt -->
+    <div id="searchPrompt" class="bg-maroon/10 border border-maroon/20 rounded-lg p-8 text-center">
+      <svg class="w-16 h-16 mx-auto text-maroon/50 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+      </svg>
+      <p class="text-dark/60 text-lg mb-2">Use the search bar in the header to find products.</p>
+      <p class="text-dark/40">Search for bags, throws, crafts, and more!</p>
+    </div>
+
+    <!-- View All Products Button -->
+    <div id="viewAllButton" class="mt-12 text-center hidden">
+      <a href="/shop" class="inline-flex items-center gap-2 bg-maroon text-white px-6 py-3 rounded-full font-semibold hover:bg-gold hover:text-maroon transition-all">
+        View All Products
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+        </svg>
+      </a>
+    </div>
+  </main>
+
+  <Footer />
+
+  <script>
+    // Client-side search functionality
+    const R2_BASE_URL = 'https://pub-1a3924a6c6994107be6fe9f3ed794c0a.r2.dev';
+    const API_BASE = 'https://etreasure-1.onrender.com';
+    
+    // Helper function to build full image URLs
+    const getImageUrl = (imagePath) => {
+      if (!imagePath) return '';
+      if (imagePath.startsWith('http')) return imagePath;
+      return `${R2_BASE_URL}/${imagePath}`;
+    };
+
+    // Format price in INR to match shop page format (convert from cents)
+    const formatPrice = (price) => {
+      // Convert from cents to rupees
+      const priceInRupees = price / 100;
+      return new Intl.NumberFormat('en-IN', {
+        style: 'currency',
+        currency: 'INR',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(priceInRupees);
+    };
+
+    // Get search query from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const query = urlParams.get('q') || '';
+
+    // DOM elements
+    const searchTitle = document.getElementById('searchTitle');
+    const searchSubtitle = document.getElementById('searchSubtitle');
+    const searchStats = document.getElementById('searchStats');
+    const searchResults = document.getElementById('searchResults');
+    const noResults = document.getElementById('noResults');
+    const searchPrompt = document.getElementById('searchPrompt');
+    const viewAllButton = document.getElementById('viewAllButton');
+
+    // Fetch search results
+    async function fetchSearchResults(q) {
+      if (!q || q.length < 1) {
+        // Show initial search prompt
+        searchPrompt.classList.remove('hidden');
+        searchResults.classList.add('hidden');
+        noResults.classList.add('hidden');
+        viewAllButton.classList.add('hidden');
+        searchTitle.textContent = 'Search Products';
+        searchSubtitle.textContent = 'Use the search bar in the header to find products.';
+        searchStats.classList.add('hidden');
+        return;
+      }
+
+      try {
+        const start = Date.now();
+        const response = await fetch(`${API_BASE}/api/search?q=${encodeURIComponent(q)}&limit=20`);
+        const data = await response.json();
+        const results = data.results || [];
+        const took = Date.now() - start;
+
+        console.log(`Search for "${q}": Found ${results.length} results in ${took}ms`);
+
+        // Update UI
+        searchTitle.innerHTML = `Search Results for "<span class="text-gold">${q}</span>"`;
+        searchSubtitle.textContent = results.length === 0 
+          ? 'No products found - showing suggested products' 
+          : `${results.length} product${results.length !== 1 ? 's' : ''} found`;
+        searchStats.textContent = `Search took ${took}ms`;
+        searchStats.classList.remove('hidden');
+
+        // Hide prompt and show results
+        searchPrompt.classList.add('hidden');
+        searchResults.classList.remove('hidden');
+        noResults.classList.add('hidden');
+        viewAllButton.classList.toggle('hidden', results.length === 0);
+
+        if (results.length === 0) {
+          searchResults.classList.add('hidden');
+          noResults.classList.remove('hidden');
+          noResults.querySelector('h3').textContent = `No products found for "${q}"`;
+        } else {
+          // Render results
+          const resultsContainer = searchResults.querySelector('.grid');
+          resultsContainer.innerHTML = results.map(item => `
+            <a href="${item.link || `/shop?category=${item.slug}`}" class="group bg-white rounded-lg overflow-hidden border border-gold/10 hover:border-gold/30 transition-all hover:shadow-lg">
               <!-- Image -->
               <div class="relative w-full aspect-square bg-gray-100 overflow-hidden">
-                {item.image ? (
+                ${item.image ? `
                   <img
-                    src={getImageUrl(item.image)}
-                    alt={item.title}
+                    src="${getImageUrl(item.image)}"
+                    alt="${item.title}"
                     class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                     loading="lazy"
                   />
-                ) : (
+                ` : `
                   <div class="w-full h-full flex items-center justify-center bg-gray-200">
                     <svg class="w-8 h-8 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                       <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
                     </svg>
                   </div>
-                )}
-                
-                {/* Suggested badge for fallback products */}
-                {item.note === 'suggested' && (
-                  <div class="absolute top-2 left-2 bg-gold text-maroon text-xs px-2 py-1 rounded-full font-medium">
-                    Suggested
-                  </div>
-                )}
+                `}
               </div>
 
               <!-- Content -->
               <div class="p-4">
                 <h3 class="font-semibold text-dark text-sm mb-2 line-clamp-2 group-hover:text-gold transition-colors">
-                  {item.title}
+                  ${item.title}
                 </h3>
 
-                {item.excerpt && (
-                  <p class="text-xs text-dark/50 line-clamp-2 mb-3">{item.excerpt}</p>
-                )}
+                ${item.excerpt ? `
+                  <p class="text-xs text-dark/50 line-clamp-2 mb-3">${item.excerpt}</p>
+                ` : ''}
 
-                {item.price && (
-                  <p class="text-lg font-bold text-gold">{formatPrice(item.price)}</p>
-                )}
+                ${item.price ? `
+                  <p class="text-lg font-bold text-gold">${formatPrice(item.price)}</p>
+                ` : ''}
 
-                {item.type && (
-                  <p class="text-xs text-dark/40 mt-2 capitalize">{item.type}</p>
-                )}
+                ${item.type ? `
+                  <p class="text-xs text-dark/40 mt-2 capitalize">${item.type}</p>
+                ` : ''}
               </div>
             </a>
-          ))
-        )}
-      </div>
-    )}
+          `).join('');
+        }
+      } catch (error) {
+        console.error('Search API error:', error);
+        searchSubtitle.textContent = 'Error loading search results. Please try again.';
+        searchResults.classList.add('hidden');
+        noResults.classList.add('hidden');
+        viewAllButton.classList.add('hidden');
+      }
+    }
 
-    {q && results.length > 0 && (
-      <div class="mt-12 text-center">
-        <a href="/shop" class="inline-flex items-center gap-2 bg-maroon text-white px-6 py-3 rounded-full font-semibold hover:bg-gold hover:text-maroon transition-all">
-          View All Products
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-          </svg>
-        </a>
-      </div>
-    )}
-  </main>
-
-  <Footer />
+    // Initialize search
+    fetchSearchResults(query);
+  </script>
 
   <style>
     .line-clamp-2 {

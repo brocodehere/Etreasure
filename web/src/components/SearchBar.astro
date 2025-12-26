@@ -31,7 +31,7 @@ const PUBLIC_API = import.meta.env.PUBLIC_API_URL || 'https://etreasure-1.onrend
 
   <!-- Suggestions Dropdown -->
   <div
-    class="search-suggestions absolute top-full left-0 right-0 mt-2 bg-white border border-gold/20 rounded-lg shadow-xl z-50 max-h-96 overflow-y-auto hidden"
+    class="search-suggestions absolute top-full left-0 right-0 mt-2 bg-white border border-gold/20 rounded-lg shadow-xl z-[60] max-h-96 overflow-y-auto hidden"
   >
     <div class="suggestions-content"></div>
   </div>
@@ -85,7 +85,7 @@ const PUBLIC_API = import.meta.env.PUBLIC_API_URL || 'https://etreasure-1.onrend
               const li = document.createElement('li');
               li.innerHTML = `
                 <a href="${result.link}" class="flex items-center gap-3 p-3 hover:bg-maroon/5 transition-colors">
-                  ${result.image ? `<img src="${result.image}" alt="${result.title}" class="w-12 h-12 object-cover rounded">` : ''}
+                  ${result.image ? `<img src="https://pub-1a3924a6c6994107be6fe9f3ed794c0a.r2.dev/${result.image}" alt="${result.title}" class="w-12 h-12 object-cover rounded">` : ''}
                   <div class="flex-1 min-w-0">
                     <p class="font-medium text-dark truncate text-sm">${result.title}</p>
                     ${result.price ? `<p class="text-gold font-semibold text-sm">₹${result.price}</p>` : ''}
