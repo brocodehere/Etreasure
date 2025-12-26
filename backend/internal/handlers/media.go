@@ -224,9 +224,9 @@ func (h *MediaHandler) Upload(c *gin.Context) {
 // GET /api/admin/media?first=&after=
 func (h *MediaHandler) List(c *gin.Context) {
 	ctx := c.Request.Context()
-	first := 20
+	first := 1000 // Set a high default to effectively show all images
 	if v := c.Query("first"); v != "" {
-		if n, err := strconv.Atoi(v); err == nil && n > 0 && n <= 100 {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 && n <= 1000 {
 			first = n
 		}
 	}
@@ -236,7 +236,7 @@ func (h *MediaHandler) List(c *gin.Context) {
 			after = n
 		}
 	}
-	rows, err := h.DB.Query(ctx, `SELECT id, path, mime_type, file_size_bytes, width, height, created_at FROM media WHERE id > $1 ORDER BY id ASC LIMIT $2`, after, first+1)
+	rows, err := h.DB.Query(ctx, `SELECT id, path, mime_type, file_size_bytes, width, height, created_at FROM media WHERE id > $1 ORDER BY created_at DESC, id DESC LIMIT $2`, after, first+1)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "query failed"})
 		return
