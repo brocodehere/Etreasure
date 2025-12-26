@@ -11,7 +11,7 @@ import (
 
 // ProductResult is returned for product search results
 type ProductResult struct {
-	ID      int64   `json:"id"`
+	ID      string  `json:"id"`
 	Title   string  `json:"title"`
 	Slug    string  `json:"slug"`
 	Price   float64 `json:"price,omitempty"`
@@ -22,20 +22,20 @@ type ProductResult struct {
 }
 
 type CategoryResult struct {
-	ID    int64  `json:"id"`
+	ID    string `json:"id"`
 	Title string `json:"title"`
 	Slug  string `json:"slug"`
 	Link  string `json:"link"`
 }
 
 type OfferResult struct {
-	ID    int64  `json:"id"`
+	ID    string `json:"id"`
 	Title string `json:"title"`
 	Link  string `json:"link"`
 }
 
 type BannerResult struct {
-	ID    int64  `json:"id"`
+	ID    string `json:"id"`
 	Title string `json:"title"`
 	Link  string `json:"link"`
 }
@@ -61,17 +61,12 @@ func SearchProducts(parentCtx context.Context, db *pgxpool.Pool, q string, limit
       p.uuid_id, p.title, p.slug, p.description,
       COALESCE(MIN(v.price_cents), 0)::double precision as price,
       COALESCE(MIN(v.currency), 'INR') as currency,
-      COALESCE(m.image_key, '') as image,
+      COALESCE((SELECT m.path FROM product_images pi JOIN media m ON pi.media_id = m.id WHERE pi.product_id = p.uuid_id ORDER BY pi.sort_order LIMIT 1), '') as image,
       1.0 as score
     FROM products p
     LEFT JOIN product_variants v ON v.product_id = p.uuid_id
-    LEFT JOIN (
-      SELECT DISTINCT ON (product_id) product_id, image_key
-      FROM product_media
-      ORDER BY product_id, sort_order
-    ) m ON m.product_id = p.uuid_id
     WHERE LOWER(p.title) LIKE LOWER($1) OR LOWER(p.description) LIKE LOWER($1)
-    GROUP BY p.uuid_id, p.title, p.slug, p.description, m.image_key
+    GROUP BY p.uuid_id, p.title, p.slug, p.description
     ORDER BY p.title
     LIMIT $2`
 
@@ -96,11 +91,11 @@ func SearchProducts(parentCtx context.Context, db *pgxpool.Pool, q string, limit
 
 	// Fallback: trigram similarity on title and slug
 	trigramQuery := `
-    SELECT id, title, slug, COALESCE(price,0)::double precision, COALESCE(image,'') as image,
-      '' as excerpt, GREATEST(similarity(lower(title), lower($1)), similarity(lower(slug), lower($1))) as score
+    SELECT uuid_id, title, slug, 0::double precision as price, '' as image,
+      '' as excerpt, 1.0 as score
     FROM products
     WHERE lower(title) % lower($1) OR lower(slug) % lower($1) OR similarity(lower(title), lower($1)) > 0.15
-    ORDER BY score DESC
+    ORDER BY title
     LIMIT $2` + ";"
 
 	rows2, err2 := db.Query(ctx, trigramQuery, q, limit)
@@ -131,8 +126,8 @@ func SearchCategories(parentCtx context.Context, db *pgxpool.Pool, q string, lim
 	defer cancel()
 
 	query := `
-    SELECT id, title, COALESCE(slug,'') as slug
-    FROM categories
+    SELECT uuid_id as id, name as title, COALESCE(slug,'') as slug
+    FROM categories_new
     WHERE lower(search_text) % lower($1) OR similarity(lower(search_text), lower($1)) > 0.15
     ORDER BY similarity(lower(search_text), lower($1)) DESC
     LIMIT $2` + ";"
@@ -182,7 +177,7 @@ func SearchOffers(parentCtx context.Context, db *pgxpool.Pool, q string, limit i
 		if err := rows.Scan(&r.ID, &r.Title); err != nil {
 			continue
 		}
-		r.Link = fmt.Sprintf("/offer/%d", r.ID)
+		r.Link = fmt.Sprintf("/offer/%s", r.ID)
 		out = append(out, r)
 	}
 	return out, nil
@@ -197,7 +192,7 @@ func SearchBanners(parentCtx context.Context, db *pgxpool.Pool, q string, limit 
 	defer cancel()
 
 	query := `
-    SELECT id, title, COALESCE(target,'') as target
+    SELECT id, title, COALESCE(link_url,'') as target
     FROM banners
     WHERE lower(search_text) % lower($1) OR similarity(lower(search_text), lower($1)) > 0.15
     ORDER BY similarity(lower(search_text), lower($1)) DESC
@@ -235,15 +230,10 @@ func FallbackTwoProducts(parentCtx context.Context, db *pgxpool.Pool) ([]Product
       p.uuid_id, p.title, p.slug,
       COALESCE(MIN(v.price_cents), 0)::double precision as price,
       COALESCE(MIN(v.currency), 'INR') as currency,
-      COALESCE(m.image_key, '') as image
+      COALESCE((SELECT m.path FROM product_images pi JOIN media m ON pi.media_id = m.id WHERE pi.product_id = p.uuid_id ORDER BY pi.sort_order LIMIT 1), '') as image
     FROM products p
     LEFT JOIN product_variants v ON v.product_id = p.uuid_id
-    LEFT JOIN (
-      SELECT DISTINCT ON (product_id) product_id, image_key
-      FROM product_media
-      ORDER BY product_id, sort_order
-    ) m ON m.product_id = p.uuid_id
-    GROUP BY p.uuid_id, p.title, p.slug, m.image_key
+    GROUP BY p.uuid_id, p.title, p.slug
     ORDER BY p.title
     LIMIT 3`
 
