@@ -8,6 +8,7 @@ import (
 
 	"github.com/etreasure/backend/internal/storage"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -72,8 +73,8 @@ func (h *CartHandler) AddToCart(c *gin.Context) {
 	// Get session ID from cookie or create new one
 	sessionID, err := c.Cookie("session_id")
 	if err != nil || sessionID == "" {
-		// Generate new session ID
-		sessionID = fmt.Sprintf("session_%d", len(req.ProductID)+len(c.Request.RemoteAddr))
+		// Generate new session ID using UUID
+		sessionID = fmt.Sprintf("session_%s", uuid.New().String())
 		c.SetCookie("session_id", sessionID, 86400*30, "/", "", false, true) // 30 days
 	}
 
