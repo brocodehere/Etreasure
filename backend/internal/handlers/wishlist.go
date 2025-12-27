@@ -118,30 +118,22 @@ func (h *WishlistHandler) ToggleWishlist(c *gin.Context) {
 
 		log.Printf("Wishlist: Using cookie domain: %s", cookieDomain)
 
-		c.SetCookie("session_id", sessionID, 86400*30, "/", cookieDomain, isSecure, false) // 30 days, HttpOnly=false for frontend access
-		log.Printf("Wishlist: SetCookie called with session_id: %s, domain: %s, secure: %v", sessionID, cookieDomain, isSecure)
+		// Industry standard: Set two cookies for cross-domain compatibility
+		// 1. Domain-specific cookie for cross-domain access (SameSite=None; Secure)
+		// 2. Host-specific cookie for fallback (SameSite=Lax)
 
-		// Also try to set the cookie manually with proper domain for cross-domain
-		domainPart := ""
-		if cookieDomain != "" {
-			domainPart = fmt.Sprintf("; Domain=%s", cookieDomain)
-		}
-		// For cross-domain requests, use SameSite=None when domain is set
-		sameSiteAttr := "SameSite=Lax"
+		// Cookie 1: Domain-specific for cross-domain
 		if cookieDomain != "" && isSecure {
-			sameSiteAttr = "SameSite=None"
+			crossDomainCookie := fmt.Sprintf("session_id=%s; Path=/; Domain=%s; Max-Age=%d; HttpOnly=false; SameSite=None; Secure",
+				sessionID, cookieDomain, 86400*30)
+			c.Header("Set-Cookie", crossDomainCookie)
+			log.Printf("Wishlist: Cross-domain cookie: %s", crossDomainCookie)
 		}
 
-		// Ensure we have the proper cookie attributes for cross-domain
-		cookieString := fmt.Sprintf("session_id=%s; Path=/; Max-Age=%d; HttpOnly=false; %s%s", sessionID, 86400*30, func() string {
-			if isSecure {
-				return "Secure; " + sameSiteAttr
-			}
-			return sameSiteAttr
-		}(), domainPart)
+		// Cookie 2: Host-specific fallback
+		c.SetCookie("session_id", sessionID, 86400*30, "/", "", isSecure, false)
+		log.Printf("Wishlist: Host-specific cookie set with session_id: %s, secure: %v", sessionID, isSecure)
 
-		c.Header("Set-Cookie", cookieString)
-		log.Printf("Wishlist: Manual Set-Cookie: %s", cookieString)
 	} else {
 		log.Printf("Wishlist: Using existing session_id: %s", sessionID)
 	}

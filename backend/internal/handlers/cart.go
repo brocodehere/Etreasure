@@ -108,30 +108,21 @@ func (h *CartHandler) AddToCart(c *gin.Context) {
 
 		log.Printf("Cart: Using cookie domain: %s", cookieDomain)
 
-		c.SetCookie("session_id", sessionID, 86400*30, "/", cookieDomain, isSecure, false) // 30 days, HttpOnly=false for frontend access
-		log.Printf("Cart: SetCookie called with session_id: %s, domain: %s, secure: %v", sessionID, cookieDomain, isSecure)
+		// Industry standard: Set two cookies for cross-domain compatibility
+		// 1. Domain-specific cookie for cross-domain access (SameSite=None; Secure)
+		// 2. Host-specific cookie for fallback (SameSite=Lax)
 
-		// Also try to set the cookie manually with proper domain for cross-domain
-		domainPart := ""
-		if cookieDomain != "" {
-			domainPart = fmt.Sprintf("; Domain=%s", cookieDomain)
-		}
-		// For cross-domain requests, use SameSite=None when domain is set
-		sameSiteAttr := "SameSite=Lax"
+		// Cookie 1: Domain-specific for cross-domain
 		if cookieDomain != "" && isSecure {
-			sameSiteAttr = "SameSite=None"
+			crossDomainCookie := fmt.Sprintf("session_id=%s; Path=/; Domain=%s; Max-Age=%d; HttpOnly=false; SameSite=None; Secure",
+				sessionID, cookieDomain, 86400*30)
+			c.Header("Set-Cookie", crossDomainCookie)
+			log.Printf("Cart: Cross-domain cookie: %s", crossDomainCookie)
 		}
 
-		// Ensure we have the proper cookie attributes for cross-domain
-		cookieString := fmt.Sprintf("session_id=%s; Path=/; Max-Age=%d; HttpOnly=false; %s%s", sessionID, 86400*30, func() string {
-			if isSecure {
-				return "Secure; " + sameSiteAttr
-			}
-			return sameSiteAttr
-		}(), domainPart)
-
-		c.Header("Set-Cookie", cookieString)
-		log.Printf("Cart: Manual Set-Cookie: %s", cookieString)
+		// Cookie 2: Host-specific fallback
+		c.SetCookie("session_id", sessionID, 86400*30, "/", "", isSecure, false)
+		log.Printf("Cart: Host-specific cookie set with session_id: %s, secure: %v", sessionID, isSecure)
 
 		// Log all response headers to debug
 		log.Printf("Cart: All response headers: %+v", c.Writer.Header())

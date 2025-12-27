@@ -85,7 +85,19 @@ func (h *RazorpayHandler) CreatePayment(c *gin.Context) {
 			}
 		}
 
-		c.SetCookie("session_id", sessionID, 86400*30, "/", cookieDomain, isSecure, false) // 30 days, HttpOnly=false for frontend access
+		// Industry standard: Set two cookies for cross-domain compatibility
+		// 1. Domain-specific cookie for cross-domain access (SameSite=None; Secure)
+		// 2. Host-specific cookie for fallback (SameSite=Lax)
+
+		// Cookie 1: Domain-specific for cross-domain
+		if cookieDomain != "" && isSecure {
+			crossDomainCookie := fmt.Sprintf("session_id=%s; Path=/; Domain=%s; Max-Age=%d; HttpOnly=false; SameSite=None; Secure",
+				sessionID, cookieDomain, 86400*30)
+			c.Header("Set-Cookie", crossDomainCookie)
+		}
+
+		// Cookie 2: Host-specific fallback
+		c.SetCookie("session_id", sessionID, 86400*30, "/", "", isSecure, false)
 	}
 
 	var subtotal int
