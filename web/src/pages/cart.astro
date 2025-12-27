@@ -5,8 +5,6 @@ import Footer from '../components/Footer.astro';
 
 // Define API URL for client-side JavaScript
 const PUBLIC_API_URL = 'https://etreasure-1.onrender.com';
-
-// Get cart data from localStorage (client-side)
 ---
 
 
@@ -261,7 +259,7 @@ const PUBLIC_API_URL = 'https://etreasure-1.onrender.com';
 
 	<script>
 		const PUBLIC_API_URL = 'https://etreasure-1.onrender.com';
-		import { getCart, removeFromCart, addToCart, toggleWishlist } from '../lib/api';
+		import { getCart, removeFromCart, addToCart, toggleWishlist, clearCart } from '../lib/api';
 		import '../lib/toast.js';
 
 	// Initialize cart functionality
@@ -361,7 +359,8 @@ const PUBLIC_API_URL = 'https://etreasure-1.onrender.com';
 								});
 								const verifyData = await verifyRes.json();
 								if (verifyRes.ok && verifyData.status === 'paid') {
-									localStorage.removeItem('cart');
+									// Clear cart on server side after successful payment
+									await clearCart();
 									window.location.href = `/order-confirmation?order_id=${data.order_id}`;
 								} else {
 									showError('Payment verification failed. Please try again.');

@@ -2,8 +2,6 @@
 import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
-
-const PUBLIC_API_URL = 'https://etreasure-1.onrender.com';
 ---
 
 <Layout title="My Wishlist - Ethnic Treasures" description="View your favorite handcrafted products saved to wishlist">
@@ -74,7 +72,7 @@ const PUBLIC_API_URL = 'https://etreasure-1.onrender.com';
 </Layout>
 
 <script>
-		import { getWishlist, removeFromWishlist } from '../lib/api';
+		import { getWishlist, removeFromWishlist, addToCart } from '../lib/api';
 	import '../lib/toast.js';
 
 	// Wishlist functionality
@@ -179,15 +177,7 @@ const PUBLIC_API_URL = 'https://etreasure-1.onrender.com';
 
 	async function addToCartFromWishlist(productId, name, price, image) {
 		try {
-			const response = await fetch(`${PUBLIC_API_URL}/api/cart/add`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ product_id: productId, quantity: 1 })
-			});
-			
-			if (!response.ok) {
-				throw new Error('Failed to add to cart');
-			}
+			await addToCart(productId, 1);
 			
 			// Update cart count using Header component function
 			if (typeof updateCartCount === 'function') {
