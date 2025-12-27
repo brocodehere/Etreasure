@@ -15,7 +15,7 @@ interface ContentPage {
   updated_at: string;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://etreasure-1.onrender.com';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 const apiRequest = async (url: string, options: RequestInit = {}) => {
   const token = localStorage.getItem('access_token');

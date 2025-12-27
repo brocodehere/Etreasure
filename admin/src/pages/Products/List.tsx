@@ -15,15 +15,14 @@ type Product = {
 
 type ProductsResponse = {
   items: Array<Product>;
-  nextCursor?: string;
 };
 
 export const ProductsListPage: React.FC = () => {
   const qc = useQueryClient();
   
   const { data, isLoading, error } = useQuery<ProductsResponse>({
-    queryKey: ['products', { first: 20 }],
-    queryFn: () => api.get<ProductsResponse>('/products?first=20'),
+    queryKey: ['products'],
+    queryFn: () => api.get<ProductsResponse>('/products'),
     retry: (failureCount: number, error: any) => {
       // Don't retry on 4xx errors
       if (error?.status >= 400 && error?.status < 500) return false;

@@ -7,11 +7,11 @@ export default defineConfig({
     port: 5174,
     proxy: {
       '/api/admin': {
-        target: 'https://etreasure-1.onrender.com',
+        target: 'http://localhost:8080',
         changeOrigin: true,
       },
       '/uploads': {
-        target: 'https://etreasure-1.onrender.com',
+        target: 'http://localhost:8080',
         changeOrigin: true,
       },
     },
