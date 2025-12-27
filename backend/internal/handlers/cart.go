@@ -89,13 +89,10 @@ func (h *CartHandler) AddToCart(c *gin.Context) {
 
 		// For production, set cookie domain to work across ethnictreasures.co.in
 		cookieDomain := ""
-		if isSecure {
-			// In production (HTTPS), set domain to work across main site
-			// Can be overridden with env var for flexibility
-			cookieDomain = os.Getenv("COOKIE_DOMAIN")
-			if cookieDomain == "" {
-				cookieDomain = "ethnictreasures.co.in"
-			}
+		// Always set domain for cross-domain cookie sharing
+		cookieDomain = os.Getenv("COOKIE_DOMAIN")
+		if cookieDomain == "" {
+			cookieDomain = "ethnictreasures.co.in"
 		}
 
 		log.Printf("Cart: Using cookie domain: %s", cookieDomain)
@@ -108,9 +105,9 @@ func (h *CartHandler) AddToCart(c *gin.Context) {
 		if cookieDomain != "" {
 			domainPart = fmt.Sprintf("; Domain=%s", cookieDomain)
 		}
-		// For cross-domain requests, use SameSite=None when Secure
+		// For cross-domain requests, use SameSite=None when domain is set
 		sameSiteAttr := "SameSite=Lax"
-		if isSecure && cookieDomain != "" {
+		if cookieDomain != "" {
 			sameSiteAttr = "SameSite=None"
 		}
 
