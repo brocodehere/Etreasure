@@ -113,14 +113,14 @@ func (h *WishlistHandler) ToggleWishlist(c *gin.Context) {
 		c.SetCookie("session_id", sessionID, 86400*30, "/", cookieDomain, isSecure, false) // 30 days, HttpOnly=false for frontend access
 		log.Printf("Wishlist: SetCookie called with session_id: %s, domain: %s, secure: %v", sessionID, cookieDomain, isSecure)
 
-		// Also try to set the cookie manually as a fallback with proper domain
+		// Also try to set the cookie manually with proper domain for cross-domain
 		domainPart := ""
 		if cookieDomain != "" {
 			domainPart = fmt.Sprintf("; Domain=%s", cookieDomain)
 		}
 		// For cross-domain requests, use SameSite=None when domain is set
 		sameSiteAttr := "SameSite=Lax"
-		if cookieDomain != "" {
+		if cookieDomain != "" && isSecure {
 			sameSiteAttr = "SameSite=None"
 		}
 
@@ -132,7 +132,7 @@ func (h *WishlistHandler) ToggleWishlist(c *gin.Context) {
 		}(), domainPart)
 
 		c.Header("Set-Cookie", cookieString)
-		log.Printf("Wishlist: Manual Set-Cookie header: %s", cookieString)
+		log.Printf("Wishlist: Manual Set-Cookie: %s", cookieString)
 	} else {
 		log.Printf("Wishlist: Using existing session_id: %s", sessionID)
 	}
