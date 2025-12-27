@@ -108,21 +108,28 @@ func (h *CartHandler) AddToCart(c *gin.Context) {
 
 		log.Printf("Cart: Using cookie domain: %s", cookieDomain)
 
-		// Industry standard: Set two cookies for cross-domain compatibility
-		// 1. Domain-specific cookie for cross-domain access (SameSite=None; Secure)
-		// 2. Host-specific cookie for fallback (SameSite=Lax)
+		// Industry standard: Set single cookie with proper attributes for cross-domain
+		// For cross-domain scenarios, we need Domain=ethnictreasures.co.in with SameSite=None; Secure
+		// For localhost scenarios, we need no domain with SameSite=Lax
 
-		// Cookie 1: Domain-specific for cross-domain
+		var cookieString string
 		if cookieDomain != "" && isSecure {
-			crossDomainCookie := fmt.Sprintf("session_id=%s; Path=/; Domain=%s; Max-Age=%d; HttpOnly=false; SameSite=None; Secure",
+			// Production: Cross-domain cookie
+			cookieString = fmt.Sprintf("session_id=%s; Path=/; Domain=%s; Max-Age=%d; HttpOnly=false; SameSite=None; Secure",
 				sessionID, cookieDomain, 86400*30)
-			c.Header("Set-Cookie", crossDomainCookie)
-			log.Printf("Cart: Cross-domain cookie: %s", crossDomainCookie)
+		} else {
+			// Localhost: Simple cookie
+			cookieString = fmt.Sprintf("session_id=%s; Path=/; Max-Age=%d; HttpOnly=false; SameSite=Lax%s",
+				sessionID, 86400*30, func() string {
+					if isSecure {
+						return "; Secure"
+					}
+					return ""
+				}())
 		}
 
-		// Cookie 2: Host-specific fallback
-		c.SetCookie("session_id", sessionID, 86400*30, "/", "", isSecure, false)
-		log.Printf("Cart: Host-specific cookie set with session_id: %s, secure: %v", sessionID, isSecure)
+		c.Header("Set-Cookie", cookieString)
+		log.Printf("Cart: Setting cookie: %s", cookieString)
 
 		// Log all response headers to debug
 		log.Printf("Cart: All response headers: %+v", c.Writer.Header())
