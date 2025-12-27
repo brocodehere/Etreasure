@@ -34,7 +34,7 @@ func (h *ProductsHandler) formatImageURL(imagePath *string) *string {
 	}
 	// If it's a local path starting with /uploads/, convert to full URL
 	if strings.HasPrefix(path, "/uploads/") {
-		url := "https://etreasure-1.onrender.com" + path
+		url := "http://localhost:8080" + path
 		return &url
 	}
 	// If it's already a full URL, keep as is
@@ -89,35 +89,13 @@ type UpsertProductRequest struct {
 	Images      []ProductImage   `json:"images"`
 }
 
-// GET /api/admin/products?first=20&after=cursor (cursor = last uuid_id)
+// GET /api/admin/products
 func (h *ProductsHandler) List(c *gin.Context) {
 	ctx := c.Request.Context()
-	firstStr := c.DefaultQuery("first", "20")
-	afterStr := c.DefaultQuery("after", "")
-	first, _ := strconv.Atoi(firstStr)
-	if first <= 0 || first > 100 {
-		first = 20
-	}
 
-	var rows pgx.Rows
-	var err error
-	if afterStr == "" {
-		rows, err = h.DB.Query(ctx, `SELECT uuid_id, slug, title, subtitle, description, category_id, published, publish_at, unpublish_at, created_at, updated_at
-			FROM products
-			ORDER BY uuid_id ASC
-			LIMIT $1`, first+1)
-	} else {
-		afterUUID, err := uuid.Parse(afterStr)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid cursor"})
-			return
-		}
-		rows, err = h.DB.Query(ctx, `SELECT uuid_id, slug, title, subtitle, description, category_id, published, publish_at, unpublish_at, created_at, updated_at
-			FROM products
-			WHERE uuid_id > $1
-			ORDER BY uuid_id ASC
-			LIMIT $2`, afterUUID, first+1)
-	}
+	rows, err := h.DB.Query(ctx, `SELECT uuid_id, slug, title, subtitle, description, category_id, published, publish_at, unpublish_at, created_at, updated_at
+		FROM products
+		ORDER BY created_at DESC`)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "query failed"})
 		return
@@ -125,20 +103,13 @@ func (h *ProductsHandler) List(c *gin.Context) {
 	defer rows.Close()
 
 	items := make([]Product, 0)
-	var nextCursor *string
 	for rows.Next() {
 		var p Product
 		if err := rows.Scan(&p.UUIDID, &p.Slug, &p.Title, &p.Subtitle, &p.Description, &p.CategoryID, &p.Published, &p.PublishAt, &p.UnpublishAt, &p.CreatedAt, &p.UpdatedAt); err == nil {
 			items = append(items, p)
 		}
 	}
-	if len(items) > first { // extra row for cursor
-		last := items[first]
-		items = items[:first]
-		nc := last.UUIDID.String()
-		nextCursor = &nc
-	}
-	c.JSON(http.StatusOK, gin.H{"items": items, "nextCursor": nextCursor})
+	c.JSON(http.StatusOK, gin.H{"items": items})
 }
 
 // POST /api/admin/products

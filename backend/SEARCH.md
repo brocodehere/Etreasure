@@ -69,7 +69,7 @@ fields         (optional, string): Comma-separated fields to include
 
 **Example Request:**
 ```bash
-curl "https://etreasure-1.onrender.com/api/search?q=silk+saree&category=2&min_price=50000&max_price=200000&sort=relevance&limit=20"
+curl "http://localhost:8080/api/search?q=silk+saree&category=2&min_price=50000&max_price=200000&sort=relevance&limit=20"
 ```
 
 **Response (200 OK):**
@@ -125,7 +125,7 @@ limit          (optional, integer, default 8, max 50): Number of suggestions
 
 **Example Request:**
 ```bash
-curl "https://etreasure-1.onrender.com/api/search/suggest?q=bana&limit=8"
+curl "http://localhost:8080/api/search/suggest?q=bana&limit=8"
 ```
 
 **Response (200 OK):**
@@ -169,7 +169,7 @@ q              (optional, string): Filter facets by query context
 
 **Example Request:**
 ```bash
-curl "https://etreasure-1.onrender.com/api/search/facets?q=saree"
+curl "http://localhost:8080/api/search/facets?q=saree"
 ```
 
 **Response (200 OK):**
@@ -213,7 +213,7 @@ curl "https://etreasure-1.onrender.com/api/search/facets?q=saree"
 
 **Example Request:**
 ```bash
-curl -X POST "https://etreasure-1.onrender.com/api/admin/search/reindex" \
+curl -X POST "http://localhost:8080/api/admin/search/reindex" \
   -H "Authorization: Bearer <admin-jwt-token>"
 ```
 
@@ -352,7 +352,7 @@ SELECT cron.schedule('reindex-search-vectors', '0 2 * * *',
 #### Option 2: External Cron (Linux/macOS)
 ```bash
 # Add to crontab
-0 2 * * * curl -X POST https://etreasure-1.onrender.com/api/admin/search/reindex \
+0 2 * * * curl -X POST http://localhost:8080/api/admin/search/reindex \
   -H "Authorization: Bearer $ADMIN_JWT_TOKEN"
 ```
 
@@ -474,7 +474,7 @@ rows, _ := db.Query(ctx, "SELECT * FROM products WHERE title ILIKE '%" + query +
 
 3. Trigger may not have executed. Manually reindex:
    ```bash
-   curl -X POST https://etreasure-1.onrender.com/api/admin/search/reindex -H "Authorization: Bearer $TOKEN"
+   curl -X POST http://localhost:8080/api/admin/search/reindex -H "Authorization: Bearer $TOKEN"
    ```
 
 ### Issue: Search is slow (> 500ms)
@@ -548,7 +548,7 @@ export let options = {
 };
 
 export default function() {
-  const url = 'https://etreasure-1.onrender.com/api/search?q=saree&limit=20';
+  const url = 'http://localhost:8080/api/search?q=saree&limit=20';
   let res = http.get(url);
   check(res, {
     'status is 200': (r) => r.status === 200,
@@ -606,7 +606,7 @@ info:
   version: 1.0.0
   description: Full-text product search with filters and suggestions
 servers:
-  - url: https://etreasure-1.onrender.com
+  - url: http://localhost:8080
 paths:
   /api/search:
     get:
