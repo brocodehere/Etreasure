@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -85,10 +86,23 @@ func (h *WishlistHandler) ToggleWishlist(c *gin.Context) {
 
 	// Get session ID from cookie or create new one
 	sessionID, err := c.Cookie("session_id")
+	log.Printf("Wishlist: Reading session_id cookie: %s, error: %v", sessionID, err)
 	if err != nil || sessionID == "" {
 		// Generate new session ID using UUID
 		sessionID = fmt.Sprintf("session_%s", uuid.New().String())
-		c.SetCookie("session_id", sessionID, 86400*30, "/", "", false, true) // 30 days
+		// Set secure flag based on whether request is HTTPS
+		isSecure := c.Request.TLS != nil
+		log.Printf("Wishlist: Setting new session_id cookie: %s, secure: %v, TLS: %v", sessionID, isSecure, c.Request.TLS != nil)
+		c.SetCookie("session_id", sessionID, 86400*30, "/", "", isSecure, true) // 30 days
+		// Also try to set the cookie manually as a fallback
+		c.Header("Set-Cookie", fmt.Sprintf("session_id=%s; Path=/; Max-Age=%d; HttpOnly; %s", sessionID, 86400*30, func() string {
+			if isSecure {
+				return "Secure; SameSite=Lax"
+			}
+			return "SameSite=Lax"
+		}()))
+	} else {
+		log.Printf("Wishlist: Using existing session_id: %s", sessionID)
 	}
 
 	// Check if item is already in wishlist (using session_id for guest users)
@@ -144,7 +158,9 @@ func (h *WishlistHandler) ToggleWishlist(c *gin.Context) {
 func (h *WishlistHandler) GetWishlist(c *gin.Context) {
 	// Get session ID from cookie (for consistency with toggle)
 	sessionID, err := c.Cookie("session_id")
+	log.Printf("GetWishlist: Reading session_id cookie: %s, error: %v", sessionID, err)
 	if err != nil || sessionID == "" {
+		log.Printf("GetWishlist: No session found, returning empty wishlist")
 		// Return empty wishlist for new users
 		c.JSON(http.StatusOK, WishlistResponse{
 			Items: []WishlistItem{},

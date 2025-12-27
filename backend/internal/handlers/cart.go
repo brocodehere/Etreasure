@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 
@@ -72,10 +73,23 @@ func (h *CartHandler) AddToCart(c *gin.Context) {
 
 	// Get session ID from cookie or create new one
 	sessionID, err := c.Cookie("session_id")
+	log.Printf("Cart: Reading session_id cookie: %s, error: %v", sessionID, err)
 	if err != nil || sessionID == "" {
 		// Generate new session ID using UUID
 		sessionID = fmt.Sprintf("session_%s", uuid.New().String())
-		c.SetCookie("session_id", sessionID, 86400*30, "/", "", false, true) // 30 days
+		// Set secure flag based on whether request is HTTPS
+		isSecure := c.Request.TLS != nil
+		log.Printf("Cart: Setting new session_id cookie: %s, secure: %v, TLS: %v", sessionID, isSecure, c.Request.TLS != nil)
+		c.SetCookie("session_id", sessionID, 86400*30, "/", "", isSecure, true) // 30 days
+		// Also try to set the cookie manually as a fallback
+		c.Header("Set-Cookie", fmt.Sprintf("session_id=%s; Path=/; Max-Age=%d; HttpOnly; %s", sessionID, 86400*30, func() string {
+			if isSecure {
+				return "Secure; SameSite=Lax"
+			}
+			return "SameSite=Lax"
+		}()))
+	} else {
+		log.Printf("Cart: Using existing session_id: %s", sessionID)
 	}
 
 	// Check if item already exists in cart
@@ -123,7 +137,9 @@ func (h *CartHandler) GetCart(c *gin.Context) {
 
 	// Get session ID from cookie
 	sessionID, err := c.Cookie("session_id")
+	log.Printf("GetCart: Reading session_id cookie: %s, error: %v", sessionID, err)
 	if err != nil || sessionID == "" {
+		log.Printf("GetCart: No session found, returning empty cart")
 		// Return empty cart for new users
 		c.JSON(http.StatusOK, CartResponse{
 			Items: []CartItem{},

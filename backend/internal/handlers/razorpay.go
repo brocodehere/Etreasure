@@ -65,7 +65,9 @@ func (h *RazorpayHandler) CreatePayment(c *gin.Context) {
 		if sessionID == "" {
 			sessionID = fmt.Sprintf("session_%d", len(body)+len(c.Request.RemoteAddr))
 		}
-		c.SetCookie("session_id", sessionID, 86400*30, "/", "", false, true) // 30 days
+		// Set secure flag based on whether request is HTTPS
+		isSecure := c.Request.TLS != nil
+		c.SetCookie("session_id", sessionID, 86400*30, "/", "", isSecure, true) // 30 days
 	}
 
 	var subtotal int

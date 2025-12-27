@@ -80,8 +80,8 @@ func main() {
 		r.Use(cors.New(cors.Config{
 			AllowOrigins:     []string{"http://localhost:4321", "http://127.0.0.1:4321", "http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5174", "http://127.0.0.1:5174", "https://ethnictreasures.co.in"},
 			AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-			AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
-			ExposeHeaders:    []string{"Content-Length"},
+			AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "X-Requested-With"},
+			ExposeHeaders:    []string{"Content-Length", "Set-Cookie"},
 			AllowCredentials: true,
 		}))
 	} else {
@@ -102,8 +102,8 @@ func main() {
 		r.Use(cors.New(cors.Config{
 			AllowOrigins:     allowedOrigins,
 			AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-			AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
-			ExposeHeaders:    []string{"Content-Length"},
+			AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "X-Requested-With"},
+			ExposeHeaders:    []string{"Content-Length", "Set-Cookie"},
 			AllowCredentials: true,
 		}))
 	}
