@@ -80,7 +80,7 @@ func (h *RazorpayHandler) CreatePayment(c *gin.Context) {
 			}
 		}
 
-		c.SetCookie("session_id", sessionID, 86400*30, "/", cookieDomain, isSecure, true) // 30 days
+		c.SetCookie("session_id", sessionID, 86400*30, "/", cookieDomain, isSecure, false) // 30 days, HttpOnly=false for frontend access
 	}
 
 	var subtotal int

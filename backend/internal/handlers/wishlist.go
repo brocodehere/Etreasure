@@ -88,6 +88,11 @@ func (h *WishlistHandler) ToggleWishlist(c *gin.Context) {
 	// Get session ID from cookie or create new one
 	sessionID, err := c.Cookie("session_id")
 	log.Printf("Wishlist: Reading session_id cookie: %s, error: %v", sessionID, err)
+	log.Printf("Wishlist: Request headers: %+v", c.Request.Header)
+	log.Printf("Wishlist: Request origin: %s", c.GetHeader("Origin"))
+	log.Printf("Wishlist: Request host: %s", c.Request.Host)
+	log.Printf("Wishlist: Is HTTPS: %v", c.Request.TLS != nil)
+
 	if err != nil || sessionID == "" {
 		// Generate new session ID using UUID
 		sessionID = fmt.Sprintf("session_%s", uuid.New().String())
@@ -106,7 +111,10 @@ func (h *WishlistHandler) ToggleWishlist(c *gin.Context) {
 			}
 		}
 
-		c.SetCookie("session_id", sessionID, 86400*30, "/", cookieDomain, isSecure, true) // 30 days
+		log.Printf("Wishlist: Using cookie domain: %s", cookieDomain)
+
+		c.SetCookie("session_id", sessionID, 86400*30, "/", cookieDomain, isSecure, false) // 30 days, HttpOnly=false for frontend access
+		log.Printf("Wishlist: SetCookie called with session_id: %s, domain: %s, secure: %v", sessionID, cookieDomain, isSecure)
 
 		// Also try to set the cookie manually as a fallback with proper domain
 		domainPart := ""
@@ -118,12 +126,16 @@ func (h *WishlistHandler) ToggleWishlist(c *gin.Context) {
 		if isSecure && cookieDomain != "" {
 			sameSiteAttr = "SameSite=None"
 		}
-		c.Header("Set-Cookie", fmt.Sprintf("session_id=%s; Path=/; Max-Age=%d; HttpOnly; %s%s", sessionID, 86400*30, func() string {
+
+		cookieString := fmt.Sprintf("session_id=%s; Path=/; Max-Age=%d; %s%s", sessionID, 86400*30, func() string {
 			if isSecure {
 				return "Secure; " + sameSiteAttr
 			}
 			return sameSiteAttr
-		}(), domainPart))
+		}(), domainPart)
+
+		c.Header("Set-Cookie", cookieString)
+		log.Printf("Wishlist: Manual Set-Cookie header: %s", cookieString)
 	} else {
 		log.Printf("Wishlist: Using existing session_id: %s", sessionID)
 	}
@@ -182,6 +194,11 @@ func (h *WishlistHandler) GetWishlist(c *gin.Context) {
 	// Get session ID from cookie (for consistency with toggle)
 	sessionID, err := c.Cookie("session_id")
 	log.Printf("GetWishlist: Reading session_id cookie: %s, error: %v", sessionID, err)
+	log.Printf("GetWishlist: Request headers: %+v", c.Request.Header)
+	log.Printf("GetWishlist: Request origin: %s", c.GetHeader("Origin"))
+	log.Printf("GetWishlist: Request host: %s", c.Request.Host)
+	log.Printf("GetWishlist: All cookies: %+v", c.Request.Cookies())
+
 	if err != nil || sessionID == "" {
 		log.Printf("GetWishlist: No session found, returning empty wishlist")
 		// Return empty wishlist for new users
@@ -191,6 +208,8 @@ func (h *WishlistHandler) GetWishlist(c *gin.Context) {
 		})
 		return
 	}
+
+	log.Printf("GetWishlist: Using session_id: %s", sessionID)
 
 	ctx := context.Background()
 
