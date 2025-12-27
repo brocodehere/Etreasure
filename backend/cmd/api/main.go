@@ -149,7 +149,7 @@ func main() {
 	imageHelper := storage.NewImageURLHelper(r2Client)
 
 	protected := r.Group("/api/admin")
-	// protected.Use(middleware.AuthRequired(cfg)) // Temporarily disabled for testing
+	// protected.Use(middleware.AuthRequired(cfg)) // Re-enabled for production
 	{
 		protected.GET("/me", authHandler.Me)
 
