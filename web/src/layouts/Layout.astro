@@ -56,7 +56,7 @@ const fullTwitterImage = twitterImage.startsWith('http') ? twitterImage : new UR
 	<meta name="keywords" content={keywords} />
 	<meta name="author" content={author} />
 	<meta name="robots" content={robots} />
-	<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+	<link rel="icon" type="image/png" href="/public/images/LOGO.png" />
 	
 	<!-- Canonical URL -->
 	<link rel="canonical" href={currentUrl} />
@@ -90,7 +90,7 @@ const fullTwitterImage = twitterImage.startsWith('http') ? twitterImage : new UR
 		"@type": "Organization",
 		"name": "Ethnic Treasures",
 		"url": Astro.url.origin,
-		"logo": new URL("/images/logo.png", Astro.url.origin).href,
+		"logo": new URL("/public/images/LOGO.png", Astro.url.origin).href,
 		"description": "Crafting Tradition, Weaving Stories - Premium ethnic wear and handcrafted products",
 		"sameAs": [
 			"https://www.instagram.com/ethnic.treasures",
