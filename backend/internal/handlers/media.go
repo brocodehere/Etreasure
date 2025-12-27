@@ -272,7 +272,7 @@ func (h *MediaHandler) List(c *gin.Context) {
 		if strings.HasPrefix(it.Path, "product/") || strings.HasPrefix(it.Path, "banner/") || strings.HasPrefix(it.Path, "category/") {
 			// R2 path - use base64 encoded key in proxy URL to avoid slash issues
 			encodedKey := strings.ReplaceAll(it.Path, "/", "_")
-			it.URL = fmt.Sprintf("http://localhost:8080/api/public/media/%s", encodedKey)
+			it.URL = fmt.Sprintf("https://etreasure-1.onrender.com/api/public/media/%s", encodedKey)
 		} else {
 			// Legacy local path
 			it.URL = it.Path
