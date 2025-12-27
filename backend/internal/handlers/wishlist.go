@@ -97,15 +97,23 @@ func (h *WishlistHandler) ToggleWishlist(c *gin.Context) {
 		// Generate new session ID using UUID
 		sessionID = fmt.Sprintf("session_%s", uuid.New().String())
 		// Set secure flag based on whether request is HTTPS
-		isSecure := c.Request.TLS != nil
-		log.Printf("Wishlist: Setting new session_id cookie: %s, secure: %v, TLS: %v", sessionID, isSecure, c.Request.TLS != nil)
+		// Check both TLS and X-Forwarded-Proto header (for proxy setups)
+		isSecure := c.Request.TLS != nil || c.GetHeader("X-Forwarded-Proto") == "https"
+		log.Printf("Wishlist: Setting new session_id cookie: %s, secure: %v, TLS: %v, X-Forwarded-Proto: %s", sessionID, isSecure, c.Request.TLS != nil, c.GetHeader("X-Forwarded-Proto"))
 
 		// For production, set cookie domain to work across ethnictreasures.co.in
 		cookieDomain := ""
-		// Always set domain for cross-domain cookie sharing
-		cookieDomain = os.Getenv("COOKIE_DOMAIN")
-		if cookieDomain == "" {
-			cookieDomain = "ethnictreasures.co.in"
+		// Only set domain for production/remote environments, not localhost
+		isLocalhost := c.Request.Host == "localhost:8080" ||
+			c.GetHeader("Host") == "localhost:8080" ||
+			c.Request.Host == "127.0.0.1:8080" ||
+			c.GetHeader("Host") == "127.0.0.1:8080"
+
+		if !isLocalhost {
+			cookieDomain = os.Getenv("COOKIE_DOMAIN")
+			if cookieDomain == "" {
+				cookieDomain = "ethnictreasures.co.in"
+			}
 		}
 
 		log.Printf("Wishlist: Using cookie domain: %s", cookieDomain)

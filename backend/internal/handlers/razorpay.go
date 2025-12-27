@@ -67,14 +67,22 @@ func (h *RazorpayHandler) CreatePayment(c *gin.Context) {
 			sessionID = fmt.Sprintf("session_%d", len(body)+len(c.Request.RemoteAddr))
 		}
 		// Set secure flag based on whether request is HTTPS
-		isSecure := c.Request.TLS != nil
+		// Check both TLS and X-Forwarded-Proto header (for proxy setups)
+		isSecure := c.Request.TLS != nil || c.GetHeader("X-Forwarded-Proto") == "https"
 
 		// For production, set cookie domain to work across ethnictreasures.co.in
 		cookieDomain := ""
-		// Always set domain for cross-domain cookie sharing
-		cookieDomain = os.Getenv("COOKIE_DOMAIN")
-		if cookieDomain == "" {
-			cookieDomain = "ethnictreasures.co.in"
+		// Only set domain for production/remote environments, not localhost
+		isLocalhost := c.Request.Host == "localhost:8080" ||
+			c.GetHeader("Host") == "localhost:8080" ||
+			c.Request.Host == "127.0.0.1:8080" ||
+			c.GetHeader("Host") == "127.0.0.1:8080"
+
+		if !isLocalhost {
+			cookieDomain = os.Getenv("COOKIE_DOMAIN")
+			if cookieDomain == "" {
+				cookieDomain = "ethnictreasures.co.in"
+			}
 		}
 
 		c.SetCookie("session_id", sessionID, 86400*30, "/", cookieDomain, isSecure, false) // 30 days, HttpOnly=false for frontend access

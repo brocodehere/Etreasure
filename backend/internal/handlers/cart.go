@@ -84,15 +84,26 @@ func (h *CartHandler) AddToCart(c *gin.Context) {
 		// Generate new session ID using UUID
 		sessionID = fmt.Sprintf("session_%s", uuid.New().String())
 		// Set secure flag based on whether request is HTTPS
-		isSecure := c.Request.TLS != nil
-		log.Printf("Cart: Setting new session_id cookie: %s, secure: %v, TLS: %v", sessionID, isSecure, c.Request.TLS != nil)
+		// Check both TLS and X-Forwarded-Proto header (for proxy setups)
+		isSecure := c.Request.TLS != nil || c.GetHeader("X-Forwarded-Proto") == "https"
+		log.Printf("Cart: Setting new session_id cookie: %s, secure: %v, TLS: %v, X-Forwarded-Proto: %s", sessionID, isSecure, c.Request.TLS != nil, c.GetHeader("X-Forwarded-Proto"))
 
 		// For production, set cookie domain to work across ethnictreasures.co.in
 		cookieDomain := ""
-		// Always set domain for cross-domain cookie sharing
-		cookieDomain = os.Getenv("COOKIE_DOMAIN")
-		if cookieDomain == "" {
-			cookieDomain = "ethnictreasures.co.in"
+		// Only set domain for production/remote environments, not localhost
+		isLocalhost := c.Request.Host == "localhost:8080" ||
+			c.GetHeader("Host") == "localhost:8080" ||
+			c.Request.Host == "127.0.0.1:8080" ||
+			c.GetHeader("Host") == "127.0.0.1:8080"
+
+		log.Printf("Cart: Request host: %s, isLocalhost: %v", c.Request.Host, isLocalhost)
+
+		if !isLocalhost {
+			// For production (etreasure-1.onrender.com), set domain to frontend domain
+			cookieDomain = os.Getenv("COOKIE_DOMAIN")
+			if cookieDomain == "" {
+				cookieDomain = "ethnictreasures.co.in"
+			}
 		}
 
 		log.Printf("Cart: Using cookie domain: %s", cookieDomain)
@@ -120,6 +131,13 @@ func (h *CartHandler) AddToCart(c *gin.Context) {
 
 		c.Header("Set-Cookie", cookieString)
 		log.Printf("Cart: Manual Set-Cookie: %s", cookieString)
+
+		// Log all response headers to debug
+		log.Printf("Cart: All response headers: %+v", c.Writer.Header())
+
+		// Test if cookie can be read immediately after setting
+		testSessionID, testErr := c.Cookie("session_id")
+		log.Printf("Cart: Test reading cookie after setting: %s, error: %v", testSessionID, testErr)
 	} else {
 		log.Printf("Cart: Using existing session_id: %s", sessionID)
 	}
