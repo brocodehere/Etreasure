@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/etreasure/backend/internal/storage"
@@ -80,14 +81,36 @@ func (h *CartHandler) AddToCart(c *gin.Context) {
 		// Set secure flag based on whether request is HTTPS
 		isSecure := c.Request.TLS != nil
 		log.Printf("Cart: Setting new session_id cookie: %s, secure: %v, TLS: %v", sessionID, isSecure, c.Request.TLS != nil)
-		c.SetCookie("session_id", sessionID, 86400*30, "/", "", isSecure, true) // 30 days
-		// Also try to set the cookie manually as a fallback
-		c.Header("Set-Cookie", fmt.Sprintf("session_id=%s; Path=/; Max-Age=%d; HttpOnly; %s", sessionID, 86400*30, func() string {
-			if isSecure {
-				return "Secure; SameSite=Lax"
+
+		// For production, set cookie domain to work across ethnictreasures.co.in
+		cookieDomain := ""
+		if isSecure {
+			// In production (HTTPS), set domain to work across main site
+			// Can be overridden with env var for flexibility
+			cookieDomain = os.Getenv("COOKIE_DOMAIN")
+			if cookieDomain == "" {
+				cookieDomain = "ethnictreasures.co.in"
 			}
-			return "SameSite=Lax"
-		}()))
+		}
+
+		c.SetCookie("session_id", sessionID, 86400*30, "/", cookieDomain, isSecure, true) // 30 days
+
+		// Also try to set the cookie manually as a fallback with proper domain
+		domainPart := ""
+		if cookieDomain != "" {
+			domainPart = fmt.Sprintf("; Domain=%s", cookieDomain)
+		}
+		// For cross-domain requests, use SameSite=None when Secure
+		sameSiteAttr := "SameSite=Lax"
+		if isSecure && cookieDomain != "" {
+			sameSiteAttr = "SameSite=None"
+		}
+		c.Header("Set-Cookie", fmt.Sprintf("session_id=%s; Path=/; Max-Age=%d; HttpOnly; %s%s", sessionID, 86400*30, func() string {
+			if isSecure {
+				return "Secure; " + sameSiteAttr
+			}
+			return sameSiteAttr
+		}(), domainPart))
 	} else {
 		log.Printf("Cart: Using existing session_id: %s", sessionID)
 	}

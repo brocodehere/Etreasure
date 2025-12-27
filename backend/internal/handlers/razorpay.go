@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/etreasure/backend/internal/config"
@@ -67,7 +68,19 @@ func (h *RazorpayHandler) CreatePayment(c *gin.Context) {
 		}
 		// Set secure flag based on whether request is HTTPS
 		isSecure := c.Request.TLS != nil
-		c.SetCookie("session_id", sessionID, 86400*30, "/", "", isSecure, true) // 30 days
+
+		// For production, set cookie domain to work across ethnictreasures.co.in
+		cookieDomain := ""
+		if isSecure {
+			// In production (HTTPS), set domain to work across main site
+			// Can be overridden with env var for flexibility
+			cookieDomain = os.Getenv("COOKIE_DOMAIN")
+			if cookieDomain == "" {
+				cookieDomain = "ethnictreasures.co.in"
+			}
+		}
+
+		c.SetCookie("session_id", sessionID, 86400*30, "/", cookieDomain, isSecure, true) // 30 days
 	}
 
 	var subtotal int
