@@ -132,7 +132,8 @@ func (h *WishlistHandler) ToggleWishlist(c *gin.Context) {
 			sameSiteAttr = "SameSite=None"
 		}
 
-		cookieString := fmt.Sprintf("session_id=%s; Path=/; Max-Age=%d; %s%s", sessionID, 86400*30, func() string {
+		// Ensure we have the proper cookie attributes for cross-domain
+		cookieString := fmt.Sprintf("session_id=%s; Path=/; Max-Age=%d; HttpOnly=false; %s%s", sessionID, 86400*30, func() string {
 			if isSecure {
 				return "Secure; " + sameSiteAttr
 			}
