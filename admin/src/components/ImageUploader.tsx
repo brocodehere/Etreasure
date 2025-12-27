@@ -31,7 +31,7 @@ export const ImageUploader: React.FC<Props> = ({ onUploaded, type = 'product' })
       <div className="flex items-center justify-between gap-4">
         <div>
           <div className="text-sm font-medium text-dark">Upload images</div>
-          <div className="text-xs text-dark/60">AVIF/WEBP up to ~5MB. Multiple files supported.</div>
+          <div className="text-xs text-dark/60">AVIF/WEBP/ up to ~5MB. Multiple files supported.</div>
         </div>
         <div className="flex items-center gap-2">
           <input
