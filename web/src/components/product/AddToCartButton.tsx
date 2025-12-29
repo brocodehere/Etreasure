@@ -11,6 +11,7 @@ interface Props {
 const AddToCartButton: FC<Props> = ({ id, name, price, image }) => {
   const addToCart = async () => {
     try {
+      // Backend will handle session creation automatically
       await addToCartAPI(id, 1);
       // Dispatch event to update cart count in header
       window.dispatchEvent(new Event('cart-updated'));

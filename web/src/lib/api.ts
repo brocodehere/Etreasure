@@ -34,8 +34,11 @@ export interface CategoriesResponse {
   items: Category[];
 }
 
-export const API_BASE_URL = 'https://etreasure-1.onrender.com';
+export const API_BASE_URL = import.meta.env.PUBLIC_API_URL || (import.meta.env.DEV ? 'https://etreasure-1.onrender.com' : 'https://etreasure-1.onrender.com');
 const R2_BASE_URL = ((import.meta as any).env?.PUBLIC_R2_BASE_URL as string) || 'https://pub-1a3924a6c6994107be6fe9f3ed794c0a.r2.dev';
+
+// Import session management
+import { cartSession, apiRequestWithSession } from './session';
 
 // Authentication types
 export interface User {
@@ -183,6 +186,20 @@ async function apiRequest(url: string, options: RequestInit = {}): Promise<Respo
   }
 }
 
+// Session-only API wrapper for cart operations (no authentication)
+async function apiRequestSessionOnly(url: string, options: RequestInit = {}): Promise<Response> {
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+    ...options.headers,
+  };
+
+  return fetch(`${API_BASE_URL}${url}`, {
+    ...options,
+    headers,
+    credentials: 'include', // Include cookies for session management only
+  });
+}
+
 // Authentication API functions
 export async function login(credentials: LoginRequest): Promise<AuthResponse> {
   const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
@@ -314,34 +331,52 @@ function dispatchShopEvent(eventName: string) {
   window.dispatchEvent(new Event(eventName));
 }
 
-// Cart and Wishlist functions (now public - no auth required)
+// Cart and Wishlist functions with session management (no authentication required)
 export const addToCart = async (productId: string, quantity = 1) => {
   try {
-    const response = await apiRequest('/api/cart/add', {
+    console.log('Adding to cart:', { productId, quantity });
+    console.log('API URL:', `${API_BASE_URL}/api/cart/add`);
+    
+    const response = await apiRequestSessionOnly('/api/cart/add', {
       method: 'POST',
       body: JSON.stringify({ product_id: productId, quantity }),
     });
 
+    console.log('Add to cart response status:', response.status);
     const data = await response.json();
+    console.log('Add to cart response data:', data);
+    
     dispatchShopEvent('cart-updated');
     return data;
   } catch (error) {
+    console.error('Add to cart error:', error);
     throw error;
   }
 };
 
 export const getCart = async () => {
   try {
-    const response = await apiRequest('/api/cart');
-    return await response.json();
+    console.log('Getting cart from:', `${API_BASE_URL}/api/cart`);
+    const response = await apiRequestSessionOnly('/api/cart');
+    console.log('Cart response status:', response.status);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to get cart: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log('Cart data received:', data);
+    return data;
   } catch (error) {
-    throw error;
+    console.error('Get cart error:', error);
+    // Return empty cart for better UX instead of throwing
+    return { items: [], total: 0 };
   }
 };
 
 export const removeFromCart = async (itemId: string) => {
   try {
-    const response = await apiRequest(`/api/cart/${itemId}`, {
+    const response = await apiRequestSessionOnly(`/api/cart/${itemId}`, {
       method: 'DELETE',
     });
 
@@ -349,13 +384,14 @@ export const removeFromCart = async (itemId: string) => {
     dispatchShopEvent('cart-updated');
     return data;
   } catch (error) {
+    console.error('Remove from cart error:', error);
     throw error;
   }
 };
 
 export const clearCart = async () => {
   try {
-    const response = await apiRequest('/api/cart/clear', {
+    const response = await apiRequestSessionOnly('/api/cart/clear', {
       method: 'POST',
     });
 
@@ -363,44 +399,65 @@ export const clearCart = async () => {
     dispatchShopEvent('cart-updated');
     return data;
   } catch (error) {
+    console.error('Clear cart error:', error);
     throw error;
   }
 };
 
 export const toggleWishlist = async (productId: string) => {
   try {
-    const response = await apiRequest('/api/wishlist/toggle', {
+    console.log('Toggling wishlist for product:', productId);
+    console.log('Wishlist API URL:', `${API_BASE_URL}/api/wishlist/toggle`);
+    
+    const response = await apiRequestSessionOnly('/api/wishlist/toggle', {
       method: 'POST',
       body: JSON.stringify({ product_id: productId }),
     });
 
+    console.log('Toggle wishlist response status:', response.status);
     const data = await response.json();
+    console.log('Toggle wishlist response data:', data);
+    
     dispatchShopEvent('wishlist-updated');
     return data;
   } catch (error) {
+    console.error('Toggle wishlist error:', error);
     throw error;
   }
 };
 
 export const getWishlist = async () => {
   try {
-    const response = await apiRequest('/api/wishlist');
-    return await response.json();
+    console.log('Getting wishlist from:', `${API_BASE_URL}/api/wishlist`);
+    const response = await apiRequestSessionOnly('/api/wishlist');
+    console.log('Get wishlist response status:', response.status);
+    
+    const data = await response.json();
+    console.log('Wishlist data received:', data);
+    return data;
   } catch (error) {
+    console.error('Get wishlist error:', error);
     throw error;
   }
 };
 
 export const removeFromWishlist = async (productId: string) => {
   try {
-    const response = await apiRequest(`/api/wishlist/${productId}`, {
+    console.log('Removing from wishlist:', productId);
+    console.log('Remove wishlist API URL:', `${API_BASE_URL}/api/wishlist/${productId}`);
+    
+    const response = await apiRequestSessionOnly(`/api/wishlist/${productId}`, {
       method: 'DELETE',
     });
 
+    console.log('Remove from wishlist response status:', response.status);
     const data = await response.json();
+    console.log('Remove from wishlist response data:', data);
+    
     dispatchShopEvent('wishlist-updated');
     return data;
   } catch (error) {
+    console.error('Remove from wishlist error:', error);
     throw error;
   }
 };
