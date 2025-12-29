@@ -30,6 +30,7 @@ type CartItem struct {
 	Price     float64 `json:"price"`
 	Quantity  int     `json:"quantity"`
 	ImageURL  string  `json:"image_url"`
+	SKU       string  `json:"sku"`
 }
 
 type CartResponse struct {
@@ -199,6 +200,7 @@ func (h *CartHandler) GetCart(c *gin.Context) {
 			c.id,
 			c.product_id::text,
 			p.title,
+			pv.sku,
 			pv.price_cents,
 			pv.currency,
 			c.quantity,
@@ -236,8 +238,9 @@ func (h *CartHandler) GetCart(c *gin.Context) {
 		var quantity int
 		var imagePath *string
 		var productID string
+		var sku *string
 
-		err := rows.Scan(&id, &productID, &item.Title, &priceCents, &currency, &quantity, &imagePath)
+		err := rows.Scan(&id, &productID, &item.Title, &sku, &priceCents, &currency, &quantity, &imagePath)
 		if err != nil {
 			continue
 		}
@@ -246,6 +249,11 @@ func (h *CartHandler) GetCart(c *gin.Context) {
 		item.ProductID = productID
 		item.Price = float64(priceCents) / 100.0
 		item.Quantity = quantity
+
+		// Set SKU if available
+		if sku != nil {
+			item.SKU = *sku
+		}
 
 		// Construct proper image URL using ImageHelper
 		if h.ImageHelper != nil {
