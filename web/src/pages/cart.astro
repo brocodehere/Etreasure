@@ -448,7 +448,7 @@ const PUBLIC_API_URL = import.meta.env.DEV ? 'https://etreasure-1.onrender.com' 
 							<div class="flex-1 space-y-4">
 								<div>
 									<h3 class="font-semibold text-lg text-dark mb-2">${item.title}</h3>
-									<p class="text-sm text-dark/60">SKU: ${item.product_id} | Size: Standard</p>
+									<p class="text-sm text-dark/60">SKU: ${item.sku || 'N/A'} | Size: Standard</p>
 								</div>
 								
 								<div class="flex items-center space-x-4">
