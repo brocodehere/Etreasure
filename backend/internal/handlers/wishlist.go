@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -87,11 +86,6 @@ func (h *WishlistHandler) ToggleWishlist(c *gin.Context) {
 
 	// Get session ID from cookie or create new one
 	sessionID, err := c.Cookie("session_id")
-	log.Printf("Wishlist: Reading session_id cookie: %s, error: %v", sessionID, err)
-	log.Printf("Wishlist: Request headers: %+v", c.Request.Header)
-	log.Printf("Wishlist: Request origin: %s", c.GetHeader("Origin"))
-	log.Printf("Wishlist: Request host: %s", c.Request.Host)
-	log.Printf("Wishlist: Is HTTPS: %v", c.Request.TLS != nil)
 
 	if err != nil || sessionID == "" {
 		// Generate new session ID using UUID
@@ -99,7 +93,6 @@ func (h *WishlistHandler) ToggleWishlist(c *gin.Context) {
 		// Set secure flag based on whether request is HTTPS
 		// Check both TLS and X-Forwarded-Proto header (for proxy setups)
 		isSecure := c.Request.TLS != nil || c.GetHeader("X-Forwarded-Proto") == "https"
-		log.Printf("Wishlist: Setting new session_id cookie: %s, secure: %v, TLS: %v, X-Forwarded-Proto: %s", sessionID, isSecure, c.Request.TLS != nil, c.GetHeader("X-Forwarded-Proto"))
 
 		// For production, set cookie domain to work across ethnictreasures.co.in
 		cookieDomain := ""
@@ -108,8 +101,6 @@ func (h *WishlistHandler) ToggleWishlist(c *gin.Context) {
 		headerHost := c.GetHeader("Host")
 		origin := c.GetHeader("Origin")
 		referer := c.GetHeader("Referer")
-
-		log.Printf("Wishlist: Request detection - RequestHost: %s, HeaderHost: %s, Origin: %s, Referer: %s", requestHost, headerHost, origin, referer)
 
 		// Check if this is a production request from ethnictreasures.co.in
 		isProduction := (origin == "https://ethnictreasures.co.in") ||
@@ -127,8 +118,6 @@ func (h *WishlistHandler) ToggleWishlist(c *gin.Context) {
 			origin == "http://localhost:4321" ||
 			origin == "http://localhost:3000"
 
-		log.Printf("Wishlist: IsLocalhost: %v, IsProduction: %v", isLocalhost, isProduction)
-
 		if isProduction && !isLocalhost {
 			// For cross-origin requests, don't set domain to let browser handle cookies naturally
 			cookieDomain = os.Getenv("COOKIE_DOMAIN")
@@ -136,12 +125,7 @@ func (h *WishlistHandler) ToggleWishlist(c *gin.Context) {
 				// Don't set domain for cross-origin - let browser handle it
 				cookieDomain = ""
 			}
-			log.Printf("Wishlist: Production cross-origin mode - no domain will be set")
-		} else {
-			log.Printf("Wishlist: Localhost/Dev mode - no domain will be set")
 		}
-
-		log.Printf("Wishlist: Using cookie domain: %s", cookieDomain)
 
 		// Industry standard: Set single cookie with proper attributes for cross-domain
 		// For cross-domain scenarios, we need Domain=ethnictreasures.co.in with SameSite=None; Secure
@@ -163,10 +147,9 @@ func (h *WishlistHandler) ToggleWishlist(c *gin.Context) {
 		}
 
 		c.Header("Set-Cookie", cookieString)
-		log.Printf("Wishlist: Setting cookie: %s", cookieString)
 
 	} else {
-		log.Printf("Wishlist: Using existing session_id: %s", sessionID)
+		// Use existing session
 	}
 
 	// Check if item is already in wishlist (using session_id for guest users)
@@ -222,14 +205,8 @@ func (h *WishlistHandler) ToggleWishlist(c *gin.Context) {
 func (h *WishlistHandler) GetWishlist(c *gin.Context) {
 	// Get session ID from cookie (for consistency with toggle)
 	sessionID, err := c.Cookie("session_id")
-	log.Printf("GetWishlist: Reading session_id cookie: %s, error: %v", sessionID, err)
-	log.Printf("GetWishlist: Request headers: %+v", c.Request.Header)
-	log.Printf("GetWishlist: Request origin: %s", c.GetHeader("Origin"))
-	log.Printf("GetWishlist: Request host: %s", c.Request.Host)
-	log.Printf("GetWishlist: All cookies: %+v", c.Request.Cookies())
 
 	if err != nil || sessionID == "" {
-		log.Printf("GetWishlist: No session found, returning empty wishlist")
 		// Return empty wishlist for new users
 		c.JSON(http.StatusOK, WishlistResponse{
 			Items: []WishlistItem{},
@@ -237,8 +214,6 @@ func (h *WishlistHandler) GetWishlist(c *gin.Context) {
 		})
 		return
 	}
-
-	log.Printf("GetWishlist: Using session_id: %s", sessionID)
 
 	ctx := context.Background()
 

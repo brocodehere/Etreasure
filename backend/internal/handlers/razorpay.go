@@ -302,8 +302,16 @@ func (h *RazorpayHandler) VerifyPayment(c *gin.Context) {
 
 	ctx := c.Request.Context()
 
+	// Start transaction for stock management
+	tx, err := h.DB.Begin(ctx)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to start transaction"})
+		return
+	}
+	defer tx.Rollback(ctx)
+
 	// Mark order as paid and store payment details
-	_, err := h.DB.Exec(ctx, `
+	_, err = tx.Exec(ctx, `
     UPDATE orders SET 
         status = 'paid', 
         updated_at = NOW(),
@@ -314,6 +322,62 @@ func (h *RazorpayHandler) VerifyPayment(c *gin.Context) {
   `, req.OrderID, req.RazorpayOrderID, req.RazorpayPaymentID, req.RazorpaySignature)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update order"})
+		return
+	}
+
+	// Decrease stock for each order line item after successful payment
+	rows, err := tx.Query(ctx, `
+		SELECT product_id, variant_id, quantity 
+		FROM order_line_items 
+		WHERE order_id = $1
+	`, req.OrderID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch order items"})
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var productID string
+		var variantID *string
+		var quantity int
+		if err := rows.Scan(&productID, &variantID, &quantity); err != nil {
+			continue
+		}
+
+		// Check current stock and decrease if available
+		var currentStock int
+		err := tx.QueryRow(ctx, `
+			SELECT COALESCE(stock_quantity, 0) 
+			FROM product_variants 
+			WHERE product_id = $1
+		`, productID).Scan(&currentStock)
+
+		if err != nil || currentStock < quantity {
+			// Insufficient stock - rollback transaction
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error":         "insufficient stock for product " + productID,
+				"current_stock": currentStock,
+				"requested":     quantity,
+			})
+			return
+		}
+
+		// Decrease stock from product_variants
+		_, err = tx.Exec(ctx, `
+			UPDATE product_variants 
+			SET stock_quantity = stock_quantity - $1 
+			WHERE product_id = $2
+		`, quantity, productID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update stock"})
+			return
+		}
+	}
+
+	// Commit transaction
+	if err := tx.Commit(ctx); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to commit transaction"})
 		return
 	}
 

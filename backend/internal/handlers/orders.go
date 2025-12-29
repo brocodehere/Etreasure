@@ -484,14 +484,26 @@ func (h *Handler) UpdateOrder(c *gin.Context) {
 		return
 	}
 
+	// Get current order status to check if we're cancelling a paid order
+	var currentStatus string
+	err := h.DB.QueryRow(c, "SELECT status FROM orders WHERE id = $1", id).Scan(&currentStatus)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "order not found"})
+		return
+	}
+
 	sets := []string{}
 	args := []any{}
 	argIdx := 1
+	var isCancellingPaidOrder bool
 
 	if req.Status != nil {
 		sets = append(sets, "status = $"+strconv.Itoa(argIdx))
 		args = append(args, *req.Status)
 		argIdx++
+
+		// Check if we're cancelling a paid order
+		isCancellingPaidOrder = (currentStatus == "paid" && *req.Status == "cancelled")
 	}
 	if req.ShippingStatus != nil {
 		sets = append(sets, "shipping_status = $"+strconv.Itoa(argIdx))
@@ -509,13 +521,61 @@ func (h *Handler) UpdateOrder(c *gin.Context) {
 		return
 	}
 
+	// Start transaction for stock management
+	tx, err := h.DB.Begin(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to start transaction"})
+		return
+	}
+	defer tx.Rollback(c)
+
 	sets = append(sets, "updated_at = NOW()")
 	query := "UPDATE orders SET " + joinString(sets, ", ") + " WHERE id = $" + strconv.Itoa(argIdx)
 	args = append(args, id)
 
-	_, err := h.DB.Exec(c, query, args...)
+	_, err = tx.Exec(c, query, args...)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// If cancelling a paid order, restore stock
+	if isCancellingPaidOrder {
+		rows, err := tx.Query(c, `
+			SELECT product_id, variant_id, quantity 
+			FROM order_line_items 
+			WHERE order_id = $1
+		`, id)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch order items"})
+			return
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var productID string
+			var variantID *string
+			var quantity int
+			if err := rows.Scan(&productID, &variantID, &quantity); err != nil {
+				continue
+			}
+
+			// Restore stock to product_variants
+			_, err = tx.Exec(c, `
+				UPDATE product_variants 
+				SET stock_quantity = stock_quantity + $1 
+				WHERE product_id = $2
+			`, quantity, productID)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to restore stock"})
+				return
+			}
+		}
+	}
+
+	// Commit transaction
+	if err := tx.Commit(c); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to commit transaction"})
 		return
 	}
 

@@ -161,6 +161,8 @@ func main() {
 		protected.PUT("/products/:id", products.Update)
 		protected.DELETE("/products/:id", products.Delete)
 		protected.POST("/products/import", products.Import)
+		protected.GET("/products/out-of-stock", products.GetOutOfStockProducts)
+		protected.PATCH("/products/:productId/variants/:variantId/stock", products.UpdateVariantStock)
 
 		// Media
 		media := &handlers.MediaHandler{DB: pool, UploadDir: cfg.UploadDir, HMACSecret: cfg.UploadHMACSecret, R2Client: r2Client, Config: cfg}

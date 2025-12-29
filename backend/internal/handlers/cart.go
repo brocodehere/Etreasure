@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -74,11 +73,6 @@ func (h *CartHandler) AddToCart(c *gin.Context) {
 
 	// Get session ID from cookie or create new one
 	sessionID, err := c.Cookie("session_id")
-	log.Printf("Cart: Reading session_id cookie: %s, error: %v", sessionID, err)
-	log.Printf("Cart: Request headers: %+v", c.Request.Header)
-	log.Printf("Cart: Request origin: %s", c.GetHeader("Origin"))
-	log.Printf("Cart: Request host: %s", c.Request.Host)
-	log.Printf("Cart: Is HTTPS: %v", c.Request.TLS != nil)
 
 	if err != nil || sessionID == "" {
 		// Generate new session ID using UUID
@@ -86,7 +80,6 @@ func (h *CartHandler) AddToCart(c *gin.Context) {
 		// Set secure flag based on whether request is HTTPS
 		// Check both TLS and X-Forwarded-Proto header (for proxy setups)
 		isSecure := c.Request.TLS != nil || c.GetHeader("X-Forwarded-Proto") == "https"
-		log.Printf("Cart: Setting new session_id cookie: %s, secure: %v, TLS: %v, X-Forwarded-Proto: %s", sessionID, isSecure, c.Request.TLS != nil, c.GetHeader("X-Forwarded-Proto"))
 
 		// For production, set cookie domain to work across ethnictreasures.co.in
 		cookieDomain := ""
@@ -95,8 +88,6 @@ func (h *CartHandler) AddToCart(c *gin.Context) {
 		headerHost := c.GetHeader("Host")
 		origin := c.GetHeader("Origin")
 		referer := c.GetHeader("Referer")
-
-		log.Printf("Cart: Request detection - RequestHost: %s, HeaderHost: %s, Origin: %s, Referer: %s", requestHost, headerHost, origin, referer)
 
 		// Check if this is a production request from ethnictreasures.co.in
 		isProduction := (origin == "https://ethnictreasures.co.in") ||
@@ -114,8 +105,6 @@ func (h *CartHandler) AddToCart(c *gin.Context) {
 			origin == "http://localhost:4321" ||
 			origin == "http://localhost:3000"
 
-		log.Printf("Cart: IsLocalhost: %v, IsProduction: %v", isLocalhost, isProduction)
-
 		if isProduction && !isLocalhost {
 			// For cross-origin requests, don't set domain to let browser handle cookies naturally
 			cookieDomain = os.Getenv("COOKIE_DOMAIN")
@@ -123,12 +112,7 @@ func (h *CartHandler) AddToCart(c *gin.Context) {
 				// Don't set domain for cross-origin - let browser handle it
 				cookieDomain = ""
 			}
-			log.Printf("Cart: Production cross-origin mode - no domain will be set")
-		} else {
-			log.Printf("Cart: Localhost/Dev mode - no domain will be set")
 		}
-
-		log.Printf("Cart: Using cookie domain: %s", cookieDomain)
 
 		// Industry standard: Set single cookie with proper attributes for cross-domain
 		// For cross-domain scenarios, we need Domain=ethnictreasures.co.in with SameSite=None; Secure
@@ -150,16 +134,8 @@ func (h *CartHandler) AddToCart(c *gin.Context) {
 		}
 
 		c.Header("Set-Cookie", cookieString)
-		log.Printf("Cart: Setting cookie: %s", cookieString)
-
-		// Log all response headers to debug
-		log.Printf("Cart: All response headers: %+v", c.Writer.Header())
-
-		// Test if cookie can be read immediately after setting
-		testSessionID, testErr := c.Cookie("session_id")
-		log.Printf("Cart: Test reading cookie after setting: %s, error: %v", testSessionID, testErr)
 	} else {
-		log.Printf("Cart: Using existing session_id: %s", sessionID)
+		// Use existing session
 	}
 
 	// Check if item already exists in cart
@@ -207,14 +183,8 @@ func (h *CartHandler) GetCart(c *gin.Context) {
 
 	// Get session ID from cookie
 	sessionID, err := c.Cookie("session_id")
-	log.Printf("GetCart: Reading session_id cookie: %s, error: %v", sessionID, err)
-	log.Printf("GetCart: Request headers: %+v", c.Request.Header)
-	log.Printf("GetCart: Request origin: %s", c.GetHeader("Origin"))
-	log.Printf("GetCart: Request host: %s", c.Request.Host)
-	log.Printf("GetCart: All cookies: %+v", c.Request.Cookies())
 
 	if err != nil || sessionID == "" {
-		log.Printf("GetCart: No session found, returning empty cart")
 		// Return empty cart for new users
 		c.JSON(http.StatusOK, CartResponse{
 			Items: []CartItem{},
@@ -223,8 +193,6 @@ func (h *CartHandler) GetCart(c *gin.Context) {
 		})
 		return
 	}
-
-	log.Printf("GetCart: Using session_id: %s", sessionID)
 
 	query := `
 		SELECT 

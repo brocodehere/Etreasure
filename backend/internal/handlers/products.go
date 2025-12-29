@@ -379,7 +379,8 @@ func (h *ProductsHandler) PublicList(c *gin.Context) {
 			       pv.price_cents,
 			       pv.currency,
 			       m.path AS image_path,
-			       p.created_at
+			       p.created_at,
+			       COALESCE((SELECT SUM(stock_quantity) FROM product_variants WHERE product_id = p.uuid_id), 0) as total_stock
 			FROM products p
 			LEFT JOIN LATERAL (
 				SELECT price_cents, currency
@@ -414,7 +415,8 @@ func (h *ProductsHandler) PublicList(c *gin.Context) {
 			       pv.price_cents,
 			       pv.currency,
 			       m.path AS image_path,
-			       p.created_at
+			       p.created_at,
+			       COALESCE((SELECT SUM(stock_quantity) FROM product_variants WHERE product_id = p.uuid_id), 0) as total_stock
 			FROM products p
 			LEFT JOIN LATERAL (
 				SELECT price_cents, currency
@@ -492,22 +494,24 @@ func (h *ProductsHandler) PublicList(c *gin.Context) {
 	defer rows.Close()
 
 	type PublicProduct struct {
-		ID          uuid.UUID  `json:"id"`
-		Slug        string     `json:"slug"`
-		Title       string     `json:"title"`
-		Description *string    `json:"description,omitempty"`
-		CategoryID  *uuid.UUID `json:"category_id,omitempty"`
-		PriceCents  *int       `json:"price_cents,omitempty"`
-		Currency    *string    `json:"currency,omitempty"`
-		ImageKey    *string    `json:"image_key,omitempty"`
-		ImageURL    *string    `json:"image_url,omitempty"`
+		ID            uuid.UUID  `json:"id"`
+		Slug          string     `json:"slug"`
+		Title         string     `json:"title"`
+		Description   *string    `json:"description,omitempty"`
+		CategoryID    *uuid.UUID `json:"category_id,omitempty"`
+		PriceCents    *int       `json:"price_cents,omitempty"`
+		Currency      *string    `json:"currency,omitempty"`
+		ImageKey      *string    `json:"image_key,omitempty"`
+		ImageURL      *string    `json:"image_url,omitempty"`
+		StockQuantity int        `json:"stock_quantity"`
+		CreatedAt     time.Time  `json:"created_at"`
 	}
 
 	items := make([]PublicProduct, 0)
 	for rows.Next() {
 		var p PublicProduct
 		var imagePath *string
-		if err := rows.Scan(&p.ID, &p.Slug, &p.Title, &p.Description, &p.CategoryID, &p.PriceCents, &p.Currency, &imagePath, new(time.Time)); err == nil {
+		if err := rows.Scan(&p.ID, &p.Slug, &p.Title, &p.Description, &p.CategoryID, &p.PriceCents, &p.Currency, &imagePath, &p.CreatedAt, &p.StockQuantity); err == nil {
 			if h.ImageHelper != nil {
 				p.ImageKey, p.ImageURL = h.ImageHelper.GetImageKeyAndURL(imagePath)
 
@@ -779,4 +783,131 @@ func (h *ProductsHandler) Search(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"items": items})
+}
+
+// GetOutOfStockProducts returns all published products that are out of stock
+// GET /api/admin/products/out-of-stock
+func (h *ProductsHandler) GetOutOfStockProducts(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	query := `
+		SELECT p.uuid_id,
+			   p.slug,
+			   p.title,
+			   p.subtitle,
+			   p.description,
+			   p.category_id,
+			   p.published,
+			   p.publish_at,
+			   p.unpublish_at,
+			   p.created_at,
+			   p.updated_at,
+			   COALESCE((SELECT SUM(stock_quantity) FROM product_variants WHERE product_id = p.uuid_id), 0) as total_stock,
+			   (SELECT m.path FROM product_images pi JOIN media m ON pi.media_id = m.id WHERE pi.product_id = p.uuid_id ORDER BY pi.sort_order LIMIT 1) as image_path
+		FROM products p
+		WHERE p.published = true 
+		  AND NOT EXISTS (
+			SELECT 1 FROM product_variants pv 
+			WHERE pv.product_id = p.uuid_id AND pv.stock_quantity > 0
+		  )
+		ORDER BY p.updated_at DESC
+	`
+
+	rows, err := h.DB.Query(ctx, query)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "query failed"})
+		return
+	}
+	defer rows.Close()
+
+	type OutOfStockProduct struct {
+		UUIDID      uuid.UUID        `json:"id"`
+		Slug        string           `json:"slug"`
+		Title       string           `json:"title"`
+		Subtitle    *string          `json:"subtitle,omitempty"`
+		Description *string          `json:"description,omitempty"`
+		CategoryID  *uuid.UUID       `json:"category_id,omitempty"`
+		Published   bool             `json:"published"`
+		PublishAt   *time.Time       `json:"publish_at,omitempty"`
+		UnpublishAt *time.Time       `json:"unpublish_at,omitempty"`
+		CreatedAt   time.Time        `json:"created_at"`
+		UpdatedAt   time.Time        `json:"updated_at"`
+		TotalStock  int              `json:"total_stock"`
+		ImageKey    *string          `json:"image_key,omitempty"`
+		ImageURL    *string          `json:"image_url,omitempty"`
+		Variants    []ProductVariant `json:"variants"`
+	}
+
+	var products []OutOfStockProduct
+	for rows.Next() {
+		var p OutOfStockProduct
+		var imagePath *string
+		if err := rows.Scan(&p.UUIDID, &p.Slug, &p.Title, &p.Subtitle, &p.Description, &p.CategoryID, &p.Published, &p.PublishAt, &p.UnpublishAt, &p.CreatedAt, &p.UpdatedAt, &p.TotalStock, &imagePath); err == nil {
+
+			// Set image fields
+			if imagePath != nil {
+				p.ImageKey, p.ImageURL = h.ImageHelper.GetImageKeyAndURL(imagePath)
+
+				// If no image URL is available, use fallback
+				if p.ImageURL == nil || *p.ImageURL == "" {
+					fallbackURL := h.ImageHelper.GetFallbackImageURL("product")
+					p.ImageURL = &fallbackURL
+				}
+			}
+
+			// Fetch variants for this product
+			variantRows, err := h.DB.Query(ctx, `
+				SELECT id, product_id, sku, title, price_cents, compare_at_price_cents, currency, stock_quantity
+				FROM product_variants
+				WHERE product_id = $1
+				ORDER BY id
+			`, p.UUIDID)
+			if err == nil {
+				defer variantRows.Close()
+				for variantRows.Next() {
+					var variant ProductVariant
+					if err := variantRows.Scan(&variant.ID, &variant.ProductID, &variant.SKU, &variant.Title, &variant.PriceCents, &variant.CompareAtPriceCents, &variant.Currency, &variant.StockQuantity); err == nil {
+						p.Variants = append(p.Variants, variant)
+					}
+				}
+			}
+
+			products = append(products, p)
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"products": products})
+}
+
+// UpdateVariantStock updates the stock quantity for a specific product variant
+// PATCH /api/admin/products/:productId/variants/:variantId/stock
+func (h *ProductsHandler) UpdateVariantStock(c *gin.Context) {
+	ctx := c.Request.Context()
+	productID := c.Param("productId")
+	variantID, err := strconv.Atoi(c.Param("variantId"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid variant ID"})
+		return
+	}
+
+	var req struct {
+		StockQuantity int `json:"stock_quantity" binding:"required,min=0"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		return
+	}
+
+	// Update the stock quantity
+	_, err = h.DB.Exec(ctx, `
+		UPDATE product_variants 
+		SET stock_quantity = $1, updated_at = NOW()
+		WHERE id = $2 AND product_id = $3
+	`, req.StockQuantity, variantID, productID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update stock"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "stock updated successfully", "stock_quantity": req.StockQuantity})
 }

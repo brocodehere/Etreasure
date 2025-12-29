@@ -46,6 +46,9 @@ var dashboardStatsType = graphql.NewObject(
 			"totalRevenue": &graphql.Field{
 				Type: graphql.Float,
 			},
+			"outOfStockCount": &graphql.Field{
+				Type: graphql.Int,
+			},
 		},
 	},
 )
@@ -159,6 +162,22 @@ var rootQuery = graphql.NewObject(
 						totalRevenue = 0
 					}
 
+					// Get out of stock products count
+					var outOfStockCount int
+					err = db.QueryRow(ctx, `
+						SELECT COUNT(*) 
+						FROM products p 
+						WHERE p.published = true 
+						AND NOT EXISTS (
+							SELECT 1 FROM product_variants pv 
+							WHERE pv.product_id = p.uuid_id AND pv.stock_quantity > 0
+						)
+					`).Scan(&outOfStockCount)
+					if err != nil {
+						log.Printf("Error counting out of stock products: %v", err)
+						outOfStockCount = 0
+					}
+
 					return map[string]interface{}{
 						"totalProducts":   totalProducts,
 						"totalCategories": totalCategories,
@@ -168,6 +187,7 @@ var rootQuery = graphql.NewObject(
 						"activeOffers":    activeOffers,
 						"recentOrders":    recentOrders,
 						"totalRevenue":    totalRevenue,
+						"outOfStockCount": outOfStockCount,
 					}, nil
 				},
 			},
