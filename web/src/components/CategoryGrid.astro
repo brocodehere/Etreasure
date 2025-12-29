@@ -6,7 +6,9 @@ let allCategories = [];
 try {
   const categoriesData = await fetchCategories();
   allCategories = categoriesData.items || [];
+  console.log('Categories API response:', allCategories);
 } catch (error) {
+  console.error('Error fetching categories:', error);
     // Fallback to static categories if API fails
   allCategories = [
     {
@@ -49,12 +51,16 @@ try {
 }
 
 // Transform categories to display format
-const displayCategories = allCategories.map(category => ({
-  name: category.name,
-  image: category.image_url || getFallbackImage(category.name),
-  href: `/shop?category=${category.slug}`,
-  description: category.description || `Discover our ${category.name} collection`
-}));
+const displayCategories = allCategories.map(category => {
+  const imageUrl = category.image_url || getFallbackImage(category.name);
+  console.log(`Category: ${category.name}, image_url: ${category.image_url}, final image: ${imageUrl}`);
+  return {
+    name: category.name,
+    image: imageUrl,
+    href: `/shop?category=${category.slug}`,
+    description: category.description || `Discover our ${category.name} collection`
+  };
+});
 
 // Fallback image function
 function getFallbackImage(categoryName) {

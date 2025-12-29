@@ -112,7 +112,10 @@ export async function apiRequestWithSession(url: string, options: RequestInit = 
   // The backend handles session ID through cookies automatically
   // No need to manually add X-Session-ID header or authorization
 
-  const response = await fetch(`https://etreasure-1.onrender.com${url}`, {
+  // Use dynamic URL based on environment
+  const baseUrl = import.meta.env.DEV ? 'https://etreasure-1.onrender.com' : 'https://etreasure-1.onrender.com';
+  
+  const response = await fetch(`${baseUrl}${url}`, {
     ...options,
     headers,
     credentials: 'include', // Important for session cookies
@@ -125,7 +128,8 @@ export async function apiRequestWithSession(url: string, options: RequestInit = 
     
     // For cart operations, we can retry once as backend will create new session
     if (url.startsWith('/api/cart')) {
-      const retryResponse = await fetch(`https://etreasure-1.onrender.com${url}`, {
+      const baseUrl = import.meta.env.DEV ? 'https://etreasure-1.onrender.com' : 'https://etreasure-1.onrender.com';
+      const retryResponse = await fetch(`${baseUrl}${url}`, {
         ...options,
         headers,
         credentials: 'include',

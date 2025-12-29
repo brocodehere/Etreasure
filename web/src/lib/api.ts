@@ -34,7 +34,8 @@ export interface CategoriesResponse {
   items: Category[];
 }
 
-export const API_BASE_URL = import.meta.env.PUBLIC_API_URL || 'https://etreasure-1.onrender.com';
+export const API_BASE_URL = import.meta.env.PUBLIC_API_URL || 
+  (import.meta.env.DEV ? 'https://etreasure-1.onrender.com' : 'https://etreasure-1.onrender.com');
 const R2_BASE_URL = ((import.meta as any).env?.PUBLIC_R2_BASE_URL as string) || 'https://pub-1a3924a6c6994107be6fe9f3ed794c0a.r2.dev';
 
 // Import session management
@@ -193,11 +194,24 @@ async function apiRequestSessionOnly(url: string, options: RequestInit = {}): Pr
     ...options.headers,
   };
 
-  return fetch(`${API_BASE_URL}${url}`, {
+  console.log(`API Request: ${API_BASE_URL}${url}`);
+  console.log('API Request headers:', headers);
+  console.log('API Request options:', options);
+
+  const response = await fetch(`${API_BASE_URL}${url}`, {
     ...options,
     headers,
     credentials: 'include', // Include cookies for session management only
   });
+
+  console.log(`API Response status: ${response.status}`);
+  console.log('API Response headers:', [...response.headers.entries()]);
+  
+  // Check for Set-Cookie header
+  const setCookieHeader = response.headers.get('set-cookie');
+  console.log('Set-Cookie header:', setCookieHeader);
+
+  return response;
 }
 
 // Authentication API functions
