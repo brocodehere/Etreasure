@@ -18,35 +18,7 @@ for (const slug of policySlugs) {
       }
 }
 
-// Fallback content if no policies found
-const fallbackPolicies = [
-  {
-    title: 'Disclaimer & Privacy Policy',
-    slug: 'privacy-policy',
-    content: '<p>Your privacy is important to us. This policy outlines how we collect, use, and protect your information.</p>',
-    type: 'policy'
-  },
-  {
-    title: 'Terms & Conditions',
-    slug: 'terms-of-service', 
-    content: '<p>Terms and conditions governing the use of our website and services.</p>',
-    type: 'policy'
-  },
-  {
-    title: 'Return Policy',
-    slug: 'refund-policy',
-    content: '<p>Our return policy ensures customer satisfaction with every purchase.</p>',
-    type: 'policy'
-  },
-  {
-    title: 'Shipping Policy',
-    slug: 'shipping-policy',
-    content: '<p>Information about shipping methods, timelines, and costs.</p>',
-    type: 'policy'
-  }
-];
-
-const displayPolicies = policies.length > 0 ? policies : fallbackPolicies;
+const displayPolicies = policies;
 ---
 
 <Layout title="Policies - Ethnic Treasures">

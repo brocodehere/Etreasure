@@ -31,17 +31,12 @@ export async function getStaticPaths() {
     props: { category: category.id }
   }));
 
-  // If no categories found, add some common fallback paths
+  // If no categories found, return only 'all' category
   if (categories.length === 0) {
-    const fallbackPaths = [
-      { params: { category: 'embroidered-clutches' }, props: { category: 'embroidered-clutches' } },
-      { params: { category: 'baby' }, props: { category: 'baby' } },
-      { params: { category: 'women' }, props: { category: 'women' } },
-      { params: { category: 'men' }, props: { category: 'men' } },
-      { params: { category: 'all' }, props: { category: 'all' } },
-    ];
-    
-    return fallbackPaths;
+    return [{
+      params: { category: 'all' },
+      props: { category: 'all' }
+    }];
   }
 
   // Add 'all' category path
@@ -76,24 +71,15 @@ try {
 const { category } = Astro.params;
 const currentCategory = categories.find(cat => cat.id === category);
 
-// If category not found, show 404 or fallback
+// If category not found and not 'all', redirect to shop
 if (!currentCategory && category !== 'all') {
-  // Try to find by partial match or create fallback
-  const fallbackCategory = categories.find(cat => 
-    cat.id.toLowerCase().includes(category.toLowerCase()) ||
-    category.toLowerCase().includes(cat.id.toLowerCase())
-  );
-  
-  if (!fallbackCategory) {
-    // Return a proper 404 response
-    return Astro.redirect('/shop');
-  }
+  return Astro.redirect('/shop');
 }
 
-// Use current category or fallback
+// Use current category or create default for 'all'
 const displayCategory = currentCategory || { 
-  name: category === 'all' ? 'All Products' : 'Category', 
-  description: category === 'all' ? 'Browse all available products' : 'Products in this category'
+  name: 'All Products', 
+  description: 'Browse all available products'
 };
 
 // Fetch products for this category (by uuid) - filtered from database
@@ -509,20 +495,49 @@ function renderProducts() {
 	
 	let html = '';
 	clientFilteredProducts.forEach(product => {
+		// Check if product is in stock
+		const isInStock = product.stock_quantity >= 1;
+		
+		// Check if product is new arrival (created within last 5 days)
+		const isNewArrival = () => {
+			if (!product.created_at) return false;
+			const createdDate = new Date(product.created_at);
+			const currentDate = new Date();
+			const diffTime = Math.abs(currentDate.getTime() - createdDate.getTime());
+			const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+			return diffDays <= 5;
+		};
+		
+		const newArrivalBadge = isNewArrival() ? 
+			'<div class="absolute top-4 left-4 z-20"><span class="bg-gradient-to-r from-maroon to-burgundy text-white text-xs px-3 py-1 rounded-full font-medium shadow-md">New Arrival</span></div>' : '';
+		
+		const stockStatus = `<span class="text-xs font-medium ${isInStock ? 'text-green-600' : 'text-red-600'}">${isInStock ? 'In Stock' : 'Out of Stock'}</span>`;
+		const stockIndicator = `<div class="w-2 h-2 rounded-full ${isInStock ? 'bg-green-500' : 'bg-red-500'}"></div>`;
+		
+		const buttonClass = isInStock ? 
+			'bg-gold/20 py-2 px-3 sm:px-4 rounded-lg text-dark text-sm sm:text-base font-medium hover:bg-gold hover:text-maroon transition-colors duration-300 flex-shrink-0' :
+			'bg-gray-300 text-gray-500 py-2 px-3 sm:px-4 rounded-lg text-sm sm:text-base font-medium cursor-not-allowed flex-shrink-0';
+		
+		const buttonText = isInStock ? 'Add to Cart' : 'Out of Stock';
+		
 		html += '<div class="bg-white rounded-2xl shadow-lg overflow-hidden group hover:shadow-xl transition-all duration-300">';
 		html += '<div class="relative h-64 overflow-hidden">';
 		html += '<a href="/product/' + product.id + '" class="block w-full h-full">';
 		html += '<img src="' + product.image + '" alt="' + product.name + '" class="w-full h-full object-cover group-hover:scale-110" loading="lazy" />';
 		html += '</a></div>';
+		html += newArrivalBadge;
 		html += '<div class="p-4 sm:p-6">';
 		html += '<h3 class="font-playfair text-lg sm:text-xl font-bold text-maroon mb-2 line-clamp-2">' + product.name + '</h3>';
 		html += '<p class="text-dark/60 text-xs sm:text-sm mb-4 line-clamp-2">' + product.description + '</p>';
 		html += '<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">';
 		html += '<span class="text-lg sm:text-2xl font-bold text-gold">$' + product.price + '</span>';
 		html += '<div class="flex items-center gap-2">';
-		html += '<button class="bg-gold/20 py-2 px-3 sm:px-4 rounded-lg text-dark text-sm sm:text-base font-medium hover:bg-gold hover:text-maroon transition-colors duration-300 flex-shrink-0" data-product-id="' + product.id + '" onclick="addToCartById(\'' + product.id + '\')">Add to Cart</button>';
-		html += '<button class="bg-transparent py-2 px-2 sm:px-4 rounded-lg text-dark text-sm sm:text-base font-medium hover:bg-gold hover:text-maroon transition-colors duration-300 flex-shrink-0" data-product-id="' + product.id + '" data-wishlist-btn><svg class="w-5 h-5 sm:w-6 sm:h-6 wishlist-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg></button>';
+		html += stockStatus + stockIndicator;
 		html += '</div>';
+		html += '</div>';
+		html += '<div class="flex items-center gap-2">';
+		html += '<button class="' + buttonClass + '" data-product-id="' + product.id + '" onclick="addToCartById(\'' + product.id + '\')" ' + (!isInStock ? 'disabled' : '') + '>' + buttonText + '</button>';
+		html += '<button class="bg-transparent py-2 px-2 sm:px-4 rounded-lg text-dark text-sm sm:text-base font-medium hover:bg-gold hover:text-maroon transition-colors duration-300 flex-shrink-0" data-product-id="' + product.id + '" data-wishlist-btn><svg class="w-5 h-5 sm:w-6 sm:h-6 wishlist-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg></button>';
 		html += '</div>';
 		html += '</div>';
 		html += '</div>';

@@ -134,8 +134,6 @@ const formatPrice = (price: number) => {
         const results = data.results || [];
         const took = Date.now() - start;
 
-        console.log(`Search for "${q}": Found ${results.length} results in ${took}ms`);
-
         // Update UI
         searchTitle.innerHTML = `Search Results for "<span class="text-gold">${q}</span>"`;
         searchSubtitle.textContent = results.length === 0 

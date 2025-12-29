@@ -6,77 +6,24 @@ let allCategories = [];
 try {
   const categoriesData = await fetchCategories();
   allCategories = categoriesData.items || [];
-  console.log('Categories API response:', allCategories);
 } catch (error) {
   console.error('Error fetching categories:', error);
-    // Fallback to static categories if API fails
-  allCategories = [
-    {
-      name: "Hand Bags",
-      image: "/images/categories/hand.webp",
-      href: "/shop?category=hand-bags",
-      description: "Premium leather and crafted hand bags"
-    },
-    {
-      name: "Laptop Bags", 
-      image: "/images/categories/enhanced_laptop__bag.png",
-      href: "/shop?category=laptop-bags",
-      description: "Professional and stylish laptop bags"
-    },
-    {
-      name: "Tote Bags",
-      image: "/images/categories/tote.webp", 
-      href: "/shop?category=tote-bags",
-      description: "Spacious and eco-friendly tote bags"
-    },
-    {
-      name: "Crochet Throws",
-      image: "/images/categories/enhanced_cohort.png",
-      href: "/shop?category=crochet-throws",
-      description: "Handcrafted crochet throws for cozy comfort"
-    },
-    {
-      name: "Embroidered Clutches",
-      image: "/images/categories/clutches.png",
-      href: "/shop?category=embroidered-clutches",
-      description: "Elegant embroidered clutches for special occasions"
-    },
-    {
-      name: "Baby Throw",
-      image: "/images/categories/baby.webp",
-      href: "/shop?category=baby-throw",
-      description: "Soft and gentle throws for baby comfort"
-    }
-  ];
+  // No fallback categories - if API fails, show no categories
+  allCategories = [];
 }
 
 // Transform categories to display format
-const displayCategories = allCategories.map(category => {
-  const imageUrl = category.image_url || getFallbackImage(category.name);
-  console.log(`Category: ${category.name}, image_url: ${category.image_url}, final image: ${imageUrl}`);
-  return {
-    name: category.name,
-    image: imageUrl,
-    href: `/shop?category=${category.slug}`,
-    description: category.description || `Discover our ${category.name} collection`
-  };
-});
+const displayCategories = allCategories
+  .filter(category => category.image_url) // Only show categories with images
+  .map(category => {
+    return {
+      name: category.name,
+      image: category.image_url,
+      href: `/shop?category=${category.slug}`,
+      description: category.description || `Discover our ${category.name} collection`
+    };
+  });
 
-// Fallback image function
-function getFallbackImage(categoryName) {
-  const imageMap = {
-    'hand bags': '/images/categories/hand.webp',
-    'laptop bags': '/images/categories/enhanced_laptop__bag.png',
-    'tote bags': '/images/categories/tote.webp',
-    'crochet throws': '/images/categories/enhanced_cohort.png',
-    'embroidered clutches': '/images/categories/clutches.png',
-    'baby throw': '/images/categories/baby.webp',
-    'everyday bags': '/images/categories/daily.webp',
-  };
-  
-  const normalizedName = categoryName.toLowerCase();
-  return imageMap[normalizedName] || '/images/categories/daily.webp';
-}
 ---
 
 <section class="py-20 bg-gradient-to-br from-cream via-white to-cream relative overflow-hidden">
@@ -99,8 +46,9 @@ function getFallbackImage(categoryName) {
 
     <!-- Category Slider -->
     <div class="relative overflow-hidden mb-12">
-      <div class="flex transition-transform duration-1000 ease-in-out" id="categorySlider">
-        {displayCategories.map((category, index) => (
+      {displayCategories.length > 0 ? (
+        <div class="flex transition-transform duration-1000 ease-in-out" id="categorySlider">
+          {displayCategories.map((category, index) => (
           <div class="w-full md:w-1/3 flex-shrink-0 px-2 md:px-4">
             <a 
               href={category.href}
@@ -152,7 +100,14 @@ function getFallbackImage(categoryName) {
             </a>
           </div>
         ))}
-      </div>
+        </div>
+      ) : (
+        <div class="text-center py-12">
+          <div class="text-gray-400 text-lg">
+            Categories are currently unavailable. Please check back later.
+          </div>
+        </div>
+      )}
       
       <!-- Slider Navigation Dots -->
       {displayCategories.length > 1 && (

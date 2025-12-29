@@ -59,7 +59,6 @@ class ProductionCartSession implements CartSessionManager {
     // Session creation is handled by backend when cart operations are performed
     // This method is kept for compatibility but actual session creation
     // happens when first cart operation is called
-    console.log('Session will be created by backend on first cart operation');
     return '';
   }
 

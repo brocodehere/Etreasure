@@ -16,10 +16,10 @@ const AddToCartButton: FC<Props> = ({ id, name, price, image }) => {
       // Dispatch event to update cart count in header
       window.dispatchEvent(new Event('cart-updated'));
       // Show success message
-      alert('Product added to cart successfully!');
+      // Success is handled by cart count update in header
     } catch (error) {
       console.error('Failed to add to cart:', error);
-      alert('Failed to add product to cart. Please try again.');
+      // Error is handled silently - user can see cart count doesn't update
     }
   };
 

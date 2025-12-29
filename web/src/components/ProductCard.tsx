@@ -11,6 +11,19 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Check if product is in stock
+  const isInStock = product.stock_quantity >= 1;
+  
+  // Check if product is new arrival (created within last 5 days)
+  const isNewArrival = () => {
+    if (!product.created_at) return false;
+    const createdDate = new Date(product.created_at);
+    const currentDate = new Date();
+    const diffTime = Math.abs(currentDate.getTime() - createdDate.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays <= 5;
+  };
+
   const handleAddToCart = async () => {
     setIsLoading(true);
     try {
@@ -76,12 +89,14 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           </svg>
         </button>
 
-        {/* Quick View Badge */}
-        <div className="absolute top-4 left-4 z-20">
-          <span className="bg-gradient-to-r from-maroon to-burgundy text-white text-xs px-3 py-1 rounded-full font-medium shadow-md">
-            New Arrival
-          </span>
-        </div>
+        {/* Quick View Badge - Only show if new arrival */}
+        {isNewArrival() && (
+          <div className="absolute top-4 left-4 z-20">
+            <span className="bg-gradient-to-r from-maroon to-burgundy text-white text-xs px-3 py-1 rounded-full font-medium shadow-md">
+              New Arrival
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Product Info */}
@@ -114,15 +129,21 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           </div>
           
           <div className="flex items-center space-x-2">
-            <span className="text-xs text-gray-500">In Stock</span>
-            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+            <span className={`text-xs font-medium ${isInStock ? 'text-green-600' : 'text-red-600'}`}>
+              {isInStock ? 'In Stock' : 'Out of Stock'}
+            </span>
+            <div className={`w-2 h-2 rounded-full ${isInStock ? 'bg-green-500' : 'bg-red-500'}`}></div>
           </div>
         </div>
         
         <button
           onClick={handleAddToCart}
-          disabled={isLoading}
-          className="w-full bg-gradient-to-r from-maroon to-burgundy text-white px-4 py-3 rounded-xl font-semibold hover:from-gold hover:to-gold hover:text-maroon transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-maroon focus:ring-offset-2 transform hover:scale-[1.02] flex items-center justify-center space-x-2"
+          disabled={isLoading || !isInStock}
+          className={`w-full px-4 py-3 rounded-xl font-semibold transition-all duration-300 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-maroon focus:ring-offset-2 transform hover:scale-[1.02] flex items-center justify-center space-x-2 ${
+            isInStock 
+              ? 'bg-gradient-to-r from-maroon to-burgundy text-white hover:from-gold hover:to-gold hover:text-maroon' 
+              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+          }`}
             aria-label={`Add ${product.title} to cart`}
           >
             {isLoading ? (
@@ -133,12 +154,19 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 </svg>
                 Adding...
               </>
-            ) : (
+            ) : isInStock ? (
               <>
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
                 </svg>
                 Add to Cart
+              </>
+            ) : (
+              <>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 12H4"></path>
+                </svg>
+                Out of Stock
               </>
             )}
           </button>

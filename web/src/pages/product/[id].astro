@@ -650,7 +650,7 @@ const structuredData = [productSchema, breadcrumbSchema];
                 
         if (!productSlug || productSlug.trim() === '' || productSlug === 'undefined') {
           console.error('Product slug not found or invalid:', productSlug);
-          alert('Unable to add product to cart. Product slug not found.');
+          // Silently fail - user can try again
           return;
         }
 
@@ -790,7 +790,7 @@ const structuredData = [productSchema, breadcrumbSchema];
                 
         if (!productSlug || productSlug.trim() === '' || productSlug === 'undefined') {
           console.error('Product slug not found or invalid:', productSlug);
-          alert('Unable to update wishlist. Product slug not found.');
+          // Silently fail - user can try again
           return;
         }
 

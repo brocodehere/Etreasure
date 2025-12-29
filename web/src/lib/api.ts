@@ -21,6 +21,8 @@ export interface Product {
   image_key?: string;
   image_url?: string;
   category_id?: string;
+  stock_quantity: number;
+  created_at: string;
 }
 
 export interface ProductsResponse {
@@ -32,6 +34,27 @@ export interface ProductsResponse {
 
 export interface CategoriesResponse {
   items: Category[];
+}
+
+export interface Banner {
+  id: string;
+  title: string;
+  desktop_image_key?: string;
+  desktop_image_url?: string;
+  laptop_image_key?: string;
+  laptop_image_url?: string;
+  mobile_image_key?: string;
+  mobile_image_url?: string;
+  is_active: boolean;
+  sort_order: number;
+  starts_at?: string;
+  ends_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BannersResponse {
+  items: Banner[];
 }
 
 export const API_BASE_URL = import.meta.env.PUBLIC_API_URL || 
@@ -194,22 +217,11 @@ async function apiRequestSessionOnly(url: string, options: RequestInit = {}): Pr
     ...options.headers,
   };
 
-  console.log(`API Request: ${API_BASE_URL}${url}`);
-  console.log('API Request headers:', headers);
-  console.log('API Request options:', options);
-
   const response = await fetch(`${API_BASE_URL}${url}`, {
     ...options,
     headers,
     credentials: 'include', // Include cookies for session management only
   });
-
-  console.log(`API Response status: ${response.status}`);
-  console.log('API Response headers:', [...response.headers.entries()]);
-  
-  // Check for Set-Cookie header
-  const setCookieHeader = response.headers.get('set-cookie');
-  console.log('Set-Cookie header:', setCookieHeader);
 
   return response;
 }
@@ -298,6 +310,30 @@ export async function fetchCategories(): Promise<CategoriesResponse> {
   }
 }
 
+export async function fetchBanners(): Promise<BannersResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/public/banners`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    
+    // Ensure image URLs are absolute
+    if (data.items) {
+      data.items = data.items.map((banner: Banner) => ({
+        ...banner,
+        desktop_image_url: getImageUrl(banner.desktop_image_key, banner.desktop_image_url),
+        laptop_image_url: getImageUrl(banner.laptop_image_key, banner.laptop_image_url),
+        mobile_image_url: getImageUrl(banner.mobile_image_key, banner.mobile_image_url)
+      }));
+    }
+    
+    return data;
+  } catch (error) {
+    return { items: [] };
+  }
+}
+
 export async function fetchProducts(params: {
   category?: string;
   search?: string;
@@ -348,17 +384,12 @@ function dispatchShopEvent(eventName: string) {
 // Cart and Wishlist functions with session management (no authentication required)
 export const addToCart = async (productId: string, quantity = 1) => {
   try {
-    console.log('Adding to cart:', { productId, quantity });
-    console.log('API URL:', `${API_BASE_URL}/api/cart/add`);
-    
     const response = await apiRequestSessionOnly('/api/cart/add', {
       method: 'POST',
       body: JSON.stringify({ product_id: productId, quantity }),
     });
 
-    console.log('Add to cart response status:', response.status);
     const data = await response.json();
-    console.log('Add to cart response data:', data);
     
     dispatchShopEvent('cart-updated');
     return data;
@@ -370,16 +401,13 @@ export const addToCart = async (productId: string, quantity = 1) => {
 
 export const getCart = async () => {
   try {
-    console.log('Getting cart from:', `${API_BASE_URL}/api/cart`);
     const response = await apiRequestSessionOnly('/api/cart');
-    console.log('Cart response status:', response.status);
     
     if (!response.ok) {
       throw new Error(`Failed to get cart: ${response.status}`);
     }
     
     const data = await response.json();
-    console.log('Cart data received:', data);
     return data;
   } catch (error) {
     console.error('Get cart error:', error);
@@ -420,18 +448,12 @@ export const clearCart = async () => {
 
 export const toggleWishlist = async (productId: string) => {
   try {
-    console.log('Toggling wishlist for product:', productId);
-    console.log('Wishlist API URL:', `${API_BASE_URL}/api/wishlist/toggle`);
-    
     const response = await apiRequestSessionOnly('/api/wishlist/toggle', {
       method: 'POST',
       body: JSON.stringify({ product_id: productId }),
     });
 
-    console.log('Toggle wishlist response status:', response.status);
     const data = await response.json();
-    console.log('Toggle wishlist response data:', data);
-    
     dispatchShopEvent('wishlist-updated');
     return data;
   } catch (error) {
@@ -442,12 +464,8 @@ export const toggleWishlist = async (productId: string) => {
 
 export const getWishlist = async () => {
   try {
-    console.log('Getting wishlist from:', `${API_BASE_URL}/api/wishlist`);
     const response = await apiRequestSessionOnly('/api/wishlist');
-    console.log('Get wishlist response status:', response.status);
-    
     const data = await response.json();
-    console.log('Wishlist data received:', data);
     return data;
   } catch (error) {
     console.error('Get wishlist error:', error);
@@ -457,17 +475,11 @@ export const getWishlist = async () => {
 
 export const removeFromWishlist = async (productId: string) => {
   try {
-    console.log('Removing from wishlist:', productId);
-    console.log('Remove wishlist API URL:', `${API_BASE_URL}/api/wishlist/${productId}`);
-    
     const response = await apiRequestSessionOnly(`/api/wishlist/${productId}`, {
       method: 'DELETE',
     });
 
-    console.log('Remove from wishlist response status:', response.status);
     const data = await response.json();
-    console.log('Remove from wishlist response data:', data);
-    
     dispatchShopEvent('wishlist-updated');
     return data;
   } catch (error) {

@@ -12,57 +12,8 @@ import Layout from '../layouts/Layout.astro';
 			return data.products || [];
 		} catch (error) {
 			console.error('Failed to fetch bestsellers:', error);
-			// Fallback data
-			return [
-				{
-					id: 1,
-					name: "Banarasi Silk Saree",
-					price: "₹12,500",
-					originalPrice: "₹18,000",
-					image: "/images/categories/baby.webp",
-					href: "/product/banarasi-silk-saree",
-					badge: "Bestseller",
-					rating: 4.8,
-					reviews: 127,
-					isNew: false,
-					discount: 31,
-					category: "Sarees",
-					colors: ["#6D0F19", "#D4A857", "#0B3D2E"],
-					inStock: true
-				},
-				{
-					id: 2,
-					name: "Kashmiri Pashmina Shawl",
-					price: "₹8,900",
-					originalPrice: "₹12,000",
-					image: "/images/categories/baby.webp",
-					href: "/product/kashmiri-pashmina-shawl",
-					badge: "Limited",
-					rating: 4.9,
-					reviews: 89,
-					isNew: false,
-					discount: 26,
-					category: "Shawls",
-					colors: ["#F7F3EB", "#6D0F19", "#1A1E3A"],
-					inStock: true
-				},
-				{
-					id: 3,
-					name: "Rajasthani Lehenga",
-					price: "₹15,750",
-					originalPrice: "₹22,000",
-					image: "/images/categories/baby.webp",
-					href: "/product/rajasthani-lehenga",
-					badge: "New",
-					rating: 4.7,
-					reviews: 203,
-					isNew: true,
-					discount: 28,
-					category: "Lehengas",
-					colors: ["#D4A857", "#6D0F19", "#F7F3EB"],
-					inStock: true
-				}
-			];
+			// No fallback data - if API fails, show no bestsellers
+			return [];
 		}
 	}
 
