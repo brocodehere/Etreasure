@@ -10,6 +10,14 @@ export default defineConfig({
         target: 'https://etreasure-1.onrender.com',
         changeOrigin: true,
       },
+      '/api/cart': {
+        target: 'https://etreasure-1.onrender.com',
+        changeOrigin: true,
+      },
+      '/api/wishlist': {
+        target: 'https://etreasure-1.onrender.com',
+        changeOrigin: true,
+      },
       '/uploads': {
         target: 'https://etreasure-1.onrender.com',
         changeOrigin: true,
