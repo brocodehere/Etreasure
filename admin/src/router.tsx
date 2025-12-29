@@ -30,6 +30,7 @@ import ContentManagement from './pages/Content/ContentManagement';
 import ContentEdit from './pages/Content/ContentEdit';
 import { FAQPage } from './pages/Content/FAQ';
 import AboutPageManagement from './pages/Content/AboutPage';
+import { OutOfStockPage } from './pages/OutOfStock';
 
 const RequireAuth: React.FC<{ children: React.ReactElement }> = ({ children }) => {
   const location = useLocation();
@@ -63,6 +64,7 @@ export default function App() {
           <Route path="new" element={<ProductEditPage />} />
           <Route path=":id" element={<ProductEditPage />} />
         </Route>
+        <Route path="out-of-stock" element={<OutOfStockPage />} />
         <Route path="media" element={<MediaLibraryPage />} />
         <Route path="categories">
           <Route index element={<CategoriesListPage />} />

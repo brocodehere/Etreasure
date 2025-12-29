@@ -11,6 +11,7 @@ export const GET_DASHBOARD_STATS = gql`
       activeOffers
       recentOrders
       totalRevenue
+      outOfStockCount
     }
   }
 `;
