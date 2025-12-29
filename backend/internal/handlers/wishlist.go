@@ -104,16 +104,41 @@ func (h *WishlistHandler) ToggleWishlist(c *gin.Context) {
 		// For production, set cookie domain to work across ethnictreasures.co.in
 		cookieDomain := ""
 		// Only set domain for production/remote environments, not localhost
-		isLocalhost := c.Request.Host == "localhost:8080" ||
-			c.GetHeader("Host") == "localhost:8080" ||
-			c.Request.Host == "127.0.0.1:8080" ||
-			c.GetHeader("Host") == "127.0.0.1:8080"
+		requestHost := c.Request.Host
+		headerHost := c.GetHeader("Host")
+		origin := c.GetHeader("Origin")
+		referer := c.GetHeader("Referer")
 
-		if !isLocalhost {
+		log.Printf("Wishlist: Request detection - RequestHost: %s, HeaderHost: %s, Origin: %s, Referer: %s", requestHost, headerHost, origin, referer)
+
+		// Check if this is a production request from ethnictreasures.co.in
+		isProduction := (origin == "https://ethnictreasures.co.in") ||
+			(referer != "" && strings.Contains(referer, "ethnictreasures.co.in")) ||
+			(headerHost != "" && strings.Contains(headerHost, "ethnictreasures.co.in")) ||
+			(requestHost != "" && strings.Contains(requestHost, "ethnictreasures.co.in"))
+
+		// Check if this is localhost
+		isLocalhost := requestHost == "localhost:8080" ||
+			headerHost == "localhost:8080" ||
+			requestHost == "127.0.0.1:8080" ||
+			headerHost == "127.0.0.1:8080" ||
+			requestHost == "localhost:4321" ||
+			headerHost == "localhost:4321" ||
+			origin == "http://localhost:4321" ||
+			origin == "http://localhost:3000"
+
+		log.Printf("Wishlist: IsLocalhost: %v, IsProduction: %v", isLocalhost, isProduction)
+
+		if isProduction && !isLocalhost {
+			// For cross-origin requests, don't set domain to let browser handle cookies naturally
 			cookieDomain = os.Getenv("COOKIE_DOMAIN")
 			if cookieDomain == "" {
-				cookieDomain = "ethnictreasures.co.in"
+				// Don't set domain for cross-origin - let browser handle it
+				cookieDomain = ""
 			}
+			log.Printf("Wishlist: Production cross-origin mode - no domain will be set")
+		} else {
+			log.Printf("Wishlist: Localhost/Dev mode - no domain will be set")
 		}
 
 		log.Printf("Wishlist: Using cookie domain: %s", cookieDomain)
@@ -124,18 +149,17 @@ func (h *WishlistHandler) ToggleWishlist(c *gin.Context) {
 
 		var cookieString string
 		if cookieDomain != "" && isSecure {
-			// Production: Cross-domain cookie
+			// Production: Cross-domain cookie with explicit domain
 			cookieString = fmt.Sprintf("session_id=%s; Path=/; Domain=%s; Max-Age=%d; HttpOnly=false; SameSite=None; Secure",
 				sessionID, cookieDomain, 86400*30)
+		} else if isSecure {
+			// Cross-origin or localhost: Secure cookie without domain
+			cookieString = fmt.Sprintf("session_id=%s; Path=/; Max-Age=%d; HttpOnly=false; SameSite=None; Secure",
+				sessionID, 86400*30)
 		} else {
 			// Localhost: Simple cookie
-			cookieString = fmt.Sprintf("session_id=%s; Path=/; Max-Age=%d; HttpOnly=false; SameSite=Lax%s",
-				sessionID, 86400*30, func() string {
-					if isSecure {
-						return "; Secure"
-					}
-					return ""
-				}())
+			cookieString = fmt.Sprintf("session_id=%s; Path=/; Max-Age=%d; HttpOnly=false; SameSite=Lax",
+				sessionID, 86400*30)
 		}
 
 		c.Header("Set-Cookie", cookieString)

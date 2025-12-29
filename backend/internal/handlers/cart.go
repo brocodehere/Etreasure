@@ -117,13 +117,13 @@ func (h *CartHandler) AddToCart(c *gin.Context) {
 		log.Printf("Cart: IsLocalhost: %v, IsProduction: %v", isLocalhost, isProduction)
 
 		if isProduction && !isLocalhost {
-			// For production, set domain to frontend domain for cross-domain cookies
+			// For cross-origin requests, don't set domain to let browser handle cookies naturally
 			cookieDomain = os.Getenv("COOKIE_DOMAIN")
 			if cookieDomain == "" {
-				// Set to frontend domain for cross-domain cookie access
-				cookieDomain = "ethnictreasures.co.in"
+				// Don't set domain for cross-origin - let browser handle it
+				cookieDomain = ""
 			}
-			log.Printf("Cart: Production mode - setting domain: %s", cookieDomain)
+			log.Printf("Cart: Production cross-origin mode - no domain will be set")
 		} else {
 			log.Printf("Cart: Localhost/Dev mode - no domain will be set")
 		}
@@ -136,18 +136,17 @@ func (h *CartHandler) AddToCart(c *gin.Context) {
 
 		var cookieString string
 		if cookieDomain != "" && isSecure {
-			// Production: Cross-domain cookie
+			// Production: Cross-domain cookie with explicit domain
 			cookieString = fmt.Sprintf("session_id=%s; Path=/; Domain=%s; Max-Age=%d; HttpOnly=false; SameSite=None; Secure",
 				sessionID, cookieDomain, 86400*30)
+		} else if isSecure {
+			// Cross-origin or localhost: Secure cookie without domain
+			cookieString = fmt.Sprintf("session_id=%s; Path=/; Max-Age=%d; HttpOnly=false; SameSite=None; Secure",
+				sessionID, 86400*30)
 		} else {
 			// Localhost: Simple cookie
-			cookieString = fmt.Sprintf("session_id=%s; Path=/; Max-Age=%d; HttpOnly=false; SameSite=Lax%s",
-				sessionID, 86400*30, func() string {
-					if isSecure {
-						return "; Secure"
-					}
-					return ""
-				}())
+			cookieString = fmt.Sprintf("session_id=%s; Path=/; Max-Age=%d; HttpOnly=false; SameSite=Lax",
+				sessionID, 86400*30)
 		}
 
 		c.Header("Set-Cookie", cookieString)
