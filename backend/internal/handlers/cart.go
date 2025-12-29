@@ -96,12 +96,11 @@ func (h *CartHandler) AddToCart(c *gin.Context) {
 			c.Request.Host == "127.0.0.1:8080" ||
 			c.GetHeader("Host") == "127.0.0.1:8080"
 
-		log.Printf("Cart: Request host: %s, isLocalhost: %v", c.Request.Host, isLocalhost)
-
 		if !isLocalhost {
-			// For production (etreasure-1.onrender.com), set domain to frontend domain
+			// For production, set domain to frontend domain for cross-domain cookies
 			cookieDomain = os.Getenv("COOKIE_DOMAIN")
 			if cookieDomain == "" {
+				// Set to frontend domain for cross-domain cookie access
 				cookieDomain = "ethnictreasures.co.in"
 			}
 		}
