@@ -91,18 +91,41 @@ func (h *CartHandler) AddToCart(c *gin.Context) {
 		// For production, set cookie domain to work across ethnictreasures.co.in
 		cookieDomain := ""
 		// Only set domain for production/remote environments, not localhost
-		isLocalhost := c.Request.Host == "localhost:8080" ||
-			c.GetHeader("Host") == "localhost:8080" ||
-			c.Request.Host == "127.0.0.1:8080" ||
-			c.GetHeader("Host") == "127.0.0.1:8080"
+		requestHost := c.Request.Host
+		headerHost := c.GetHeader("Host")
+		origin := c.GetHeader("Origin")
+		referer := c.GetHeader("Referer")
 
-		if !isLocalhost {
+		log.Printf("Cart: Request detection - RequestHost: %s, HeaderHost: %s, Origin: %s, Referer: %s", requestHost, headerHost, origin, referer)
+
+		// Check if this is a production request from ethnictreasures.co.in
+		isProduction := (origin == "https://ethnictreasures.co.in") ||
+			(referer != "" && strings.Contains(referer, "ethnictreasures.co.in")) ||
+			(headerHost != "" && strings.Contains(headerHost, "ethnictreasures.co.in")) ||
+			(requestHost != "" && strings.Contains(requestHost, "ethnictreasures.co.in"))
+
+		// Check if this is localhost
+		isLocalhost := requestHost == "localhost:8080" ||
+			headerHost == "localhost:8080" ||
+			requestHost == "127.0.0.1:8080" ||
+			headerHost == "127.0.0.1:8080" ||
+			requestHost == "localhost:4321" ||
+			headerHost == "localhost:4321" ||
+			origin == "http://localhost:4321" ||
+			origin == "http://localhost:3000"
+
+		log.Printf("Cart: IsLocalhost: %v, IsProduction: %v", isLocalhost, isProduction)
+
+		if isProduction && !isLocalhost {
 			// For production, set domain to frontend domain for cross-domain cookies
 			cookieDomain = os.Getenv("COOKIE_DOMAIN")
 			if cookieDomain == "" {
 				// Set to frontend domain for cross-domain cookie access
 				cookieDomain = "ethnictreasures.co.in"
 			}
+			log.Printf("Cart: Production mode - setting domain: %s", cookieDomain)
+		} else {
+			log.Printf("Cart: Localhost/Dev mode - no domain will be set")
 		}
 
 		log.Printf("Cart: Using cookie domain: %s", cookieDomain)

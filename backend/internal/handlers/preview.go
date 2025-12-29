@@ -71,17 +71,12 @@ func renderProductPreview(data map[string]interface{}) string {
 
 func renderBannerPreview(data map[string]interface{}) string {
 	title := asString(data["title"])
-	subtitle := asString(data["subtitle"])
 	image := asString(data["image_url"])
 	link := asString(data["link_url"])
 
 	var imageHtml string
 	if image != "" {
 		imageHtml = `<img class="absolute inset-0 w-full h-full object-cover opacity-50" src="` + image + `" alt="` + title + `">`
-	}
-	var subtitleHtml string
-	if subtitle != "" {
-		subtitleHtml = `<p class="text-lg mb-4">` + subtitle + `</p>`
 	}
 	var linkHtml string
 	if link != "" {
@@ -92,7 +87,6 @@ func renderBannerPreview(data map[string]interface{}) string {
 		imageHtml +
 		`<div class="relative z-10 flex flex-col justify-center items-center h-full text-white text-center px-6">
 			<h2 class="text-3xl font-bold mb-2">` + title + `</h2>` +
-		subtitleHtml +
 		linkHtml +
 		`</div>
 	</div>`
