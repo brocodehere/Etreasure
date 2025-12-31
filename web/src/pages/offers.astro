@@ -29,7 +29,6 @@ async function getProductsForOffer(offer) {
     const offerSkus = offer.applies_to_ids.map(sku => sku.trim());
     const productsWithMatchingVariants = [];
     
-    console.log(`Looking for products with SKUs: ${offerSkus.join(', ')}`);
     
     // Now we can use the public endpoint with variants field
     const productPromises = allProducts.map(async (product, index) => {
@@ -45,7 +44,6 @@ async function getProductsForOffer(offer) {
           // Log variants for debugging
           if (variants.length > 0) {
             const variantSkus = variants.map(v => v.sku);
-            console.log(`Product ${index}: ${product.title} has SKUs: [${variantSkus.join(', ')}]`);
             
             // Check if any variant matches the offer SKUs
             const matchingVariant = variants.find(variant => 
@@ -53,7 +51,6 @@ async function getProductsForOffer(offer) {
             );
             
             if (matchingVariant) {
-              console.log(`🎉 MATCH FOUND: ${product.title} with SKU: "${matchingVariant.sku}"`);
               return {
                 ...product,
                 variants: variants,
@@ -88,19 +85,15 @@ async function getProductsForOffer(offer) {
 }
 
 // Pre-fetch products for all offers
-console.log('Starting to fetch products for offers...');
 const offersWithProducts = await Promise.all(
   activeOffers.map(async (offer) => {
-    console.log(`Processing offer: ${offer.title}, applies_to: ${offer.applies_to}`);
     const offerProducts = await getProductsForOffer(offer);
-    console.log(`Found ${offerProducts.length} products for offer: ${offer.title}`);
     return {
       ...offer,
       products: offerProducts
     };
   })
 );
-console.log('Finished fetching products for all offers');
 function getDiscountedPrice(priceCents, discountType, discountValue) {
   if (discountType === 'percentage') {
     return Math.round(priceCents * (1 - discountValue / 100));
