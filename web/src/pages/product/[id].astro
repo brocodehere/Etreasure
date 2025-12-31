@@ -3,12 +3,12 @@ import Layout from '../../layouts/Layout.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import ProductSpecifications from '../../components/ProductSpecifications.astro';
-import { fetchOffers } from '../../lib/api';
+import { fetchSales } from '../../lib/api';
 
 export async function getStaticPaths() {
   try {
     // Fetch all products to get their IDs and slugs for static generation
-    const API_URL = 'http://localhost:8080';
+    const API_URL = 'https://etreasure-1.onrender.com';
     const response = await fetch(`${API_URL}/api/products?limit=100`);
     
     if (!response.ok) {
@@ -101,7 +101,7 @@ export async function getStaticPaths() {
   }
 }
 
-const API_URL = 'http://localhost:8080';
+const API_URL = 'https://etreasure-1.onrender.com';
 
 const { id } = Astro.params;
 
@@ -164,17 +164,17 @@ if (!product) {
   return Astro.redirect('/shop');
 }
 
-// Fetch offers to check for applicable discounts
-const offersResponse = await fetchOffers();
-const offers = offersResponse.items || [];
+// Fetch sales to check for applicable discounts
+const salesResponse = await fetchSales();
+const sales = salesResponse.items || [];
 
-// Filter active offers
-const activeOffers = offers.filter(offer => 
-  offer.is_active && 
-  new Date(offer.ends_at) > new Date()
+// Filter active sales
+const activeSales = sales.filter(sale => 
+  sale.is_active && 
+  new Date(sale.ends_at) > new Date()
 );
 
-// Fetch product variants to check product-specific offers
+// Fetch product variants to check product-specific sales
 let productVariants = [];
 try {
   // Use public endpoint with variants field
@@ -190,26 +190,25 @@ try {
 
 // Debug logging - log full product data to see available fields
 
-// Find applicable offers for this product
-const applicableOffers = activeOffers.filter(offer => {
-  if (offer.applies_to === 'all') {
+// Find applicable sales for this product
+const applicableSales = activeSales.filter(sale => {
+  if (sale.applies_to === 'all') {
     return true;
-  } else if (offer.applies_to === 'categories' && product.category_id) {
-    return offer.applies_to_ids.includes(product.category_id);
-  } else if (offer.applies_to === 'products') {
-    // Check if any variant SKU matches the offer SKUs
-    const offerSkus = offer.applies_to_ids.map(sku => sku.trim()); // Trim spaces
+  } else if (sale.applies_to === 'categories' && product.category_id) {
+    return sale.applies_to_ids.includes(product.category_id);
+  } else if (sale.applies_to === 'products') {
+    // Check if any variant SKU matches the sale SKUs
+    const saleSkus = sale.applies_to_ids.map(sku => sku.trim()); // Trim spaces
     return productVariants.some(variant => 
-      variant.sku && offerSkus.includes(variant.sku.trim())
+      variant.sku && saleSkus.includes(variant.sku.trim())
     );
   }
   return false;
 });
 
-
-// Get the best offer (highest discount)
-const bestOffer = applicableOffers.length > 0 ? 
-  applicableOffers.reduce((best, current) => {
+// Get the best sale (highest discount)
+const bestSale = applicableSales.length > 0 ? 
+  applicableSales.reduce((best, current) => {
     const bestDiscount = best.discount_type === 'percentage' ? best.discount_value : (best.discount_value * 100 / (product.price_cents / 100));
     const currentDiscount = current.discount_type === 'percentage' ? current.discount_value : (current.discount_value * 100 / (product.price_cents / 100));
     return currentDiscount > bestDiscount ? current : best;
@@ -220,12 +219,12 @@ let originalPrice = product.price_cents || 0;
 let discountedPrice = originalPrice;
 let discountPercentage = 0;
 
-if (bestOffer) {
-  if (bestOffer.discount_type === 'percentage') {
-    discountedPrice = Math.round(originalPrice * (1 - bestOffer.discount_value / 100));
-    discountPercentage = bestOffer.discount_value;
-  } else if (bestOffer.discount_type === 'fixed') {
-    discountedPrice = Math.max(0, originalPrice - bestOffer.discount_value * 100);
+if (bestSale) {
+  if (bestSale.discount_type === 'percentage') {
+    discountedPrice = Math.round(originalPrice * (1 - bestSale.discount_value / 100));
+    discountPercentage = bestSale.discount_value;
+  } else if (bestSale.discount_type === 'fixed') {
+    discountedPrice = Math.max(0, originalPrice - bestSale.discount_value * 100);
     discountPercentage = Math.round(((originalPrice - discountedPrice) / originalPrice) * 100);
   }
 }
@@ -252,8 +251,8 @@ const productSchema = {
     "name": "Ethnic Treasures"
   },
   "category": productCategory,
-  "offers": {
-    "@type": "Offer",
+  "sales": {
+    "@type": "Sale",
     "url": new URL(Astro.url.pathname, Astro.url.origin).href,
     "priceCurrency": productCurrency,
     "price": productPrice,
@@ -412,7 +411,7 @@ const structuredData = [productSchema, breadcrumbSchema];
 
           <!-- Price -->
           <div class="space-y-2">
-            {bestOffer ? (
+            {bestSale ? (
               <div class="flex items-center space-x-3">
                 <span class="text-2xl font-bold text-gold">
                   {(discountedPrice / 100).toFixed(2)} {product.currency || 'USD'}
@@ -429,7 +428,7 @@ const structuredData = [productSchema, breadcrumbSchema];
                 {product.price_cents ? (product.price_cents / 100).toFixed(2) : 'Price not available'} {product.currency || 'USD'}
               </div>
             )}
-            {bestOffer && (
+            {bestSale && (
               <div class="text-sm text-green-600 font-medium">
                 🎉 You save {((originalPrice - discountedPrice) / 100).toFixed(2)} {product.currency || 'USD'}!
               </div>
@@ -654,10 +653,10 @@ const structuredData = [productSchema, breadcrumbSchema];
   </div>
 </section>
 
-<script define:vars={{ bestOffer, discountedPrice, originalPrice }}>
+<script define:vars={{ bestSale, discountedPrice, originalPrice }}>
   // Pass discount data from server to client
   const discountData = {
-    hasDiscount: !!bestOffer,
+    hasDiscount: !!bestSale,
     discountedPrice: discountedPrice / 100,
     originalPrice: originalPrice / 100
   };
@@ -827,7 +826,7 @@ const structuredData = [productSchema, breadcrumbSchema];
 
         try {
           // First, fetch product data to get the UUID
-          const API_URL = 'http://localhost:8080';
+          const API_URL = 'https://etreasure-1.onrender.com';
           const productResponse = await fetch(`${API_URL}/api/products/${productSlug}`);
           
           if (!productResponse.ok) {
@@ -898,7 +897,7 @@ const structuredData = [productSchema, breadcrumbSchema];
 
         try {
           // First, fetch product data to get the UUID
-          const API_URL = 'http://localhost:8080';
+          const API_URL = 'https://etreasure-1.onrender.com';
           const productResponse = await fetch(`${API_URL}/api/products/${productSlug}`);
           
           if (!productResponse.ok) {
@@ -961,7 +960,7 @@ const structuredData = [productSchema, breadcrumbSchema];
             return;
           }
 
-          const API_URL = 'http://localhost:8080';
+          const API_URL = 'https://etreasure-1.onrender.com';
           const productResponse = await fetch(`${API_URL}/api/products/${productSlug}`);
           
           if (!productResponse.ok) {

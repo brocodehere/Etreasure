@@ -4,11 +4,11 @@ import SearchBar from './SearchBar.astro';
 ---
 
 <script>
-	window.PUBLIC_API_URL = window.PUBLIC_API_URL || 'http://localhost:8080';
+	window.PUBLIC_API_URL = window.PUBLIC_API_URL || 'https://etreasure-1.onrender.com';
 	// Fetch categories from API
 	async function fetchCategories() {
 		try {
-			const apiBase = window.PUBLIC_API_URL || 'http://localhost:8080';
+			const apiBase = window.PUBLIC_API_URL || 'https://etreasure-1.onrender.com';
 			const response = await fetch(`${apiBase}/api/public/categories`);
 			const data = await response.json();
 			return data.items || [];
@@ -113,11 +113,12 @@ import SearchBar from './SearchBar.astro';
 					</svg>
 					<span>Contact</span>
 				</a>
-				<a href="/offers" class="nav-link group px-3 lg:px-4 py-2 rounded-lg hover:bg-gradient-to-r hover:from-gold/10 hover:to-maroon/5 transition-all duration-300 flex items-center space-x-1">
-					<svg class="w-4 h-4 group-hover:scale-110 transition-transform duration-300" fill="currentColor" viewBox="0 0 20 20">
-						<path fill-rule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 011 1H6a1 1 0 011-1V3a1 1 0 011-1H5zM3 3v1a1 1 0 001 1h1a1 1 0 001-1V3a1 1 0 00-1-1H3zM5 8a1 1 0 011 1v1h1a1 1 0 011 1H6a1 1 0 011-1V8a1 1 0 00-1-1H5zM3 8v1a1 1 0 001 1h1a1 1 0 001-1V8a1 1 0 00-1-1H3zM5 13a1 1 0 011 1v1h1a1 1 0 011 1H6a1 1 0 011-1v-1a1 1 0 00-1-1H5zM3 13v1a1 1 0 001 1h1a1 1 0 001-1v-1a1 1 0 00-1-1H3zM15 3a1 1 0 011 1v1h1a1 1 0 011 1H16a1 1 0 011-1V3a1 1 0 00-1-1H15zM13 3v1a1 1 0 001 1h1a1 1 0 001-1V3a1 1 0 00-1-1H13zM15 8a1 1 0 011 1v1h1a1 1 0 011 1H16a1 1 0 011-1V8a1 1 0 00-1-1H15zM13 8v1a1 1 0 001 1h1a1 1 0 001-1V8a1 1 0 00-1-1H13zM15 13a1 1 0 011 1v1h1a1 1 0 011 1H16a1 1 0 011-1v-1a1 1 0 00-1-1H15zM13 13v1a1 1 0 001 1h1a1 1 0 001-1v-1a1 1 0 00-1-1H13z" clip-rule="evenodd"></path>
+				<a href="/sales" class="nav-link group px-3 lg:px-4 py-2 rounded-lg hover:bg-gradient-to-r hover:from-gold/10 hover:to-maroon/5 transition-all duration-300 flex items-center space-x-1">
+					<svg class="w-4 h-4 group-hover:scale-110 transition-transform duration-300" fill="currentColor" viewBox="0 0 24 24">
+						<path d="M21.41 11.41L19 9l-1.41 1.41L21.17 14l3.59-3.59-1.35-1.35z"/>
+						<path d="M12 2l-5.5 9h11L12 2zm0 3.84L13.93 9h-3.87L12 5.84zM17.5 13c-2.49 0-4.5 2.01-4.5 4.5s2.01 4.5 4.5 4.5 4.5-2.01 4.5-4.5-2.01-4.5-4.5-4.5zm0 7c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5zM3 21.5h8v-8H3v8zm2-6h4v4H5v-4z"/>
 					</svg>
-					<span>Offers</span>
+					<span>Sales</span>
 				</a>
 							</div>
 
@@ -216,11 +217,12 @@ import SearchBar from './SearchBar.astro';
 				</svg>
 				<span class="font-medium">Contact</span>
 			</a>
-			<a href="/offers" class="flex items-center space-x-3 px-4 py-3 text-dark hover:text-maroon hover:bg-gradient-to-r hover:from-gold/10 hover:to-maroon/5 rounded-lg transition-all duration-300 group">
-				<svg class="w-5 h-5 group-hover:scale-110 transition-transform duration-300" fill="currentColor" viewBox="0 0 20 20">
-					<path fill-rule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 011 1H6a1 1 0 011-1V3a1 1 0 011-1H5zM3 3v1a1 1 0 001 1h1a1 1 0 001-1V3a1 1 0 00-1-1H3zM5 8a1 1 0 011 1v1h1a1 1 0 011 1H6a1 1 0 011-1V8a1 1 0 00-1-1H5zM3 8v1a1 1 0 001 1h1a1 1 0 001-1V8a1 1 0 00-1-1H3zM5 13a1 1 0 011 1v1h1a1 1 0 011 1H6a1 1 0 011-1v-1a1 1 0 00-1-1H5zM3 13v1a1 1 0 001 1h1a1 1 0 001-1v-1a1 1 0 00-1-1H3zM15 3a1 1 0 011 1v1h1a1 1 0 011 1H16a1 1 0 011-1V3a1 1 0 00-1-1H15zM13 3v1a1 1 0 001 1h1a1 1 0 001-1V3a1 1 0 00-1-1H13zM15 8a1 1 0 011 1v1h1a1 1 0 011 1H16a1 1 0 011-1V8a1 1 0 00-1-1H15zM13 8v1a1 1 0 001 1h1a1 1 0 001-1V8a1 1 0 00-1-1H13zM15 13a1 1 0 011 1v1h1a1 1 0 011 1H16a1 1 0 011-1v-1a1 1 0 00-1-1H15zM13 13v1a1 1 0 001 1h1a1 1 0 001-1v-1a1 1 0 00-1-1H13z" clip-rule="evenodd"></path>
+			<a href="/sales" class="flex items-center space-x-3 px-4 py-3 text-dark hover:text-maroon hover:bg-gradient-to-r hover:from-gold/10 hover:to-maroon/5 rounded-lg transition-all duration-300 group">
+				<svg class="w-5 h-5 group-hover:scale-110 transition-transform duration-300" fill="currentColor" viewBox="0 0 24 24">
+					<path d="M21.41 11.41L19 9l-1.41 1.41L21.17 14l3.59-3.59-1.35-1.35z"/>
+					<path d="M12 2l-5.5 9h11L12 2zm0 3.84L13.93 9h-3.87L12 5.84zM17.5 13c-2.49 0-4.5 2.01-4.5 4.5s2.01 4.5 4.5 4.5 4.5-2.01 4.5-4.5-2.01-4.5-4.5-4.5zm0 7c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5zM3 21.5h8v-8H3v8zm2-6h4v4H5v-4z"/>
 				</svg>
-				<span class="font-medium">Offers</span>
+				<span class="font-medium">Sales</span>
 			</a>
 			
 			<!-- Mobile Account Links -->
@@ -251,7 +253,7 @@ import SearchBar from './SearchBar.astro';
 </header>
 
 <script type="module">
-	const PUBLIC_API_URL = window.PUBLIC_API_URL || 'http://localhost:8080';
+	const PUBLIC_API_URL = window.PUBLIC_API_URL || 'https://etreasure-1.onrender.com';
 	// Mobile menu toggle
 	const mobileMenuButton = document.querySelector('[data-mobile-menu-button]');
 	const mobileMenu = document.getElementById('mobileMenu');
@@ -315,7 +317,7 @@ import SearchBar from './SearchBar.astro';
 
 	// Update cart count from API (now public - no auth required)
 	async function updateCartCount() {
-		const API_BASE = window.PUBLIC_API_URL || 'http://localhost:8080';
+		const API_BASE = window.PUBLIC_API_URL || 'https://etreasure-1.onrender.com';
 		try {
 			const response = await fetch(`${API_BASE}/api/cart`, {
 				credentials: 'include', // Include cookies for session management
@@ -347,7 +349,7 @@ import SearchBar from './SearchBar.astro';
 
 	// Update wishlist count from API (now public - no auth required)
 	async function updateWishlistCount() {
-		const API_BASE = window.PUBLIC_API_URL || 'http://localhost:8080';
+		const API_BASE = window.PUBLIC_API_URL || 'https://etreasure-1.onrender.com';
 		try {
 			const response = await fetch(`${API_BASE}/api/wishlist`, {
 				credentials: 'include', // Include cookies for session management

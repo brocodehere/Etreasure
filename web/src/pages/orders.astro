@@ -35,7 +35,7 @@ import Footer from '../components/Footer.astro';
 				</div>
 			`;
 
-			const res = await fetch('http://localhost:8080/api/orders/my', {
+			const res = await fetch('https://etreasure-1.onrender.com/api/orders/my', {
 				method: 'GET',
 				headers: {
 					'Authorization': `Bearer ${token}`,

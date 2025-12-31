@@ -12,7 +12,7 @@
     
     // Newsletter subscription function
     async function subscribeToNewsletter(email) {
-      const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
+      const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://etreasure-1.onrender.com';
       
       const response = await fetch(`${apiUrl}/api/public/newsletter/subscribe`, {
         method: 'POST',
@@ -144,7 +144,7 @@
 				</div>
 				
 				<p class="text-xl text-dark/80 max-w-2xl mx-auto leading-relaxed font-light">
-					Get exclusive access to new collections, special offers, and behind-the-scenes stories from our artisan workshops
+					Get exclusive access to new collections, special sales, and behind-the-scenes stories from our artisan workshops
 				</p>
 			</div>
 

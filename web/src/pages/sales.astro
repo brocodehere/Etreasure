@@ -2,31 +2,31 @@
 import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
-import { fetchOffers, fetchProducts, fetchCategories } from '../lib/api';
+import { fetchSales, fetchProducts, fetchCategories } from '../lib/api';
 
-// Fetch offers data from database
-const offersResponse = await fetchOffers();
-const offers = offersResponse.items || [];
+// Fetch sales data from database
+const salesResponse = await fetchSales();
+const sales = salesResponse.items || [];
 
-// Fetch all products and categories for offer details
+// Fetch all products and categories for sale details
 const productsResponse = await fetchProducts({ limit: 100 });
 const allProducts = productsResponse.items || [];
 
 const categoriesResponse = await fetchCategories();
 const allCategories = categoriesResponse.items || [];
 
-// Filter and sort active offers
-const activeOffers = offers
-  .filter(offer => offer.is_active && new Date(offer.ends_at) > new Date())
+// Filter and sort active sales
+const activeSales = sales
+  .filter(sale => sale.is_active && new Date(sale.ends_at) > new Date())
   .sort((a, b) => new Date(a.ends_at).getTime() - new Date(b.ends_at).getTime());
 
-// Helper function to get products for an offer
-async function getProductsForOffer(offer) {
-  if (offer.applies_to === 'all') {
+// Helper function to get products for a sale
+async function getProductsForSale(sale) {
+  if (sale.applies_to === 'all') {
     return allProducts;
-  } else if (offer.applies_to === 'products') {
-    // For product-specific offers, we need to fetch products that have variants matching the SKUs
-    const offerSkus = offer.applies_to_ids.map(sku => sku.trim());
+  } else if (sale.applies_to === 'products') {
+    // For product-specific sales, we need to fetch products that have variants matching the SKUs
+    const saleSkus = sale.applies_to_ids.map(sku => sku.trim());
     const productsWithMatchingVariants = [];
     
     
@@ -35,7 +35,7 @@ async function getProductsForOffer(offer) {
       try {
         // Fetch product details including variants using public endpoint
         // Use product.slug instead of product.id since PublicGet expects a slug
-        const response = await fetch(`http://localhost:8080/api/products/${product.slug}?fields=variants`);
+        const response = await fetch(`https://etreasure-1.onrender.com/api/products/${product.slug}?fields=variants`);
         
         if (response.ok) {
           const productData = await response.json();
@@ -45,9 +45,9 @@ async function getProductsForOffer(offer) {
           if (variants.length > 0) {
             const variantSkus = variants.map(v => v.sku);
             
-            // Check if any variant matches the offer SKUs
+            // Check if any variant matches the sale SKUs
             const matchingVariant = variants.find(variant => 
-              variant.sku && offerSkus.includes(variant.sku.trim())
+              variant.sku && saleSkus.includes(variant.sku.trim())
             );
             
             if (matchingVariant) {
@@ -76,21 +76,21 @@ async function getProductsForOffer(offer) {
     // Filter out null results and return matching products
     return results.filter(product => product !== null);
     
-  } else if (offer.applies_to === 'categories') {
+  } else if (sale.applies_to === 'categories') {
     return allProducts.filter(product => 
-      product.category_id && offer.applies_to_ids.includes(product.category_id)
+      product.category_id && sale.applies_to_ids.includes(product.category_id)
     );
   }
   return [];
 }
 
-// Pre-fetch products for all offers
-const offersWithProducts = await Promise.all(
-  activeOffers.map(async (offer) => {
-    const offerProducts = await getProductsForOffer(offer);
+// Pre-fetch products for all sales
+const salesWithProducts = await Promise.all(
+  activeSales.map(async (sale) => {
+    const saleProducts = await getProductsForSale(sale);
     return {
-      ...offer,
-      products: offerProducts
+      ...sale,
+      products: saleProducts
     };
   })
 );
@@ -109,7 +109,7 @@ function formatPrice(cents) {
 }
 ---
 
-<Layout title="Special Offers - Ethnic Treasures" description="Discover amazing deals and discounts on authentic Indian handcrafted treasures. Limited time offers on traditional crafts and artisanal products.">
+<Layout title="Special Sales - Ethnic Treasures" description="Discover amazing deals and discounts on authentic Indian handcrafted treasures. Limited time sales on traditional crafts and artisanal products.">
   <Header />
   
   <!-- Hero Section -->
@@ -123,7 +123,7 @@ function formatPrice(cents) {
     <div class="container mx-auto px-4 relative z-10">
       <div class="text-center text-white">
         <h1 class="font-playfair text-4xl md:text-6xl font-bold mb-6 animate-fade-in">
-          Special Offers
+          Special Sales
         </h1>
         <div class="w-32 h-1 bg-gold mx-auto mb-8 animate-gold-shine"></div>
         <p class="text-xl md:text-2xl max-w-4xl mx-auto leading-relaxed animate-fade-up" style="animation-delay: 0.3s">
@@ -134,7 +134,7 @@ function formatPrice(cents) {
             <svg class="w-6 h-6 text-gold mr-2 inline" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V4a2 2 0 00-2-2H6zm1 2a1 1 0 000 2h6a1 1 0 100-2H7zm0 4a1 1 0 000 2h6a1 1 0 100-2H7zm0 4a1 1 0 000 2h2a1 1 0 100-2H7z" clip-rule="evenodd"></path>
             </svg>
-            <span class="text-white font-semibold">Limited Time Offers</span>
+            <span class="text-white font-semibold">Limited Time Sales</span>
           </div>
         </div>
       </div>
@@ -146,7 +146,7 @@ function formatPrice(cents) {
     <div class="container mx-auto px-4">
       <div class="flex flex-wrap gap-4 justify-center mb-8">
         <button class="px-6 py-3 bg-maroon text-white rounded-full font-semibold hover:bg-maroon/80 transition-all duration-300 transform hover:scale-105">
-          All Offers
+          All Sales
         </button>
         <button class="px-6 py-3 bg-white text-maroon border-2 border-maroon rounded-full font-semibold hover:bg-maroon/10 transition-all duration-300 transform hover:scale-105">
           Clothing
@@ -161,10 +161,10 @@ function formatPrice(cents) {
     </div>
   </section> -->
 
-  <!-- Offers Grid -->
+  <!-- Sales Grid -->
   <section class="py-16 bg-gradient-to-br from-cream via-white to-cream">
     <div class="container mx-auto px-4">
-      {activeOffers.length === 0 ? (
+      {activeSales.length === 0 ? (
         <div class="text-center py-20">
           <div class="max-w-2xl mx-auto">
             <!-- Empty State Icon -->
@@ -178,10 +178,10 @@ function formatPrice(cents) {
             
             <!-- Empty State Message -->
             <h2 class="font-playfair text-3xl md:text-4xl font-bold text-maroon mb-4">
-              No Offers Available Right Now
+              No Sales Available Right Now
             </h2>
             <p class="text-xl text-dark/80 mb-8 leading-relaxed">
-              We're working on bringing you amazing deals and special offers. 
+              We're working on bringing you amazing deals and special sales. 
               Check back soon for exciting discounts on authentic Indian handcrafted treasures!
             </p>
             
@@ -218,7 +218,7 @@ function formatPrice(cents) {
                   </svg>
                 </div>
                 <h3 class="font-semibold text-maroon mb-2">Limited Time Deals</h3>
-                <p class="text-sm text-dark/60">Special offers with time-sensitive discounts</p>
+                <p class="text-sm text-dark/60">Special sales with time-sensitive discounts</p>
               </div>
               
               <div class="text-center">
@@ -246,34 +246,34 @@ function formatPrice(cents) {
         </div>
       ) : (
         <div class="space-y-12">
-          {offersWithProducts.map((offer, index) => {
+          {salesWithProducts.map((sale, index) => {
             return (
-              <div class="bg-white rounded-2xl shadow-xl overflow-hidden" key={offer.id}>
-                <!-- Offer Header -->
+              <div class="bg-white rounded-2xl shadow-xl overflow-hidden" key={sale.id}>
+                <!-- Sale Header -->
                 <div class="bg-gradient-to-r from-maroon to-maroon/80 p-6 text-white">
                   <div class="flex flex-col md:flex-row md:items-center md:justify-between">
                     <div>
                       <div class="flex items-center gap-4 mb-4">
                         <div class="bg-gold text-maroon px-4 py-2 rounded-full text-lg font-bold shadow-lg">
-                          {offer.discount_type === 'percentage' ? `${offer.discount_value}% OFF` : `₹${offer.discount_value} OFF`}
+                          {sale.discount_type === 'percentage' ? `${sale.discount_value}% OFF` : `₹${sale.discount_value} OFF`}
                         </div>
                         <div class="text-sm opacity-90">
-                          Valid until: {new Date(offer.ends_at).toLocaleDateString()}
+                          Valid until: {new Date(sale.ends_at).toLocaleDateString()}
                         </div>
                       </div>
                       <h3 class="font-playfair text-3xl font-bold mb-2">
-                        {offer.title}
+                        {sale.title}
                       </h3>
                       <p class="text-white/90 leading-relaxed">
-                        {offer.description}
+                        {sale.description}
                       </p>
                     </div>
                     <div class="mt-4 md:mt-0">
                       <div class="text-sm text-white/80 mb-2">Applies to:</div>
                       <div class="font-semibold capitalize">
-                        {offer.applies_to === 'all' ? 'All Products' : 
-                         offer.applies_to === 'products' ? `${offer.applies_to_ids.length} Selected Product Variants` :
-                         offer.applies_to === 'categories' ? `${offer.applies_to_ids.length} Categories` :
+                        {sale.applies_to === 'all' ? 'All Products' : 
+                         sale.applies_to === 'products' ? `${sale.applies_to_ids.length} Selected Product Variants` :
+                         sale.applies_to === 'categories' ? `${sale.applies_to_ids.length} Categories` :
                          'Selected Collections'}
                       </div>
                     </div>
@@ -281,13 +281,13 @@ function formatPrice(cents) {
                 </div>
 
                 <!-- Products Grid -->
-                {offer.products.length > 0 ? (
+                {sale.products.length > 0 ? (
                   <div class="p-6">
-                    <h4 class="text-xl font-semibold text-maroon mb-6">Products in this offer ({offer.products.length})</h4>
+                    <h4 class="text-xl font-semibold text-maroon mb-6">Products in this sale ({sale.products.length})</h4>
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                      {offer.products.map((product) => {
+                      {sale.products.map((product) => {
                         const originalPrice = product.price_cents;
-                        const discountedPrice = getDiscountedPrice(originalPrice, offer.discount_type, offer.discount_value);
+                        const discountedPrice = getDiscountedPrice(originalPrice, sale.discount_type, sale.discount_value);
                         const savings = originalPrice - discountedPrice;
                         const discountPercentage = Math.round((savings / originalPrice) * 100);
                         
@@ -362,7 +362,7 @@ function formatPrice(cents) {
                       <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
                       </svg>
-                      <p>No products available for this offer at the moment.</p>
+                      <p>No products available for this sale at the moment.</p>
                       <p class="text-sm mt-2">Please check back later or contact support for assistance.</p>
                     </div>
                   </div>
@@ -388,7 +388,7 @@ function formatPrice(cents) {
           Never Miss a Deal
         </h2>
         <p class="text-xl mb-8 max-w-2xl mx-auto">
-          Subscribe to our newsletter and get exclusive offers delivered to your inbox
+          Subscribe to our newsletter and get exclusive sales delivered to your inbox
         </p>
         
         <div class="flex flex-col sm:flex-row gap-4 justify-center items-center max-w-md mx-auto">
@@ -403,7 +403,7 @@ function formatPrice(cents) {
         </div>
         
         <p class="text-sm mt-6 text-white/80">
-          Join 10,000+ subscribers getting exclusive access to limited-time offers
+          Join 10,000+ subscribers getting exclusive access to limited-time sales
         </p>
       </div>
     </div>

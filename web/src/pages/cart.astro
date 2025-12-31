@@ -4,7 +4,7 @@ import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 
 // Define API URL for client-side JavaScript
-const PUBLIC_API_URL = import.meta.env.DEV ? 'http://localhost:8080' : 'http://localhost:8080';
+const PUBLIC_API_URL = import.meta.env.DEV ? 'https://etreasure-1.onrender.com' : 'https://etreasure-1.onrender.com';
 ---
 
 
@@ -184,7 +184,13 @@ const PUBLIC_API_URL = import.meta.env.DEV ? 'http://localhost:8080' : 'http://l
 										<div class="text-sm text-gray-600">Pay securely via Razorpay using UPI, credit/debit card, netbanking, wallets.</div>
 									</div>
 								</div>
-								<button id="razorpayPayBtn" class="w-full btn-primary py-4 mt-4">Pay Securely with Razorpay</button>
+								<button id="razorpayPayBtn" class="w-full btn-primary py-4 mt-4 flex items-center justify-center">
+									<span id="razorpayBtnText">Pay Securely with Razorpay</span>
+									<svg id="razorpayBtnSpinner" class="hidden animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+										<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+										<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+									</svg>
+								</button>
 							</div>
 						</div>
 
@@ -258,7 +264,7 @@ const PUBLIC_API_URL = import.meta.env.DEV ? 'http://localhost:8080' : 'http://l
 	<Footer />
 
 	<script>
-		const PUBLIC_API_URL = import.meta.env.DEV ? 'http://localhost:8080' : 'http://localhost:8080';
+		const PUBLIC_API_URL = import.meta.env.DEV ? 'https://etreasure-1.onrender.com' : 'https://etreasure-1.onrender.com';
 		import { getCart, removeFromCart, addToCart, toggleWishlist, clearCart } from '../lib/api';
 		import '../lib/toast.js';
 
@@ -270,6 +276,9 @@ const PUBLIC_API_URL = import.meta.env.DEV ? 'http://localhost:8080' : 'http://l
 
 		// Razorpay payment integration
 		const razorpayBtn = document.getElementById('razorpayPayBtn');
+		const razorpayBtnText = document.getElementById('razorpayBtnText');
+		const razorpayBtnSpinner = document.getElementById('razorpayBtnSpinner');
+		
 		if (razorpayBtn) {
 			razorpayBtn.addEventListener('click', async function () {
 				// Check if user is authenticated before proceeding to payment
@@ -281,6 +290,12 @@ const PUBLIC_API_URL = import.meta.env.DEV ? 'http://localhost:8080' : 'http://l
 					window.location.href = '/login?redirect=' + encodeURIComponent('/cart');
 					return;
 				}
+
+				// Show loading state
+				razorpayBtn.disabled = true;
+				razorpayBtnText.textContent = 'Processing...';
+				razorpayBtnSpinner.classList.remove('hidden');
+
 				try {
 					// Get current cart data from server
 					const cartData = await getCart();
@@ -288,6 +303,10 @@ const PUBLIC_API_URL = import.meta.env.DEV ? 'http://localhost:8080' : 'http://l
 					// Validate cart is not empty
 					if (!cartData || !cartData.items || cartData.items.length === 0) {
 						showError('Your cart is empty. Please add items before proceeding to payment.');
+						// Reset loading state
+						razorpayBtn.disabled = false;
+						razorpayBtnText.textContent = 'Pay Securely with Razorpay';
+						razorpayBtnSpinner.classList.add('hidden');
 						return;
 					}
 
@@ -305,6 +324,10 @@ const PUBLIC_API_URL = import.meta.env.DEV ? 'http://localhost:8080' : 'http://l
 					// Validate customer info
 					if (!firstName || !lastName || !email || !phone || !address || !city || !state || !pinCode) {
 						showError('Please fill in all required fields.');
+						// Reset loading state
+						razorpayBtn.disabled = false;
+						razorpayBtnText.textContent = 'Pay Securely with Razorpay';
+						razorpayBtnSpinner.classList.add('hidden');
 						return;
 					}
 
@@ -317,9 +340,13 @@ const PUBLIC_API_URL = import.meta.env.DEV ? 'http://localhost:8080' : 'http://l
 					const amountPaise = Math.round(total * 100);
 
 					// Create order in backend and get Razorpay order id
+					const token = localStorage.getItem('accessToken');
 					const orderRes = await fetch(`${PUBLIC_API_URL}/api/orders/create-payment`, {
 						method: 'POST',
-						headers: { 'Content-Type': 'application/json' },
+						headers: { 
+							'Content-Type': 'application/json',
+							'Authorization': `Bearer ${token}`
+						},
 						credentials: 'include',
 						body: JSON.stringify({
 							items: cart.map(item => ({ product_id: item.product_id, quantity: item.quantity })),
@@ -348,9 +375,13 @@ const PUBLIC_API_URL = import.meta.env.DEV ? 'http://localhost:8080' : 'http://l
 						},
 						handler: async function (response) {
 							try {
+								const token = localStorage.getItem('accessToken');
 								const verifyRes = await fetch(`${PUBLIC_API_URL}/api/orders/verify-payment`, {
 									method: 'POST',
-									headers: { 'Content-Type': 'application/json' },
+									headers: { 
+										'Content-Type': 'application/json',
+										'Authorization': `Bearer ${token}`
+									},
 									credentials: 'include',
 									body: JSON.stringify({
 										order_id: data.order_id,
@@ -366,18 +397,47 @@ const PUBLIC_API_URL = import.meta.env.DEV ? 'http://localhost:8080' : 'http://l
 									window.location.href = `/order-confirmation?order_id=${data.order_id}`;
 								} else {
 									showError('Payment verification failed. Please try again.');
+									// Reset loading state
+									razorpayBtn.disabled = false;
+									razorpayBtnText.textContent = 'Pay Securely with Razorpay';
+									razorpayBtnSpinner.classList.add('hidden');
 								}
 							} catch (err) {
 								showError('Payment verification failed. Please try again.');
+								// Reset loading state
+								razorpayBtn.disabled = false;
+								razorpayBtnText.textContent = 'Pay Securely with Razorpay';
+								razorpayBtnSpinner.classList.add('hidden');
 							}
 						},
 						theme: { color: '#800000' }
 					};
 					const rzp = new window.Razorpay(options);
+					
+					// Add event listener for modal close
+					rzp.on('payment.failed', function (response) {
+						// Reset loading state on payment failure
+						razorpayBtn.disabled = false;
+						razorpayBtnText.textContent = 'Pay Securely with Razorpay';
+						razorpayBtnSpinner.classList.add('hidden');
+					});
+					
+					// Add event listener for modal close (when user closes without paying)
+					rzp.on('modal.closed', function () {
+						// Reset loading state when modal is closed
+						razorpayBtn.disabled = false;
+						razorpayBtnText.textContent = 'Pay Securely with Razorpay';
+						razorpayBtnSpinner.classList.add('hidden');
+					});
+					
 					rzp.open();
 				} catch (err) {
 					console.error('Payment error:', err);
 					showError('Payment failed. Please try again.');
+					// Reset loading state
+					razorpayBtn.disabled = false;
+					razorpayBtnText.textContent = 'Pay Securely with Razorpay';
+					razorpayBtnSpinner.classList.add('hidden');
 				}
 			});
 		}

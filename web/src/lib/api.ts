@@ -58,7 +58,7 @@ export interface BannersResponse {
 }
 
 export const API_BASE_URL = import.meta.env?.PUBLIC_API_URL as string || 
-  (import.meta.env.DEV ? 'http://localhost:8080' : 'http://localhost:8080');
+  (import.meta.env.DEV ? 'https://etreasure-1.onrender.com' : 'https://etreasure-1.onrender.com');
 const R2_BASE_URL = import.meta.env?.PUBLIC_R2_BASE_URL as string || 'https://pub-1a3924a6c6994107be6fe9f3ed794c0a.r2.dev';
 
 // Import session management
@@ -511,8 +511,8 @@ export interface ContentPage {
   updated_at: string;
 }
 
-// Offers management types
-export interface Offer {
+// Sales management types
+export interface Sale {
   id: string;
   title: string;
   description: string;
@@ -530,8 +530,8 @@ export interface Offer {
   updated_at: string;
 }
 
-export interface OffersResponse {
-  items: Offer[];
+export interface SalesResponse {
+  items: Sale[];
   total: number;
   page: number;
   limit: number;
@@ -553,8 +553,8 @@ export async function fetchContent(slug: string): Promise<ContentPage | null> {
   }
 }
 
-// Fetch offers from database
-export async function fetchOffers(): Promise<OffersResponse> {
+// Fetch sales from database
+export async function fetchSales(): Promise<SalesResponse> {
   try {
     const response = await fetch(`${API_BASE_URL}/api/public/offers`);
     if (!response.ok) {
