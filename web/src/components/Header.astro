@@ -4,11 +4,11 @@ import SearchBar from './SearchBar.astro';
 ---
 
 <script>
-	window.PUBLIC_API_URL = window.PUBLIC_API_URL || 'http://localhost:8080';
+	window.PUBLIC_API_URL = window.PUBLIC_API_URL || 'https://etreasure-1.onrender.com';
 	// Fetch categories from API
 	async function fetchCategories() {
 		try {
-			const apiBase = window.PUBLIC_API_URL || 'http://localhost:8080';
+			const apiBase = window.PUBLIC_API_URL || 'https://etreasure-1.onrender.com';
 			const response = await fetch(`${apiBase}/api/public/categories`);
 			const data = await response.json();
 			return data.items || [];
@@ -253,7 +253,7 @@ import SearchBar from './SearchBar.astro';
 </header>
 
 <script type="module">
-	const PUBLIC_API_URL = window.PUBLIC_API_URL || 'http://localhost:8080';
+	const PUBLIC_API_URL = window.PUBLIC_API_URL || 'https://etreasure-1.onrender.com';
 	// Mobile menu toggle
 	const mobileMenuButton = document.querySelector('[data-mobile-menu-button]');
 	const mobileMenu = document.getElementById('mobileMenu');
@@ -317,7 +317,7 @@ import SearchBar from './SearchBar.astro';
 
 	// Update cart count from API (now public - no auth required)
 	async function updateCartCount() {
-		const API_BASE = window.PUBLIC_API_URL || 'http://localhost:8080';
+		const API_BASE = window.PUBLIC_API_URL || 'https://etreasure-1.onrender.com';
 		try {
 			const response = await fetch(`${API_BASE}/api/cart`, {
 				credentials: 'include', // Include cookies for session management
@@ -349,7 +349,7 @@ import SearchBar from './SearchBar.astro';
 
 	// Update wishlist count from API (now public - no auth required)
 	async function updateWishlistCount() {
-		const API_BASE = window.PUBLIC_API_URL || 'http://localhost:8080';
+		const API_BASE = window.PUBLIC_API_URL || 'https://etreasure-1.onrender.com';
 		try {
 			const response = await fetch(`${API_BASE}/api/wishlist`, {
 				credentials: 'include', // Include cookies for session management

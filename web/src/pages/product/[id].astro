@@ -8,7 +8,7 @@ import { fetchSales } from '../../lib/api';
 export async function getStaticPaths() {
   try {
     // Fetch all products to get their IDs and slugs for static generation
-    const API_URL = 'http://localhost:8080';
+    const API_URL = 'https://etreasure-1.onrender.com';
     const response = await fetch(`${API_URL}/api/products?limit=100`);
     
     if (!response.ok) {
@@ -101,7 +101,7 @@ export async function getStaticPaths() {
   }
 }
 
-const API_URL = 'http://localhost:8080';
+const API_URL = 'https://etreasure-1.onrender.com';
 
 const { id } = Astro.params;
 
@@ -826,7 +826,7 @@ const structuredData = [productSchema, breadcrumbSchema];
 
         try {
           // First, fetch product data to get the UUID
-          const API_URL = 'http://localhost:8080';
+          const API_URL = 'https://etreasure-1.onrender.com';
           const productResponse = await fetch(`${API_URL}/api/products/${productSlug}`);
           
           if (!productResponse.ok) {
@@ -897,7 +897,7 @@ const structuredData = [productSchema, breadcrumbSchema];
 
         try {
           // First, fetch product data to get the UUID
-          const API_URL = 'http://localhost:8080';
+          const API_URL = 'https://etreasure-1.onrender.com';
           const productResponse = await fetch(`${API_URL}/api/products/${productSlug}`);
           
           if (!productResponse.ok) {
@@ -960,7 +960,7 @@ const structuredData = [productSchema, breadcrumbSchema];
             return;
           }
 
-          const API_URL = 'http://localhost:8080';
+          const API_URL = 'https://etreasure-1.onrender.com';
           const productResponse = await fetch(`${API_URL}/api/products/${productSlug}`);
           
           if (!productResponse.ok) {

@@ -112,7 +112,7 @@ export async function apiRequestWithSession(url: string, options: RequestInit = 
   // No need to manually add X-Session-ID header or authorization
 
   // Use dynamic URL based on environment
-  const baseUrl = import.meta.env.DEV ? 'http://localhost:8080' : 'http://localhost:8080';
+  const baseUrl = import.meta.env.DEV ? 'https://etreasure-1.onrender.com' : 'https://etreasure-1.onrender.com';
   
   const response = await fetch(`${baseUrl}${url}`, {
     ...options,
@@ -127,7 +127,7 @@ export async function apiRequestWithSession(url: string, options: RequestInit = 
     
     // For cart operations, we can retry once as backend will create new session
     if (url.startsWith('/api/cart')) {
-      const baseUrl = import.meta.env.DEV ? 'http://localhost:8080' : 'http://localhost:8080';
+      const baseUrl = import.meta.env.DEV ? 'https://etreasure-1.onrender.com' : 'https://etreasure-1.onrender.com';
       const retryResponse = await fetch(`${baseUrl}${url}`, {
         ...options,
         headers,
