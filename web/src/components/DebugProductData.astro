@@ -1,0 +1,30 @@
+---
+// Debug component to display product data structure
+interface Props {
+  product: any;
+}
+
+const { product } = Astro.props;
+---
+
+<div class="bg-gray-100 p-4 rounded-lg mb-4">
+  <h3 class="font-bold text-lg mb-2">Debug: Product Data Structure</h3>
+  <div class="text-sm space-y-2">
+    <p><strong>Material:</strong> {product.material || 'NULL'}</p>
+    <p><strong>Design:</strong> {product.design || 'NULL'}</p>
+    <p><strong>Technique:</strong> {product.technique || 'NULL'}</p>
+    <p><strong>Texture:</strong> {product.texture || 'NULL'}</p>
+    <p><strong>Finish:</strong> {product.finish || 'NULL'}</p>
+    <p><strong>Dimensions:</strong> {product.dimensions || 'NULL'}</p>
+    <p><strong>Weight:</strong> {product.weight || 'NULL'}</p>
+    <p><strong>Product Use:</strong> {product.product_use || 'NULL'}</p>
+    <p><strong>Care Instructions:</strong> {product.care_instructions || 'NULL'}</p>
+  </div>
+  
+  <details class="mt-4">
+    <summary class="cursor-pointer font-semibold">Full Product Object</summary>
+    <pre class="text-xs bg-white p-2 rounded mt-2 overflow-x-auto">
+      {JSON.stringify(product, null, 2)}
+    </pre>
+  </details>
+</div>

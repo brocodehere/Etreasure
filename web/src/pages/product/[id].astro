@@ -2,12 +2,13 @@
 import Layout from '../../layouts/Layout.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
+import ProductSpecifications from '../../components/ProductSpecifications.astro';
 import { fetchOffers } from '../../lib/api';
 
 export async function getStaticPaths() {
   try {
     // Fetch all products to get their IDs and slugs for static generation
-    const API_URL = 'https://etreasure-1.onrender.com';
+    const API_URL = 'http://localhost:8080';
     const response = await fetch(`${API_URL}/api/products?limit=100`);
     
     if (!response.ok) {
@@ -40,13 +41,25 @@ export async function getStaticPaths() {
             availability: fullProductData.availability,
             hero_image: fullProductData.hero_image,
             images: fullProductData.images || [], // Use images from detailed API response
+            // Material specifications
+            material: fullProductData.material,
+            design: fullProductData.design,
+            technique: fullProductData.technique,
+            texture: fullProductData.texture,
+            finish: fullProductData.finish,
+            dimensions: fullProductData.dimensions,
+            weight: fullProductData.weight,
+            product_use: fullProductData.product_use,
+            care_instructions: fullProductData.care_instructions,
             // Add fallback fields for compatibility
             name: fullProductData.title,
             image: fullProductData.hero_image?.url,
             image_url: fullProductData.hero_image?.url,
             published: true,
             category: fullProductData.category,
-            stock_status: fullProductData.stock_status
+            stock_status: fullProductData.stock_status,
+            category_id: fullProductData.category_id, // Add category_id
+            variants: fullProductData.variants || [], // Add variants from the response
           };
           
           // Add path for product ID
@@ -88,7 +101,7 @@ export async function getStaticPaths() {
   }
 }
 
-const API_URL = 'https://etreasure-1.onrender.com';
+const API_URL = 'http://localhost:8080';
 
 const { id } = Astro.params;
 
@@ -124,6 +137,16 @@ if (!product) {
         images: data.images || [], // Multiple images array
         category_id: data.category_id, // Add category_id
         variants: data.variants || [], // Add variants from the response
+        // Material specifications
+        material: data.material,
+        design: data.design,
+        technique: data.technique,
+        texture: data.texture,
+        finish: data.finish,
+        dimensions: data.dimensions,
+        weight: data.weight,
+        product_use: data.product_use,
+        care_instructions: data.care_instructions,
         // Add fallback fields for compatibility
         name: data.title,
         image: data.hero_image?.url,
@@ -460,7 +483,7 @@ const structuredData = [productSchema, breadcrumbSchema];
     <section class="mb-16">
       <div class="border-b border-gold/20">
         <nav class="flex space-x-8">
-          <button 
+         <button 
             x-data="{ active: true }"
             @click="active = true; $el.classList.add('border-gold', 'text-gold'); $el.classList.remove('border-transparent', 'text-dark/60'); $el.parentElement.querySelectorAll('button').forEach(btn => { if (btn !== $el) btn.classList.remove('border-gold', 'text-gold'); btn.classList.add('border-transparent', 'text-dark/60'); })"
             class="py-4 px-1 border-b-2 border-gold text-gold font-semibold tab-button"
@@ -496,12 +519,17 @@ const structuredData = [productSchema, breadcrumbSchema];
       <div class="py-8">
         <!-- Details Tab -->
         <div id="details-content" class="tab-content space-y-6">
-          <div>
-            <h3 class="font-playfair text-2xl font-semibold text-maroon mb-4">Product Details</h3>
-            <div class="prose prose-lg text-dark/90 max-w-none">
-              <p>{product.description || 'Detailed product information will be displayed here.'}</p>
-            </div>
-          </div>
+          <ProductSpecifications 
+            material={product.material}
+            design={product.design}
+            technique={product.technique}
+            texture={product.texture}
+            finish={product.finish}
+            dimensions={product.dimensions}
+            weight={product.weight}
+            productUse={product.product_use}
+            careInstructions={product.care_instructions}
+          />
         </div>
 
         <!-- Fabric & Care Tab -->
@@ -509,20 +537,58 @@ const structuredData = [productSchema, breadcrumbSchema];
           <div>
             <h3 class="font-playfair text-2xl font-semibold text-maroon mb-4">Fabric & Care Instructions</h3>
             <div class="space-y-4">
+              <!-- Material Composition -->
               <div>
-                <h4 class="font-semibold text-lg mb-2">Fabric Composition</h4>
-                <p class="text-dark/70">Premium quality fabric with traditional craftsmanship. Each piece is carefully selected for its superior quality and durability.</p>
+                <h4 class="font-semibold text-lg mb-2">Material Composition</h4>
+                {product.material ? (
+                  <p class="text-dark/70">{product.material}</p>
+                ) : (
+                  <p class="text-dark/70">Premium quality fabric with traditional craftsmanship. Each piece is carefully selected for its superior quality and durability.</p>
+                )}
               </div>
+              
+              <!-- Additional Material Details -->
+              {(product.design || product.technique || product.texture) && (
+                <div>
+                  <h4 class="font-semibold text-lg mb-2">Product Details</h4>
+                  <div class="space-y-2 text-dark/70">
+                    {product.design && <p><strong>Design:</strong> {product.design}</p>}
+                    {product.technique && <p><strong>Technique:</strong> {product.technique}</p>}
+                    {product.texture && <p><strong>Texture:</strong> {product.texture}</p>}
+                    {product.finish && <p><strong>Finish:</strong> {product.finish}</p>}
+                  </div>
+                </div>
+              )}
+              
+              <!-- Care Instructions -->
               <div>
                 <h4 class="font-semibold text-lg mb-2">Care Instructions</h4>
-                <ul class="list-disc list-inside text-dark/70 space-y-1">
-                  <li>Dry clean recommended for best results</li>
-                  <li>Hand wash in cold water with mild detergent</li>
-                  <li>Do not bleach or use harsh chemicals</li>
-                  <li>Iron on low heat if needed</li>
-                  <li>Store in a cool, dry place</li>
-                </ul>
+                {product.care_instructions ? (
+                  <div class="bg-cream/50 p-4 rounded-lg border border-gold/20">
+                    <p class="text-dark/70 leading-relaxed">{product.care_instructions}</p>
+                  </div>
+                ) : (
+                  <ul class="list-disc list-inside text-dark/70 space-y-1">
+                    <li>Dry clean recommended for best results</li>
+                    <li>Hand wash in cold water with mild detergent</li>
+                    <li>Do not bleach or use harsh chemicals</li>
+                    <li>Iron on low heat if needed</li>
+                    <li>Store in a cool, dry place</li>
+                  </ul>
+                )}
               </div>
+              
+              <!-- Dimensions and Weight -->
+              {(product.dimensions || product.weight) && (
+                <div>
+                  <h4 class="font-semibold text-lg mb-2">Specifications</h4>
+                  <div class="space-y-2 text-dark/70">
+                    {product.dimensions && <p><strong>Dimensions:</strong> {product.dimensions}</p>}
+                    {product.weight && <p><strong>Weight:</strong> {product.weight}</p>}
+                    {product.product_use && <p><strong>Ideal for:</strong> {product.product_use}</p>}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -761,7 +827,7 @@ const structuredData = [productSchema, breadcrumbSchema];
 
         try {
           // First, fetch product data to get the UUID
-          const API_URL = 'https://etreasure-1.onrender.com';
+          const API_URL = 'http://localhost:8080';
           const productResponse = await fetch(`${API_URL}/api/products/${productSlug}`);
           
           if (!productResponse.ok) {
@@ -832,7 +898,7 @@ const structuredData = [productSchema, breadcrumbSchema];
 
         try {
           // First, fetch product data to get the UUID
-          const API_URL = 'https://etreasure-1.onrender.com';
+          const API_URL = 'http://localhost:8080';
           const productResponse = await fetch(`${API_URL}/api/products/${productSlug}`);
           
           if (!productResponse.ok) {
@@ -895,7 +961,7 @@ const structuredData = [productSchema, breadcrumbSchema];
             return;
           }
 
-          const API_URL = 'https://etreasure-1.onrender.com';
+          const API_URL = 'http://localhost:8080';
           const productResponse = await fetch(`${API_URL}/api/products/${productSlug}`);
           
           if (!productResponse.ok) {

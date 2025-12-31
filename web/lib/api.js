@@ -1,4 +1,4 @@
-const API_URL = 'https://etreasure-1.onrender.com';
+const API_URL = 'http://localhost:8080';
 
 async function postJSON(path, body) {
   const res = await fetch(`${API_URL}${path}`, {

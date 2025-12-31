@@ -17,7 +17,7 @@ export interface NewsletterResponse {
 }
 
 export async function subscribeToNewsletter(email: string): Promise<NewsletterResponse> {
-  const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://etreasure-1.onrender.com';
+  const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
   
   try {
     const response = await fetch(`${apiUrl}/api/public/newsletter/subscribe`, {
