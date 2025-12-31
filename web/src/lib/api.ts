@@ -57,9 +57,9 @@ export interface BannersResponse {
   items: Banner[];
 }
 
-export const API_BASE_URL = import.meta.env.PUBLIC_API_URL || 
+export const API_BASE_URL = import.meta.env?.PUBLIC_API_URL as string || 
   (import.meta.env.DEV ? 'https://etreasure-1.onrender.com' : 'https://etreasure-1.onrender.com');
-const R2_BASE_URL = ((import.meta as any).env?.PUBLIC_R2_BASE_URL as string) || 'https://pub-1a3924a6c6994107be6fe9f3ed794c0a.r2.dev';
+const R2_BASE_URL = import.meta.env?.PUBLIC_R2_BASE_URL as string || 'https://pub-1a3924a6c6994107be6fe9f3ed794c0a.r2.dev';
 
 // Import session management
 import { cartSession, apiRequestWithSession } from './session';
@@ -382,11 +382,16 @@ function dispatchShopEvent(eventName: string) {
 }
 
 // Cart and Wishlist functions with session management (no authentication required)
-export const addToCart = async (productId: string, quantity = 1) => {
+export const addToCart = async (productId: string, quantity = 1, price?: number) => {
   try {
+    const requestBody: any = { product_id: productId, quantity };
+    if (price !== undefined && price > 0) {
+      requestBody.price = price;
+    }
+    
     const response = await apiRequestSessionOnly('/api/cart/add', {
       method: 'POST',
-      body: JSON.stringify({ product_id: productId, quantity }),
+      body: JSON.stringify(requestBody),
     });
 
     const data = await response.json();
@@ -394,7 +399,6 @@ export const addToCart = async (productId: string, quantity = 1) => {
     dispatchShopEvent('cart-updated');
     return data;
   } catch (error) {
-    console.error('Add to cart error:', error);
     throw error;
   }
 };
@@ -446,11 +450,16 @@ export const clearCart = async () => {
   }
 };
 
-export const toggleWishlist = async (productId: string) => {
+export const toggleWishlist = async (productId: string, price?: number) => {
   try {
+    const requestBody: any = { product_id: productId };
+    if (price !== undefined && price > 0) {
+      requestBody.price = price;
+    }
+    
     const response = await apiRequestSessionOnly('/api/wishlist/toggle', {
       method: 'POST',
-      body: JSON.stringify({ product_id: productId }),
+      body: JSON.stringify(requestBody),
     });
 
     const data = await response.json();

@@ -110,8 +110,6 @@ const BannerSlider: React.FC<BannerSliderProps> = ({
             <a
               href={currentBanner.link}
               className="inline-flex items-center px-4 py-2 sm:px-6 sm:py-3 bg-white hover:bg-gray-100 text-gray-900 font-semibold rounded-lg shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-900"
-              target="_blank"
-              rel="noopener noreferrer"
             >
               <span className="text-sm sm:text-base">Explore More</span>
               <svg

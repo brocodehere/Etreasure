@@ -2,6 +2,7 @@
 import Layout from '../../layouts/Layout.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
+import { fetchOffers } from '../../lib/api';
 
 export async function getStaticPaths() {
   try {
@@ -87,6 +88,8 @@ export async function getStaticPaths() {
   }
 }
 
+const API_URL = 'https://etreasure-1.onrender.com';
+
 const { id } = Astro.params;
 
 // Get product from getStaticPaths props or fetch at runtime
@@ -95,7 +98,6 @@ let product = Astro.props.product || null;
 // If no product from props (development mode), fetch at runtime
 if (!product) {
   // Use absolute URL for server-side rendering with proper URL encoding
-  const API_URL = 'https://etreasure-1.onrender.com';
   const encodedId = encodeURIComponent(id);
   const fullUrl = `${API_URL}/api/products/${encodedId}?t=${Date.now()}`;
 
@@ -120,6 +122,8 @@ if (!product) {
         availability: data.availability,
         hero_image: data.hero_image,
         images: data.images || [], // Multiple images array
+        category_id: data.category_id, // Add category_id
+        variants: data.variants || [], // Add variants from the response
         // Add fallback fields for compatibility
         name: data.title,
         image: data.hero_image?.url,
@@ -135,6 +139,83 @@ if (!product) {
 // If no product found, redirect to shop
 if (!product) {
   return Astro.redirect('/shop');
+}
+
+// Fetch offers to check for applicable discounts
+const offersResponse = await fetchOffers();
+const offers = offersResponse.items || [];
+
+// Filter active offers
+const activeOffers = offers.filter(offer => 
+  offer.is_active && 
+  new Date(offer.ends_at) > new Date()
+);
+
+// Fetch product variants to check product-specific offers
+let productVariants = [];
+try {
+  // Use public endpoint with variants field
+  // Use product.slug instead of product.id since PublicGet expects a slug
+  const variantsResponse = await fetch(`${API_URL}/api/products/${product.slug}?fields=variants`);
+  if (variantsResponse.ok) {
+    const variantsData = await variantsResponse.json();
+    productVariants = variantsData.variants || [];
+  }
+} catch (error) {
+  console.log('Failed to fetch variants from public endpoint:', error);
+}
+
+// Debug logging - log full product data to see available fields
+console.log('Full product data:', JSON.stringify(product, null, 2));
+console.log('Product variants from response:', productVariants);
+console.log('Product data:', {
+  title: product.title,
+  category_id: product.category_id,
+  category: product.category,
+  price_cents: product.price_cents
+});
+console.log('All offers:', offers);
+console.log('Active offers:', activeOffers);
+
+// Find applicable offers for this product
+const applicableOffers = activeOffers.filter(offer => {
+  if (offer.applies_to === 'all') {
+    return true;
+  } else if (offer.applies_to === 'categories' && product.category_id) {
+    return offer.applies_to_ids.includes(product.category_id);
+  } else if (offer.applies_to === 'products') {
+    // Check if any variant SKU matches the offer SKUs
+    const offerSkus = offer.applies_to_ids.map(sku => sku.trim()); // Trim spaces
+    return productVariants.some(variant => 
+      variant.sku && offerSkus.includes(variant.sku.trim())
+    );
+  }
+  return false;
+});
+
+console.log('Applicable offers:', applicableOffers);
+
+// Get the best offer (highest discount)
+const bestOffer = applicableOffers.length > 0 ? 
+  applicableOffers.reduce((best, current) => {
+    const bestDiscount = best.discount_type === 'percentage' ? best.discount_value : (best.discount_value * 100 / (product.price_cents / 100));
+    const currentDiscount = current.discount_type === 'percentage' ? current.discount_value : (current.discount_value * 100 / (product.price_cents / 100));
+    return currentDiscount > bestDiscount ? current : best;
+  }) : null;
+
+// Calculate discounted price
+let originalPrice = product.price_cents || 0;
+let discountedPrice = originalPrice;
+let discountPercentage = 0;
+
+if (bestOffer) {
+  if (bestOffer.discount_type === 'percentage') {
+    discountedPrice = Math.round(originalPrice * (1 - bestOffer.discount_value / 100));
+    discountPercentage = bestOffer.discount_value;
+  } else if (bestOffer.discount_type === 'fixed') {
+    discountedPrice = Math.max(0, originalPrice - bestOffer.discount_value * 100);
+    discountPercentage = Math.round(((originalPrice - discountedPrice) / originalPrice) * 100);
+  }
 }
 
 // SEO data extraction
@@ -318,8 +399,29 @@ const structuredData = [productSchema, breadcrumbSchema];
           </h1>
 
           <!-- Price -->
-          <div class="text-2xl font-bold text-gold">
-            {product.price_cents ? (product.price_cents / 100).toFixed(2) : 'Price not available'} {product.currency || 'USD'}
+          <div class="space-y-2">
+            {bestOffer ? (
+              <div class="flex items-center space-x-3">
+                <span class="text-2xl font-bold text-gold">
+                  {(discountedPrice / 100).toFixed(2)} {product.currency || 'USD'}
+                </span>
+                <span class="text-lg text-gray-500 line-through">
+                  {(originalPrice / 100).toFixed(2)} {product.currency || 'USD'}
+                </span>
+                <span class="bg-red-500 text-white px-2 py-1 rounded-full text-sm font-bold">
+                  -{discountPercentage}%
+                </span>
+              </div>
+            ) : (
+              <div class="text-2xl font-bold text-gold">
+                {product.price_cents ? (product.price_cents / 100).toFixed(2) : 'Price not available'} {product.currency || 'USD'}
+              </div>
+            )}
+            {bestOffer && (
+              <div class="text-sm text-green-600 font-medium">
+                🎉 You save {((originalPrice - discountedPrice) / 100).toFixed(2)} {product.currency || 'USD'}!
+              </div>
+            )}
           </div>
 
           <!-- Description -->
@@ -497,9 +599,22 @@ const structuredData = [productSchema, breadcrumbSchema];
   </div>
 </section>
 
+<script define:vars={{ bestOffer, discountedPrice, originalPrice }}>
+  // Pass discount data from server to client
+  const discountData = {
+    hasDiscount: !!bestOffer,
+    discountedPrice: discountedPrice / 100,
+    originalPrice: originalPrice / 100
+  };
+  
+  window.hasDiscount = discountData.hasDiscount ? 'true' : 'false';
+  window.discountedPrice = discountData.discountedPrice.toString();
+  window.originalPrice = discountData.originalPrice.toString();
+</script>
+
 <script>
   // Import API functions
-  import { toggleWishlist } from '../../lib/api.js';
+  import { addToCart, toggleWishlist, getWishlist } from '../../lib/api.js';
   import '../../lib/toast.js';
 
   // Wishlist state
@@ -636,7 +751,6 @@ const structuredData = [productSchema, breadcrumbSchema];
 
       // Add to Cart functionality
       window.handleAddToCart = async function() {
-        
         const button = document.getElementById('add-to-cart-btn');
         if (!button) {
           return;
@@ -646,12 +760,9 @@ const structuredData = [productSchema, breadcrumbSchema];
         const urlPath = window.location.pathname;
         const pathParts = urlPath.split('/');
         const productSlug = pathParts[pathParts.length - 1];
-        
                 
         if (!productSlug || productSlug.trim() === '' || productSlug === 'undefined') {
-          console.error('Product slug not found or invalid:', productSlug);
-          // Silently fail - user can try again
-          return;
+                    return;
         }
 
         // Show loading state
@@ -660,102 +771,31 @@ const structuredData = [productSchema, breadcrumbSchema];
         button.disabled = true;
 
         try {
-          const API_URL = 'https://etreasure-1.onrender.com';
-          
           // First, fetch product data to get the UUID
-                    const productResponse = await fetch(`${API_URL}/api/products/${productSlug}`);
+          const API_URL = 'https://etreasure-1.onrender.com';
+          const productResponse = await fetch(`${API_URL}/api/products/${productSlug}`);
           
           if (!productResponse.ok) {
             throw new Error(`Failed to fetch product data. Status: ${productResponse.status}`);
           }
           
           const productData = await productResponse.json();
-                    
           const productUuid = productData.id;
                     
           if (!productUuid) {
             throw new Error('Product UUID not found in API response');
           }
           
-          // Now add to cart with the correct UUID
-          const cartResponse = await fetch(`${API_URL}/api/cart/add`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ 
-              product_id: productUuid, 
-              quantity: 1 
-            }),
-          });
-
-
-          if (cartResponse.ok) {
-            const cartData = await cartResponse.json();
-            
-            // Show success state
-            button.textContent = 'Added to Cart!';
-            button.classList.add('bg-green-600');
-            button.classList.remove('bg-maroon');
-            
-            // Show success toast
-            showSuccess('Product added to cart successfully!');
-            
-            // Reset button after 2 seconds
-            setTimeout(() => {
-              button.textContent = originalText;
-              button.classList.remove('bg-green-600');
-              button.classList.add('bg-maroon');
-              button.disabled = false;
-            }, 2000);
-
-            // Dispatch cart update event
-            window.dispatchEvent(new CustomEvent('cart-updated'));
-            
-          } else {
-            const errorText = await cartResponse.text();
-            throw new Error(`Failed to add product to cart. Status: ${cartResponse.status}`);
-          }
-        } catch (error) {
-          showError('Failed to add product to cart. Using offline mode.');
-          
-          // Fallback to localStorage - create product object from available data
-          const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-          
-          // Try to get product data for localStorage fallback
-          let productData = null;
-          try {
-            const productResponse = await fetch(`https://etreasure-1.onrender.com/api/products/${productSlug}`);
-            if (productResponse.ok) {
-              productData = await productResponse.json();
-            }
-          } catch (e) {
-          }
-          
-          const existingItem = cart.find(item => item.id === (productData?.id || productSlug));
-          
-          if (existingItem) {
-            existingItem.quantity++;
-          } else {
-            // Create product object with fallback data
-            cart.push({
-              id: productData?.id || productSlug,
-              name: productData?.title || 'Product',
-              price: productData?.price_cents ? (productData.price_cents / 100).toFixed(2) : "0",
-              image: productData?.hero_image?.url || '',
-              slug: productSlug,
-              quantity: 1
-            });
-          }
-          
-          localStorage.setItem('cart', JSON.stringify(cart));
+          // Send discounted price if available
+          const priceToSend = window.hasDiscount === 'true' ? parseFloat(window.discountedPrice) : null;
+          await addToCart(productUuid, 1, priceToSend);
           
           // Show success state
           button.textContent = 'Added to Cart!';
           button.classList.add('bg-green-600');
           button.classList.remove('bg-maroon');
           
-          // Show success toast for localStorage fallback
+          // Show success toast
           showSuccess('Product added to cart successfully!');
           
           // Reset button after 2 seconds
@@ -769,12 +809,17 @@ const structuredData = [productSchema, breadcrumbSchema];
           // Dispatch cart update event
           window.dispatchEvent(new CustomEvent('cart-updated'));
           
+        } catch (error) {
+          showError('Failed to add product to cart. Please try again.');
+          
+          // Reset button state
+          button.textContent = originalText;
+          button.disabled = false;
         }
       };
 
       // Wishlist functionality
       window.handleToggleWishlist = async function() {
-        
         const button = document.getElementById('wishlist-btn');
         const icon = document.getElementById('wishlist-icon');
         
@@ -786,12 +831,9 @@ const structuredData = [productSchema, breadcrumbSchema];
         const urlPath = window.location.pathname;
         const pathParts = urlPath.split('/');
         const productSlug = pathParts[pathParts.length - 1];
-        
                 
         if (!productSlug || productSlug.trim() === '' || productSlug === 'undefined') {
-          console.error('Product slug not found or invalid:', productSlug);
-          // Silently fail - user can try again
-          return;
+                    return;
         }
 
         // Show loading state
@@ -800,17 +842,15 @@ const structuredData = [productSchema, breadcrumbSchema];
         button.classList.add('opacity-50', 'cursor-not-allowed');
 
         try {
-          const API_URL = 'https://etreasure-1.onrender.com';
-          
           // First, fetch product data to get the UUID
-                    const productResponse = await fetch(`${API_URL}/api/products/${productSlug}`);
+          const API_URL = 'https://etreasure-1.onrender.com';
+          const productResponse = await fetch(`${API_URL}/api/products/${productSlug}`);
           
           if (!productResponse.ok) {
             throw new Error(`Failed to fetch product data. Status: ${productResponse.status}`);
           }
           
           const productData = await productResponse.json();
-                    
           const productUuid = productData.id;
                     
           if (!productUuid) {
@@ -820,52 +860,32 @@ const structuredData = [productSchema, breadcrumbSchema];
           // Store current product ID for future use
           currentProductId = productUuid;
           
-          // Toggle wishlist with the correct UUID
+          // Use the proper toggleWishlist API function with session management
+          // Send discounted price if available
+          const priceToSend = window.hasDiscount === 'true' ? parseFloat(window.discountedPrice) : null;
+          const data = await toggleWishlist(productUuid, priceToSend);
           
-          // Use the same API logic as ProductCard
-          const response = await fetch(`${API_URL}/api/wishlist/toggle`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              // Add auth token if available (from localStorage)
-              ...(localStorage.getItem('accessToken') && {
-                'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-              })
-            },
-            body: JSON.stringify({ 
-              product_id: productUuid
-            }),
-          });
-
-
-          if (response.ok) {
-            const data = await response.json();
-            
-            // Update wishlist state
-            isWishlisted = !isWishlisted;
-            
-            // Update icon appearance
-            if (isWishlisted) {
-              icon.classList.add('fill-red-500', 'text-red-500');
-              icon.classList.remove('text-gold');
-              button.classList.add('bg-red-500', 'text-white', 'border-red-500');
-              button.classList.remove('bg-white', 'border-gold', 'text-gold');
-              showSuccess('Product added to wishlist!');
-            } else {
-              icon.classList.remove('fill-red-500', 'text-red-500');
-              icon.classList.add('text-gold');
-              button.classList.remove('bg-red-500', 'text-white', 'border-red-500');
-              button.classList.add('bg-white', 'border-gold', 'text-gold');
-              showSuccess('Product removed from wishlist!');
-            }
-            
-            // Dispatch wishlist update event
-            window.dispatchEvent(new CustomEvent('wishlist-updated'));
-            
+          // Update wishlist state based on response
+          isWishlisted = data.in_wishlist;
+          
+          // Update icon appearance
+          if (isWishlisted) {
+            icon.classList.add('fill-red-500', 'text-red-500');
+            icon.classList.remove('text-gold');
+            button.classList.add('bg-red-500', 'text-white', 'border-red-500');
+            button.classList.remove('bg-white', 'border-gold', 'text-gold');
+            showSuccess('Product added to wishlist!');
           } else {
-            const errorText = await response.text();
-            throw new Error(`Failed to update wishlist. Status: ${response.status}`);
+            icon.classList.remove('fill-red-500', 'text-red-500');
+            icon.classList.add('text-gold');
+            button.classList.remove('bg-red-500', 'text-white', 'border-red-500');
+            button.classList.add('bg-white', 'border-gold', 'text-gold');
+            showSuccess('Product removed from wishlist!');
           }
+          
+          // Dispatch wishlist update event
+          window.dispatchEvent(new CustomEvent('wishlist-updated'));
+          
         } catch (error) {
           showError('Failed to update wishlist. Please try again.');
         } finally {
@@ -902,33 +922,25 @@ const structuredData = [productSchema, breadcrumbSchema];
           
           currentProductId = productUuid;
           
-          // Check if product is in wishlist
-          const wishlistResponse = await fetch(`${API_URL}/api/wishlist`, {
-            headers: {
-              ...(localStorage.getItem('accessToken') && {
-                'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-              })
-            }
-          });
+          // Use the proper getWishlist API function with session management
+          const wishlistData = await getWishlist();
           
-          if (wishlistResponse.ok) {
-            const wishlistData = await wishlistResponse.json();
-            if (wishlistData.items && Array.isArray(wishlistData.items)) {
-              isWishlisted = wishlistData.items.some(item => item.product_id === productUuid);
-              
-              // Update initial button state
-              const button = document.getElementById('wishlist-btn');
-              const icon = document.getElementById('wishlist-icon');
-              
-              if (button && icon && isWishlisted) {
-                icon.classList.add('fill-red-500', 'text-red-500');
-                icon.classList.remove('text-gold');
-                button.classList.add('bg-red-500', 'text-white', 'border-red-500');
-                button.classList.remove('bg-white', 'border-gold', 'text-gold');
-              }
+          if (wishlistData.items && Array.isArray(wishlistData.items)) {
+            isWishlisted = wishlistData.items.some(item => item.product_id === productUuid);
+            
+            // Update initial button state
+            const button = document.getElementById('wishlist-btn');
+            const icon = document.getElementById('wishlist-icon');
+            
+            if (button && icon && isWishlisted) {
+              icon.classList.add('fill-red-500', 'text-red-500');
+              icon.classList.remove('text-gold');
+              button.classList.add('bg-red-500', 'text-white', 'border-red-500');
+              button.classList.remove('bg-white', 'border-gold', 'text-gold');
             }
           }
         } catch (error) {
+          // Silently handle initialization errors
         }
       }
 
