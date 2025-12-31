@@ -263,13 +263,6 @@ func (h *Handler) ListMyOrders(c *gin.Context) {
 		return
 	}
 
-	var email string
-	err := h.DB.QueryRow(c, `SELECT email FROM users WHERE id = $1`, userID).Scan(&email)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load user"})
-		return
-	}
-
 	queryNew := `
 		SELECT o.id,
 		       o.order_number,
@@ -277,7 +270,7 @@ func (h *Handler) ListMyOrders(c *gin.Context) {
 		         SELECT oli.product_title
 		         FROM order_line_items oli
 		         WHERE oli.order_id = o.id
-		         ORDER BY oli.created_at ASC
+		         ORDER BY oli.id ASC
 		         LIMIT 1
 		       ), '') as product_title,
 		       o.status,
@@ -286,40 +279,15 @@ func (h *Handler) ListMyOrders(c *gin.Context) {
 		       COALESCE(o.payment_method, 'razorpay') as payment_method,
 		       o.created_at
 		FROM orders o
-		WHERE o.customer_email = $1 AND o.status = 'paid'
+		WHERE o.user_id = $1 AND o.status = 'paid'
 		ORDER BY o.created_at DESC
 		LIMIT 200
 	`
 
-	rows, err := h.DB.Query(c, queryNew, email)
+	rows, err := h.DB.Query(c, queryNew, userID)
 	if err != nil {
-		// Fallback for older schema where order_line_items uses `title` and may not have created_at.
-		queryOld := `
-			SELECT o.id,
-			       o.order_number,
-			       COALESCE((
-			         SELECT oli.title
-			         FROM order_line_items oli
-			         WHERE oli.order_id = o.id
-			         ORDER BY oli.id ASC
-			         LIMIT 1
-			       ), '') as product_title,
-			       o.status,
-			       o.currency,
-			       o.total_price,
-			       COALESCE(o.payment_method, 'razorpay') as payment_method,
-			       o.created_at
-			FROM orders o
-			WHERE o.customer_email = $1 AND o.status = 'paid'
-			ORDER BY o.created_at DESC
-			LIMIT 200
-		`
-
-		rows, err = h.DB.Query(c, queryOld, email)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load orders", "details": err.Error()})
-			return
-		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load orders"})
+		return
 	}
 	defer rows.Close()
 

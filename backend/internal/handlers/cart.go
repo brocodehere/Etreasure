@@ -57,20 +57,33 @@ func (h *CartHandler) AddToCart(c *gin.Context) {
 	var currency string
 	var imageURL string
 	var variantID int
+	var currentStock int
 
 	err := h.DB.QueryRow(ctx, `
 		SELECT p.title, pv.price_cents, pv.currency, 
 		       (SELECT m.path FROM product_images pi JOIN media m ON pi.media_id = m.id WHERE pi.product_id = p.uuid_id ORDER BY pi.sort_order LIMIT 1) as image_url,
-		       pv.id as variant_id
+		       pv.id as variant_id,
+		       COALESCE(pv.stock_quantity, 0) as stock_quantity
 		FROM products p
 		LEFT JOIN product_variants pv ON p.uuid_id = pv.product_id
 		WHERE p.uuid_id = $1::uuid
 		ORDER BY pv.id
 		LIMIT 1
-	`, req.ProductID).Scan(&title, &priceCents, &currency, &imageURL, &variantID)
+	`, req.ProductID).Scan(&title, &priceCents, &currency, &imageURL, &variantID, &currentStock)
 
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
+		return
+	}
+
+	// Check stock availability
+	if currentStock < req.Quantity {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":         "insufficient stock",
+			"current_stock": currentStock,
+			"requested":     req.Quantity,
+			"variant_id":    variantID,
+		})
 		return
 	}
 
@@ -158,7 +171,21 @@ func (h *CartHandler) AddToCart(c *gin.Context) {
 		WHERE session_id = $1 AND product_id = $2::uuid AND variant_id = $3
 	`, sessionID, req.ProductID, variantID).Scan(&existingQuantity)
 
+	newTotalQuantity := existingQuantity + req.Quantity
+
 	if err == nil {
+		// Check if new total quantity exceeds available stock
+		if newTotalQuantity > currentStock {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error":           "insufficient stock",
+				"current_stock":   currentStock,
+				"existing_cart":   existingQuantity,
+				"requested":       req.Quantity,
+				"total_requested": newTotalQuantity,
+				"variant_id":      variantID,
+			})
+			return
+		}
 		// Update existing item with discounted price
 		_, err = h.DB.Exec(ctx, `
 			UPDATE cart 

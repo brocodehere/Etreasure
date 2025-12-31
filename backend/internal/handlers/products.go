@@ -58,6 +58,17 @@ type Product struct {
 	UnpublishAt *time.Time `json:"unpublish_at,omitempty"`
 	CreatedAt   time.Time  `json:"created_at"`
 	UpdatedAt   time.Time  `json:"updated_at"`
+	MinSKU      *string    `json:"min_sku,omitempty"`
+	// Material specifications
+	Material         *string `json:"material,omitempty"`
+	Design           *string `json:"design,omitempty"`
+	Technique        *string `json:"technique,omitempty"`
+	Texture          *string `json:"texture,omitempty"`
+	Finish           *string `json:"finish,omitempty"`
+	Dimensions       *string `json:"dimensions,omitempty"`
+	Weight           *string `json:"weight,omitempty"`
+	ProductUse       *string `json:"product_use,omitempty"`
+	CareInstructions *string `json:"care_instructions,omitempty"`
 }
 
 type ProductVariant struct {
@@ -87,15 +98,26 @@ type UpsertProductRequest struct {
 	UnpublishAt *time.Time       `json:"unpublish_at"`
 	Variants    []ProductVariant `json:"variants"`
 	Images      []ProductImage   `json:"images"`
+	// Material specifications
+	Material         *string `json:"material,omitempty"`
+	Design           *string `json:"design,omitempty"`
+	Technique        *string `json:"technique,omitempty"`
+	Texture          *string `json:"texture,omitempty"`
+	Finish           *string `json:"finish,omitempty"`
+	Dimensions       *string `json:"dimensions,omitempty"`
+	Weight           *string `json:"weight,omitempty"`
+	ProductUse       *string `json:"product_use,omitempty"`
+	CareInstructions *string `json:"care_instructions,omitempty"`
 }
 
 // GET /api/admin/products
 func (h *ProductsHandler) List(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	rows, err := h.DB.Query(ctx, `SELECT uuid_id, slug, title, subtitle, description, category_id, published, publish_at, unpublish_at, created_at, updated_at
-		FROM products
-		ORDER BY created_at DESC`)
+	rows, err := h.DB.Query(ctx, `SELECT p.uuid_id, p.slug, p.title, p.subtitle, p.description, p.category_id, p.published, p.publish_at, p.unpublish_at, p.created_at, p.updated_at,
+		(SELECT MIN(sku) FROM product_variants WHERE product_id = p.uuid_id) as min_sku
+		FROM products p
+		ORDER BY (SELECT MIN(sku) FROM product_variants WHERE product_id = p.uuid_id) ASC NULLS LAST, p.created_at DESC`)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "query failed"})
 		return
@@ -105,7 +127,7 @@ func (h *ProductsHandler) List(c *gin.Context) {
 	items := make([]Product, 0)
 	for rows.Next() {
 		var p Product
-		if err := rows.Scan(&p.UUIDID, &p.Slug, &p.Title, &p.Subtitle, &p.Description, &p.CategoryID, &p.Published, &p.PublishAt, &p.UnpublishAt, &p.CreatedAt, &p.UpdatedAt); err == nil {
+		if err := rows.Scan(&p.UUIDID, &p.Slug, &p.Title, &p.Subtitle, &p.Description, &p.CategoryID, &p.Published, &p.PublishAt, &p.UnpublishAt, &p.CreatedAt, &p.UpdatedAt, &p.MinSKU); err == nil {
 			items = append(items, p)
 		}
 	}
@@ -122,9 +144,9 @@ func (h *ProductsHandler) Create(c *gin.Context) {
 	}
 
 	var uuidID uuid.UUID
-	err := h.DB.QueryRow(ctx, `INSERT INTO products (slug, title, subtitle, description, category_id, published, publish_at, unpublish_at)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-		RETURNING uuid_id`, req.Slug, req.Title, req.Subtitle, req.Description, req.CategoryID, req.Published, req.PublishAt, req.UnpublishAt).Scan(&uuidID)
+	err := h.DB.QueryRow(ctx, `INSERT INTO products (slug, title, subtitle, description, category_id, published, publish_at, unpublish_at, material, design, technique, texture, finish, dimensions, weight, product_use, care_instructions)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+		RETURNING uuid_id`, req.Slug, req.Title, req.Subtitle, req.Description, req.CategoryID, req.Published, req.PublishAt, req.UnpublishAt, req.Material, req.Design, req.Technique, req.Texture, req.Finish, req.Dimensions, req.Weight, req.ProductUse, req.CareInstructions).Scan(&uuidID)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
@@ -173,8 +195,8 @@ func (h *ProductsHandler) Get(c *gin.Context) {
 		return
 	}
 	var p Product
-	err = h.DB.QueryRow(ctx, `SELECT uuid_id, slug, title, subtitle, description, category_id, published, publish_at, unpublish_at, created_at, updated_at FROM products WHERE uuid_id=$1`, uuidID).
-		Scan(&p.UUIDID, &p.Slug, &p.Title, &p.Subtitle, &p.Description, &p.CategoryID, &p.Published, &p.PublishAt, &p.UnpublishAt, &p.CreatedAt, &p.UpdatedAt)
+	err = h.DB.QueryRow(ctx, `SELECT uuid_id, slug, title, subtitle, description, category_id, published, publish_at, unpublish_at, created_at, updated_at, material, design, technique, texture, finish, dimensions, weight, product_use, care_instructions FROM products WHERE uuid_id=$1`, uuidID).
+		Scan(&p.UUIDID, &p.Slug, &p.Title, &p.Subtitle, &p.Description, &p.CategoryID, &p.Published, &p.PublishAt, &p.UnpublishAt, &p.CreatedAt, &p.UpdatedAt, &p.Material, &p.Design, &p.Technique, &p.Texture, &p.Finish, &p.Dimensions, &p.Weight, &p.ProductUse, &p.CareInstructions)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
@@ -224,8 +246,8 @@ func (h *ProductsHandler) Update(c *gin.Context) {
 		return
 	}
 
-	_, err = h.DB.Exec(ctx, `UPDATE products SET slug=$1,title=$2,subtitle=$3,description=$4,category_id=$5,published=$6,publish_at=$7,unpublish_at=$8,updated_at=NOW() WHERE uuid_id=$9`,
-		req.Slug, req.Title, req.Subtitle, req.Description, req.CategoryID, req.Published, req.PublishAt, req.UnpublishAt, uuidID)
+	_, err = h.DB.Exec(ctx, `UPDATE products SET slug=$1,title=$2,subtitle=$3,description=$4,category_id=$5,published=$6,publish_at=$7,unpublish_at=$8,material=$9,design=$10,technique=$11,texture=$12,finish=$13,dimensions=$14,weight=$15,product_use=$16,care_instructions=$17,updated_at=NOW() WHERE uuid_id=$18`,
+		req.Slug, req.Title, req.Subtitle, req.Description, req.CategoryID, req.Published, req.PublishAt, req.UnpublishAt, req.Material, req.Design, req.Technique, req.Texture, req.Finish, req.Dimensions, req.Weight, req.ProductUse, req.CareInstructions, uuidID)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
@@ -541,13 +563,14 @@ func (h *ProductsHandler) PublicGet(c *gin.Context) {
 	err := h.DB.QueryRow(ctx, `
 		SELECT p.uuid_id, p.slug, p.title, p.subtitle, p.description, p.category_id, p.published, p.publish_at, p.unpublish_at, p.created_at, p.updated_at,
 			COALESCE(MIN(v.price_cents), 0) AS price_cents,
-			COALESCE(MIN(v.currency), 'INR') AS currency
+			COALESCE(MIN(v.currency), 'INR') AS currency,
+			p.material, p.design, p.technique, p.texture, p.finish, p.dimensions, p.weight, p.product_use, p.care_instructions
 		FROM products p
 		LEFT JOIN product_variants v ON v.product_id = p.uuid_id
 		WHERE p.slug = $1 AND p.published = TRUE AND (p.publish_at IS NULL OR p.publish_at <= NOW())
 		GROUP BY p.uuid_id
 	`, slug).
-		Scan(&p.UUIDID, &p.Slug, &p.Title, &p.Subtitle, &p.Description, &p.CategoryID, &p.Published, &p.PublishAt, &p.UnpublishAt, &p.CreatedAt, &p.UpdatedAt, &priceCents, &currency)
+		Scan(&p.UUIDID, &p.Slug, &p.Title, &p.Subtitle, &p.Description, &p.CategoryID, &p.Published, &p.PublishAt, &p.UnpublishAt, &p.CreatedAt, &p.UpdatedAt, &priceCents, &currency, &p.Material, &p.Design, &p.Technique, &p.Texture, &p.Finish, &p.Dimensions, &p.Weight, &p.ProductUse, &p.CareInstructions)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
@@ -619,6 +642,16 @@ func (h *ProductsHandler) PublicGet(c *gin.Context) {
 				"url": heroURL,
 			},
 			"images": images,
+			// Material specifications
+			"material":          p.Material,
+			"design":            p.Design,
+			"technique":         p.Technique,
+			"texture":           p.Texture,
+			"finish":            p.Finish,
+			"dimensions":        p.Dimensions,
+			"weight":            p.Weight,
+			"product_use":       p.ProductUse,
+			"care_instructions": p.CareInstructions,
 		}
 		c.JSON(http.StatusOK, response)
 		return
@@ -666,6 +699,34 @@ func (h *ProductsHandler) PublicGet(c *gin.Context) {
 	}
 	if requested["images"] {
 		resp["images"] = images
+	}
+	// Material specifications
+	if requested["material"] {
+		resp["material"] = p.Material
+	}
+	if requested["design"] {
+		resp["design"] = p.Design
+	}
+	if requested["technique"] {
+		resp["technique"] = p.Technique
+	}
+	if requested["texture"] {
+		resp["texture"] = p.Texture
+	}
+	if requested["finish"] {
+		resp["finish"] = p.Finish
+	}
+	if requested["dimensions"] {
+		resp["dimensions"] = p.Dimensions
+	}
+	if requested["weight"] {
+		resp["weight"] = p.Weight
+	}
+	if requested["product_use"] {
+		resp["product_use"] = p.ProductUse
+	}
+	if requested["care_instructions"] {
+		resp["care_instructions"] = p.CareInstructions
 	}
 	if requested["variants"] {
 		// Fetch variants for this product

@@ -515,10 +515,14 @@ CREATE INDEX IF NOT EXISTS idx_wishlist_product ON wishlist(product_id);
 		})
 	})
 
-	// Payment endpoints (Razorpay)
+	// Payment endpoints (Razorpay) - require authentication
 	razorpay := &handlers.RazorpayHandler{DB: pool, Cfg: cfg}
-	r.POST("/api/orders/create-payment", razorpay.CreatePayment)
-	r.POST("/api/orders/verify-payment", razorpay.VerifyPayment)
+	paymentRoutes := r.Group("/api/orders")
+	paymentRoutes.Use(middleware.AuthRequired(cfg))
+	{
+		paymentRoutes.POST("/create-payment", razorpay.CreatePayment)
+		paymentRoutes.POST("/verify-payment", razorpay.VerifyPayment)
+	}
 
 	// Authenticated user orders
 	userOrders := r.Group("/api/orders")

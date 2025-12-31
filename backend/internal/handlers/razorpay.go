@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -57,6 +58,19 @@ func (h *RazorpayHandler) CreatePayment(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
+
+	// Get user_id from context if user is logged in
+	var userID *int
+	if val, exists := c.Get("user_id"); exists {
+		if uid, ok := val.(int); ok {
+			userID = &uid
+			log.Printf("CreatePayment: Found user_id in context: %d", uid)
+		} else {
+			log.Printf("CreatePayment: user_id in context but not int type: %T", val)
+		}
+	} else {
+		log.Printf("CreatePayment: No user_id found in context - user may not be logged in")
+	}
 
 	// Compute amount from the server-side cart for this session.
 	// This keeps UI cart total and Razorpay amount consistent and avoids client-side manipulation.
@@ -163,17 +177,23 @@ func (h *RazorpayHandler) CreatePayment(c *gin.Context) {
         shipping_city, shipping_state, shipping_country, shipping_pin_code,
         billing_name, billing_email, billing_phone, billing_address_line1,
         billing_city, billing_state, billing_country, billing_pin_code,
-        payment_method
+        payment_method, user_id
     ) VALUES (
         gen_random_uuid()::text, 'pending_payment', 'INR', $1, $2, $3, $4,
         $5, $6, $7, $8, $9, $10, $11, $12, $13, 'India', $14,
-        $5, $6, $7, $11, $12, $13, 'India', $14, 'razorpay'
+        $5, $6, $7, $11, $12, $13, 'India', $14, 'razorpay', $15
     ) RETURNING id
   `,
 		float64(total)/100.0, float64(subtotal)/100.0, float64(tax)/100.0, float64(shipping)/100.0,
 		req.Customer.Name, req.Customer.Email, req.Customer.Phone,
 		req.Customer.Name, req.Customer.Email, req.Customer.Phone, shippingAddrLine1,
-		shippingCity, shippingState, shippingPinCode).Scan(&orderID)
+		shippingCity, shippingState, shippingPinCode, userID).Scan(&orderID)
+
+	if userID != nil {
+		log.Printf("CreatePayment: Storing order with user_id: %d", *userID)
+	} else {
+		log.Printf("CreatePayment: Storing order with NULL user_id (user not logged in)")
+	}
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create order", "details": err.Error()})
 		return
@@ -218,7 +238,7 @@ func (h *RazorpayHandler) CreatePayment(c *gin.Context) {
 				order_id, product_id, variant_id, product_title, product_sku,
 				product_image_url, quantity, price, total
 			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		`, orderID, productID, fmt.Sprintf("%d", variantID), productTitle, productSKU, productImageURL,
+		`, orderID, productID, variantID, productTitle, productSKU, productImageURL,
 			qty, float64(itemPriceCents)/100.0, float64(itemPriceCents*qty)/100.0)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create order line item", "details": err.Error()})
@@ -279,16 +299,22 @@ type verifyPaymentRequest struct {
 
 // VerifyPayment verifies Razorpay signature and marks order as paid
 func (h *RazorpayHandler) VerifyPayment(c *gin.Context) {
+	log.Printf("VerifyPayment: Starting payment verification")
+
 	if h.Cfg.RazorpaySecret == "" {
+		log.Printf("VerifyPayment: Razorpay secret not configured")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "payment not configured"})
 		return
 	}
 
 	var req verifyPaymentRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
+		log.Printf("VerifyPayment: Invalid payload - %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
 		return
 	}
+
+	log.Printf("VerifyPayment: Processing order %s, razorpay_order_id %s", req.OrderID, req.RazorpayOrderID)
 
 	data := req.RazorpayOrderID + "|" + req.RazorpayPaymentID
 	mac := hmac.New(sha256.New, []byte(h.Cfg.RazorpaySecret))
@@ -296,19 +322,38 @@ func (h *RazorpayHandler) VerifyPayment(c *gin.Context) {
 	expected := hex.EncodeToString(mac.Sum(nil))
 
 	if !hmac.Equal([]byte(expected), []byte(req.RazorpaySignature)) {
+		log.Printf("VerifyPayment: Invalid signature - expected %s, got %s", expected, req.RazorpaySignature)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid signature"})
 		return
 	}
 
+	log.Printf("VerifyPayment: Signature verified successfully")
+
 	ctx := c.Request.Context()
+
+	// Get user_id from context if user is logged in
+	var userID *int
+	if val, exists := c.Get("user_id"); exists {
+		if uid, ok := val.(int); ok {
+			userID = &uid
+			log.Printf("VerifyPayment: Found user_id in context: %d", uid)
+		} else {
+			log.Printf("VerifyPayment: user_id in context but not int type: %T", val)
+		}
+	} else {
+		log.Printf("VerifyPayment: No user_id found in context - user may not be logged in")
+	}
 
 	// Start transaction for stock management
 	tx, err := h.DB.Begin(ctx)
 	if err != nil {
+		log.Printf("VerifyPayment: Failed to start transaction - %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to start transaction"})
 		return
 	}
 	defer tx.Rollback(ctx)
+
+	log.Printf("VerifyPayment: Transaction started successfully")
 
 	// Mark order as paid and store payment details
 	_, err = tx.Exec(ctx, `
@@ -317,74 +362,43 @@ func (h *RazorpayHandler) VerifyPayment(c *gin.Context) {
         updated_at = NOW(),
         razorpay_order_id = $2,
         razorpay_payment_id = $3,
-        razorpay_signature = $4
+        razorpay_signature = $4,
+        user_id = $5
     WHERE id = $1
-  `, req.OrderID, req.RazorpayOrderID, req.RazorpayPaymentID, req.RazorpaySignature)
+  `, req.OrderID, req.RazorpayOrderID, req.RazorpayPaymentID, req.RazorpaySignature, userID)
 	if err != nil {
+		log.Printf("VerifyPayment: Failed to update order - %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update order"})
 		return
 	}
 
-	// Decrease stock for each order line item after successful payment
-	rows, err := tx.Query(ctx, `
-		SELECT product_id, variant_id, quantity 
-		FROM order_line_items 
-		WHERE order_id = $1
-	`, req.OrderID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch order items"})
-		return
+	if userID != nil {
+		log.Printf("VerifyPayment: Updated order %s with user_id: %d", req.OrderID, *userID)
+	} else {
+		log.Printf("VerifyPayment: Updated order %s with NULL user_id (user not logged in)", req.OrderID)
 	}
-	defer rows.Close()
 
-	for rows.Next() {
-		var productID string
-		var variantID *string
-		var quantity int
-		if err := rows.Scan(&productID, &variantID, &quantity); err != nil {
-			continue
-		}
+	log.Printf("VerifyPayment: Order %s updated to paid status", req.OrderID)
 
-		// Check current stock and decrease if available
-		var currentStock int
-		err := tx.QueryRow(ctx, `
-			SELECT COALESCE(stock_quantity, 0) 
-			FROM product_variants 
-			WHERE product_id = $1
-		`, productID).Scan(&currentStock)
-
-		if err != nil || currentStock < quantity {
-			// Insufficient stock - rollback transaction
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error":         "insufficient stock for product " + productID,
-				"current_stock": currentStock,
-				"requested":     quantity,
-			})
-			return
-		}
-
-		// Decrease stock from product_variants
-		_, err = tx.Exec(ctx, `
-			UPDATE product_variants 
-			SET stock_quantity = stock_quantity - $1 
-			WHERE product_id = $2
-		`, quantity, productID)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update stock"})
-			return
-		}
-	}
+	// Stock management removed from payment verification
+	// Stock is now only managed when adding items to cart
+	log.Printf("VerifyPayment: Skipping stock deduction - stock managed at cart level")
 
 	// Commit transaction
 	if err := tx.Commit(ctx); err != nil {
+		log.Printf("VerifyPayment: Failed to commit transaction - %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to commit transaction"})
 		return
 	}
 
+	log.Printf("VerifyPayment: Transaction committed successfully for order %s", req.OrderID)
+
 	// Clear cart after successful payment (session-based cart)
 	if sessionID, errCookie := c.Cookie("session_id"); errCookie == nil && sessionID != "" {
+		log.Printf("VerifyPayment: Clearing cart for session %s", sessionID)
 		_, _ = h.DB.Exec(ctx, `DELETE FROM cart WHERE session_id = $1`, sessionID)
 	}
 
+	log.Printf("VerifyPayment: Payment verification completed successfully for order %s", req.OrderID)
 	c.JSON(http.StatusOK, gin.H{"order_id": req.OrderID, "status": "paid"})
 }
