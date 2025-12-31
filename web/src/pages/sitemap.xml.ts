@@ -64,7 +64,7 @@ export const GET: APIRoute = async ({ site }) => {
 
   try {
     // Fetch dynamic data from API
-    const API_URL = import.meta.env.PUBLIC_API_URL || 'https://etreasure-1.onrender.com';
+    const API_URL = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
     
     // Fetch products
     const productsResponse = await fetch(`${API_URL}/api/products?limit=1000`);

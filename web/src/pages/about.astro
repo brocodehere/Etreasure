@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import FoundersStory from '../components/FoundersStory.astro';
 import { fetchContent } from '../lib/api';
 
 // Fetch all about-related content from API
@@ -51,16 +52,30 @@ try {
 <Layout title={aboutContent.title} description="Learn about Ethnic Treasures - our story, mission, and commitment to preserving Indian craftsmanship through handcrafted treasures.">
   <Header />
   
-  <!-- Hero Section -->
+  <!-- Enhanced Hero Section with Logo -->
   <section class="relative py-20 bg-gradient-to-br from-maroon via-maroon/80 to-maroon overflow-hidden">
     <!-- Background Effects -->
     <div class="absolute inset-0">
       <div class="absolute top-10 left-20 w-64 h-64 bg-gold/20 rounded-full blur-3xl animate-pulse"></div>
       <div class="absolute bottom-10 right-20 w-80 h-80 bg-white/10 rounded-full blur-3xl animate-pulse" style="animation-delay: 2s;"></div>
+      <!-- Background Pattern -->
+      <div class="absolute inset-0 opacity-5">
+        <div class="absolute inset-0" style="background-image: url('data:image/svg+xml,%3Csvg%20width=%2260%22%20height=%2260%22%20viewBox=%220%200%2060%2060%22%20xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cg%20fill=%22none%22%20fill-rule=%22evenodd%22%3E%3Cg%20fill=%22%23D4A857%22%20fill-opacity=%220.1%22%3E%3Ccircle%20cx=%227%22%20cy=%227%22%20r=%221%22/%3E%3Ccircle%20cx=%2253%22%20cy=%227%22%20r=%221%22/%3E%3Ccircle%20cx=%2230%22%20cy=%227%22%20r=%221%22/%3E%3Ccircle%20cx=%227%22%20cy=%2230%22%20r=%221%22/%3E%3Ccircle%20cx=%2253%22%20cy=%2230%22%20r=%221%22/%3E%3Ccircle%20cx=%2230%22%20cy=%2230%22%20r=%221%22/%3E%3Ccircle%20cx=%227%22%20cy=%2253%22%20r=%221%22/%3E%3Ccircle%20cx=%2253%22%20cy=%2253%22%20r=%221%22/%3E%3Ccircle%20cx=%2230%22%20cy=%2253%22%20r=%221%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E'); background-repeat: repeat;"></div>
+      </div>
     </div>
     
     <div class="container mx-auto px-4 relative z-10">
       <div class="text-center text-white">
+        <!-- Logo Integration -->
+        <div class="flex justify-center mb-8">
+          <div class="relative group">
+            <div class="absolute inset-0 bg-gradient-to-br from-gold to-white rounded-full blur-xl opacity-30 group-hover:opacity-50 transition-opacity duration-300"></div>
+            <div class="relative bg-white/10 backdrop-blur-sm p-6 rounded-full shadow-2xl border border-gold/30">
+              <img src="/images/rev-logo.png" alt="Ethnic Treasures Logo" class="w-32 h-32 object-contain transform group-hover:scale-110 transition-transform duration-300" />
+            </div>
+          </div>
+        </div>
+        
         <h1 class="font-playfair text-4xl md:text-6xl font-bold mb-6 animate-fade-in">
           {aboutContent.hero_title}
         </h1>
@@ -103,6 +118,9 @@ try {
       </div>
     </div>
   </section>
+
+  <!-- Enhanced Founder's Story Section (Commented out for now) -->
+  <!-- <FoundersStory /> -->
 
   <!-- Stats Section -->
   <section class="py-20 bg-gradient-to-r from-maroon to-maroon/80 relative overflow-hidden">

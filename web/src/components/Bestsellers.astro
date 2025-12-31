@@ -7,7 +7,7 @@ import Layout from '../layouts/Layout.astro';
 	// Fetch bestsellers from API
 	async function fetchBestsellers() {
 		try {
-			const response = await fetch('https://etreasure-1.onrender.com/api/public/products?bestseller=true&limit=10');
+			const response = await fetch('http://localhost:8080/api/public/products?bestseller=true&limit=10');
 			const data = await response.json();
 			return data.products || [];
 		} catch (error) {

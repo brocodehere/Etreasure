@@ -4,7 +4,7 @@ import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 
 // Define API URL for client-side JavaScript
-const PUBLIC_API_URL = import.meta.env.DEV ? 'https://etreasure-1.onrender.com' : 'https://etreasure-1.onrender.com';
+const PUBLIC_API_URL = import.meta.env.DEV ? 'http://localhost:8080' : 'http://localhost:8080';
 ---
 
 
@@ -264,7 +264,7 @@ const PUBLIC_API_URL = import.meta.env.DEV ? 'https://etreasure-1.onrender.com' 
 	<Footer />
 
 	<script>
-		const PUBLIC_API_URL = import.meta.env.DEV ? 'https://etreasure-1.onrender.com' : 'https://etreasure-1.onrender.com';
+		const PUBLIC_API_URL = import.meta.env.DEV ? 'http://localhost:8080' : 'http://localhost:8080';
 		import { getCart, removeFromCart, addToCart, toggleWishlist, clearCart } from '../lib/api';
 		import '../lib/toast.js';
 
