@@ -19,18 +19,20 @@ type CartHandler struct {
 }
 
 type AddToCartRequest struct {
-	ProductID string `json:"product_id" binding:"required"`
-	Quantity  int    `json:"quantity"`
+	ProductID string  `json:"product_id" binding:"required"`
+	Quantity  int     `json:"quantity"`
+	Price     float64 `json:"price,omitempty"` // Allow price override for discounts
 }
 
 type CartItem struct {
-	ID        string  `json:"id"`
-	ProductID string  `json:"product_id"`
-	Title     string  `json:"title"`
-	Price     float64 `json:"price"`
-	Quantity  int     `json:"quantity"`
-	ImageURL  string  `json:"image_url"`
-	SKU       string  `json:"sku"`
+	ID              string  `json:"id"`
+	ProductID       string  `json:"product_id"`
+	Title           string  `json:"title"`
+	Price           float64 `json:"price"`
+	Quantity        int     `json:"quantity"`
+	ImageURL        string  `json:"image_url"`
+	SKU             string  `json:"sku"`
+	DiscountedPrice *string `json:"discounted_price,omitempty"`
 }
 
 type CartResponse struct {
@@ -139,6 +141,16 @@ func (h *CartHandler) AddToCart(c *gin.Context) {
 		// Use existing session
 	}
 
+	// Use provided price or get from database
+	var finalPrice float64
+	if req.Price > 0 {
+		// Use the provided price (discounted price)
+		finalPrice = req.Price
+	} else {
+		// Use regular price from database
+		finalPrice = float64(priceCents) / 100.0
+	}
+
 	// Check if item already exists in cart
 	var existingQuantity int
 	err = h.DB.QueryRow(ctx, `
@@ -147,33 +159,25 @@ func (h *CartHandler) AddToCart(c *gin.Context) {
 	`, sessionID, req.ProductID, variantID).Scan(&existingQuantity)
 
 	if err == nil {
-		// Update existing item
+		// Update existing item with discounted price
 		_, err = h.DB.Exec(ctx, `
 			UPDATE cart 
-			SET quantity = quantity + $1, updated_at = NOW()
-			WHERE session_id = $2 AND product_id = $3::uuid AND variant_id = $4
-		`, req.Quantity, sessionID, req.ProductID, variantID)
+			SET quantity = quantity + $1, discounted_price = $2, updated_at = NOW()
+			WHERE session_id = $3 AND product_id = $4::uuid AND variant_id = $5
+		`, req.Quantity, fmt.Sprintf("%.2f", finalPrice), sessionID, req.ProductID, variantID)
 	} else {
-		// Insert new item
+		// Insert new item with discounted price
 		_, err = h.DB.Exec(ctx, `
-			INSERT INTO cart (session_id, product_id, variant_id, quantity, updated_at)
-			VALUES ($1, $2::uuid, $3, $4, NOW())
-		`, sessionID, req.ProductID, variantID, req.Quantity)
+			INSERT INTO cart (session_id, product_id, variant_id, quantity, discounted_price, updated_at)
+			VALUES ($1, $2::uuid, $3, $4, $5, NOW())
+		`, sessionID, req.ProductID, variantID, req.Quantity, fmt.Sprintf("%.2f", finalPrice))
 	}
-
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add to cart"})
-		return
-	}
-
-	// Convert cents to price
-	price := float64(priceCents) / 100.0
 
 	c.JSON(http.StatusOK, gin.H{
 		"message":    "Product added to cart successfully",
 		"product_id": req.ProductID,
 		"quantity":   req.Quantity + existingQuantity,
-		"price":      price,
+		"price":      finalPrice,
 		"currency":   currency,
 	})
 }
@@ -196,14 +200,18 @@ func (h *CartHandler) GetCart(c *gin.Context) {
 	}
 
 	query := `
-		SELECT 
+			SELECT 
 			c.id,
 			c.product_id::text,
 			p.title,
 			pv.sku,
-			pv.price_cents,
+			CASE 
+				WHEN c.discounted_price IS NOT NULL THEN c.discounted_price::numeric * 100
+				ELSE pv.price_cents
+			END as price_cents,
 			pv.currency,
 			c.quantity,
+			c.discounted_price,
 			(SELECT m.path FROM product_images pi JOIN media m ON pi.media_id = m.id WHERE pi.product_id = p.uuid_id ORDER BY pi.sort_order LIMIT 1) as image_url
 		FROM cart c
 		JOIN products p ON c.product_id = p.uuid_id
@@ -239,8 +247,9 @@ func (h *CartHandler) GetCart(c *gin.Context) {
 		var imagePath *string
 		var productID string
 		var sku *string
+		var discountedPrice *string
 
-		err := rows.Scan(&id, &productID, &item.Title, &sku, &priceCents, &currency, &quantity, &imagePath)
+		err := rows.Scan(&id, &productID, &item.Title, &sku, &priceCents, &currency, &quantity, &discountedPrice, &imagePath)
 		if err != nil {
 			continue
 		}
@@ -253,6 +262,11 @@ func (h *CartHandler) GetCart(c *gin.Context) {
 		// Set SKU if available
 		if sku != nil {
 			item.SKU = *sku
+		}
+
+		// Set discounted price if available
+		if discountedPrice != nil {
+			item.DiscountedPrice = discountedPrice
 		}
 
 		// Construct proper image URL using ImageHelper

@@ -666,7 +666,46 @@ func (h *ProductsHandler) PublicGet(c *gin.Context) {
 	}
 	if requested["images"] {
 		resp["images"] = images
-	} else {
+	}
+	if requested["variants"] {
+		// Fetch variants for this product
+		variantRows, err := h.DB.Query(ctx, `
+			SELECT id, product_id, sku, title, price_cents, compare_at_price_cents, currency, stock_quantity
+			FROM product_variants
+			WHERE product_id = $1
+			ORDER BY id
+		`, p.UUIDID)
+		if err != nil && err != pgx.ErrNoRows {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load variants"})
+			return
+		}
+		defer variantRows.Close()
+
+		var variants []gin.H
+		for variantRows.Next() {
+			var id int
+			var productID uuid.UUID
+			var sku string
+			var title string
+			var priceCents int
+			var compareAtPriceCents *int
+			var currency string
+			var stockQuantity int
+
+			if err := variantRows.Scan(&id, &productID, &sku, &title, &priceCents, &compareAtPriceCents, &currency, &stockQuantity); err == nil {
+				variants = append(variants, gin.H{
+					"id":                     id,
+					"product_id":             productID,
+					"sku":                    sku,
+					"title":                  title,
+					"price_cents":            priceCents,
+					"compare_at_price_cents": compareAtPriceCents,
+					"currency":               currency,
+					"stock_quantity":         stockQuantity,
+				})
+			}
+		}
+		resp["variants"] = variants
 	}
 
 	c.JSON(http.StatusOK, resp)

@@ -37,7 +37,8 @@ type WishlistHandler struct {
 }
 
 type ToggleWishlistRequest struct {
-	ProductID string `json:"product_id" binding:"required"`
+	ProductID string  `json:"product_id" binding:"required"`
+	Price     float64 `json:"price,omitempty"` // Allow price override for discounts
 }
 
 type WishlistItem struct {
@@ -188,14 +189,21 @@ func (h *WishlistHandler) ToggleWishlist(c *gin.Context) {
 			return
 		}
 
-		// Convert cents to price
-		price := float64(priceCents) / 100.0
+		// Use provided price or get from database
+		var finalPrice float64
+		if req.Price > 0 {
+			// Use the provided price (discounted price)
+			finalPrice = req.Price
+		} else {
+			// Use regular price from database
+			finalPrice = float64(priceCents) / 100.0
+		}
 
 		c.JSON(http.StatusOK, gin.H{
 			"message":     "Product added to wishlist successfully",
 			"product_id":  req.ProductID,
 			"in_wishlist": true,
-			"price":       price,
+			"price":       finalPrice,
 			"currency":    currency,
 		})
 	}
