@@ -108,55 +108,53 @@ const { id } = Astro.params;
 // Get product from getStaticPaths props or fetch at runtime
 let product = Astro.props.product || null;
 
-// If no product from props (development mode), fetch at runtime
-if (!product) {
-  // Use absolute URL for server-side rendering with proper URL encoding
-  const encodedId = encodeURIComponent(id);
-  const fullUrl = `${API_URL}/api/products/${encodedId}?t=${Date.now()}`;
+// Always fetch fresh data to ensure specifications are up-to-date
+// This overrides static data with current API data
+const encodedId = encodeURIComponent(id);
+const fullUrl = `${API_URL}/api/products/${encodedId}?t=${Date.now()}`;
 
-  try {
-    const response = await fetch(fullUrl, {
-      headers: {
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
-      }
-    });
-    if (response.ok) {
-      const data = await response.json();
-      // Transform the API response to match expected format
-      product = {
-        uuid_id: data.id,
-        slug: data.slug,
-        title: data.title,
-        subtitle: data.subtitle,
-        description: data.description,
-        price_cents: data.price_cents,
-        currency: data.currency,
-        availability: data.availability,
-        hero_image: data.hero_image,
-        images: data.images || [], // Multiple images array
-        category_id: data.category_id, // Add category_id
-        variants: data.variants || [], // Add variants from the response
-        // Material specifications
-        material: data.material,
-        design: data.design,
-        technique: data.technique,
-        texture: data.texture,
-        finish: data.finish,
-        dimensions: data.dimensions,
-        weight: data.weight,
-        product_use: data.product_use,
-        care_instructions: data.care_instructions,
-        // Add fallback fields for compatibility
-        name: data.title,
-        image: data.hero_image?.url,
-        image_url: data.hero_image?.url,
-        published: true, // PublicGet only returns published products
-      };
+try {
+  const response = await fetch(fullUrl, {
+    headers: {
+      'Cache-Control': 'no-cache',
+      'Pragma': 'no-cache'
     }
-  } catch (error) {
-    // Failed to fetch product details
+  });
+  if (response.ok) {
+    const data = await response.json();
+    // Transform the API response to match expected format
+    product = {
+      uuid_id: data.id,
+      slug: data.slug,
+      title: data.title,
+      subtitle: data.subtitle,
+      description: data.description,
+      price_cents: data.price_cents,
+      currency: data.currency,
+      availability: data.availability,
+      hero_image: data.hero_image,
+      images: data.images || [], // Multiple images array
+      category_id: data.category_id, // Add category_id
+      variants: data.variants || [], // Add variants from the response
+      // Material specifications
+      material: data.material,
+      design: data.design,
+      technique: data.technique,
+      texture: data.texture,
+      finish: data.finish,
+      dimensions: data.dimensions,
+      weight: data.weight,
+      product_use: data.product_use,
+      care_instructions: data.care_instructions,
+      // Add fallback fields for compatibility
+      name: data.title,
+      image: data.hero_image?.url,
+      image_url: data.hero_image?.url,
+      published: true, // PublicGet only returns published products
+    };
   }
+} catch (error) {
+  // Failed to fetch product details
 }
 
 // If no product found, redirect to shop
