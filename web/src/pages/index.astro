@@ -1,6 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
+import NewYearPopup from '../components/NewYearPopup.astro';
 import BannerContainer from '../components/BannerContainer';
 import CategoryGrid from '../components/CategoryGrid.astro';
 // import Bestsellers from '../components/Bestsellers.astro'; // Temporarily hidden
@@ -42,6 +43,7 @@ const homepageSchema = {
   ogType="website"
   structuredData={homepageSchema}
 >
+	<NewYearPopup />
 	<Header />
 	<BannerContainer 
 		client:load
