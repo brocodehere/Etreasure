@@ -4,6 +4,32 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import type { Offer } from '../../types';
 
+interface Product {
+  uuid_id: string;
+  title: string;
+  slug: string;
+  variants?: Array<{
+    id: number;
+    sku: string;
+    title: string;
+    price_cents: number;
+  }>;
+}
+
+interface Category {
+  uuid_id: string;
+  name: string;
+  slug: string;
+}
+
+interface ProductVariant {
+  id: number;
+  product_id: string;
+  sku: string;
+  title: string;
+  price_cents: number;
+}
+
 interface FormData {
   title: string;
   description: string;
@@ -40,6 +66,40 @@ export function OfferEditPage() {
     queryKey: ['offer', id],
     queryFn: () => api.get<Offer>(`/offers/${id}`),
     enabled: !!id,
+  });
+
+  // Fetch products and categories for selection
+  const { data: productsData } = useQuery<Product[]>({
+    queryKey: ['products'],
+    queryFn: async () => {
+      const products = await api.get<{ items: Product[] }>('/products').then(res => res.items);
+      
+      // Fetch variants for each product
+      const productsWithVariants = await Promise.all(
+        products.map(async (product) => {
+          try {
+            const productDetails = await api.get<{ product: Product; variants: ProductVariant[] }>(`/products/${product.uuid_id}`);
+            return {
+              ...product,
+              variants: productDetails.variants || []
+            };
+          } catch (error) {
+            console.error(`Failed to fetch variants for product ${product.uuid_id}:`, error);
+            return {
+              ...product,
+              variants: []
+            };
+          }
+        })
+      );
+      
+      return productsWithVariants;
+    },
+  });
+
+  const { data: categoriesData } = useQuery<Category[]>({
+    queryKey: ['categories'],
+    queryFn: () => api.get<{ items: Category[] }>('/categories').then(res => res.items),
   });
 
   const createMutation = useMutation({
@@ -222,16 +282,79 @@ export function OfferEditPage() {
         {formData.applies_to !== 'all' && (
           <div>
             <label className="block text-sm font-medium mb-1">
-              {formData.applies_to === 'products' ? 'Product IDs' : formData.applies_to === 'categories' ? 'Category IDs' : 'Collection IDs'}
+              {formData.applies_to === 'products' ? 'Select Products' : formData.applies_to === 'categories' ? 'Select Categories' : 'Select Collections'}
             </label>
-            <input
-              name="applies_to_ids"
-              type="text"
-              value={formData.applies_to_ids.join(',')}
-              onChange={(e) => setFormData(prev => ({ ...prev, applies_to_ids: e.target.value.split(',').map(s => s.trim()).filter(Boolean) }))}
-              placeholder="uuid1,uuid2,uuid3"
-              className="w-full border rounded px-3 py-2"
-            />
+            {formData.applies_to === 'products' ? (
+              <div className="space-y-2 max-h-40 overflow-y-auto border rounded p-2">
+                {productsData?.map((product) => (
+                  <div key={product.uuid_id} className="space-y-1">
+                    <div className="font-medium text-sm">{product.title}</div>
+                    {product.variants && product.variants.length > 0 ? (
+                      product.variants.map((variant) => (
+                        <label key={variant.id} className="flex items-center space-x-2 text-sm ml-4">
+                          <input
+                            type="checkbox"
+                            checked={formData.applies_to_ids.includes(variant.sku)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  applies_to_ids: [...prev.applies_to_ids, variant.sku]
+                                }));
+                              } else {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  applies_to_ids: prev.applies_to_ids.filter(id => id !== variant.sku)
+                                }));
+                              }
+                            }}
+                            className="rounded"
+                          />
+                          <span>{variant.title} - SKU: {variant.sku} - ₹{(variant.price_cents / 100).toFixed(2)}</span>
+                        </label>
+                      ))
+                    ) : (
+                      <div className="text-sm text-gray-500 ml-4">No variants available</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : formData.applies_to === 'categories' ? (
+              <div className="space-y-2 max-h-40 overflow-y-auto border rounded p-2">
+                {categoriesData?.map((category) => (
+                  <label key={category.uuid_id} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={formData.applies_to_ids.includes(category.uuid_id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setFormData(prev => ({
+                            ...prev,
+                            applies_to_ids: [...prev.applies_to_ids, category.uuid_id]
+                          }));
+                        } else {
+                          setFormData(prev => ({
+                            ...prev,
+                            applies_to_ids: prev.applies_to_ids.filter(id => id !== category.uuid_id)
+                          }));
+                        }
+                      }}
+                      className="rounded"
+                    />
+                    <span>{category.name} ({category.slug})</span>
+                  </label>
+                ))}
+              </div>
+            ) : (
+              <input
+                name="applies_to_ids"
+                type="text"
+                value={formData.applies_to_ids.join(',')}
+                onChange={(e) => setFormData(prev => ({ ...prev, applies_to_ids: e.target.value.split(',').map(s => s.trim()).filter(Boolean) }))}
+                placeholder="collection1,collection2,collection3"
+                className="w-full border rounded px-3 py-2"
+              />
+            )}
           </div>
         )}
 
