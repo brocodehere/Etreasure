@@ -2,7 +2,7 @@ import { useState } from 'react';
 import PasswordStrengthIndicator from './PasswordStrengthIndicator';
 
 // Temporarily hardcoded for debugging
-const API_URL = 'https://etreasure-1.onrender.com';
+const API_URL = 'http://localhost:8080';
 
 export default function SignupForm() {
   const [fullName, setFullName] = useState('');

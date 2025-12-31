@@ -1,5 +1,5 @@
 // Updated wishlist functions to use API
-const PUBLIC_API_URL = 'https://etreasure-1.onrender.com';
+const PUBLIC_API_URL = 'http://localhost:8080';
 
 async function updateWishlistCount() {
     try {
@@ -18,7 +18,7 @@ async function updateWishlistCount() {
 
 async function removeFromWishlist(productId) {
     try {
-        const response = await fetch(`https://etreasure-1.onrender.com/api/wishlist/remove/${productId}`, {
+        const response = await fetch(`http://localhost:8080/api/wishlist/remove/${productId}`, {
             method: 'DELETE'
         });
         

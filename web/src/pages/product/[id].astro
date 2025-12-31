@@ -7,7 +7,7 @@ import { fetchOffers } from '../../lib/api';
 export async function getStaticPaths() {
   try {
     // Fetch all products to get their IDs and slugs for static generation
-    const API_URL = 'https://etreasure-1.onrender.com';
+    const API_URL = 'http://localhost:8080';
     const response = await fetch(`${API_URL}/api/products?limit=100`);
     
     if (!response.ok) {
@@ -88,7 +88,7 @@ export async function getStaticPaths() {
   }
 }
 
-const API_URL = 'https://etreasure-1.onrender.com';
+const API_URL = 'http://localhost:8080';
 
 const { id } = Astro.params;
 
@@ -162,20 +162,7 @@ try {
     productVariants = variantsData.variants || [];
   }
 } catch (error) {
-  console.log('Failed to fetch variants from public endpoint:', error);
 }
-
-// Debug logging - log full product data to see available fields
-console.log('Full product data:', JSON.stringify(product, null, 2));
-console.log('Product variants from response:', productVariants);
-console.log('Product data:', {
-  title: product.title,
-  category_id: product.category_id,
-  category: product.category,
-  price_cents: product.price_cents
-});
-console.log('All offers:', offers);
-console.log('Active offers:', activeOffers);
 
 // Find applicable offers for this product
 const applicableOffers = activeOffers.filter(offer => {
@@ -192,8 +179,6 @@ const applicableOffers = activeOffers.filter(offer => {
   }
   return false;
 });
-
-console.log('Applicable offers:', applicableOffers);
 
 // Get the best offer (highest discount)
 const bestOffer = applicableOffers.length > 0 ? 
@@ -772,7 +757,7 @@ const structuredData = [productSchema, breadcrumbSchema];
 
         try {
           // First, fetch product data to get the UUID
-          const API_URL = 'https://etreasure-1.onrender.com';
+          const API_URL = 'http://localhost:8080';
           const productResponse = await fetch(`${API_URL}/api/products/${productSlug}`);
           
           if (!productResponse.ok) {
@@ -843,7 +828,7 @@ const structuredData = [productSchema, breadcrumbSchema];
 
         try {
           // First, fetch product data to get the UUID
-          const API_URL = 'https://etreasure-1.onrender.com';
+          const API_URL = 'http://localhost:8080';
           const productResponse = await fetch(`${API_URL}/api/products/${productSlug}`);
           
           if (!productResponse.ok) {
@@ -906,7 +891,7 @@ const structuredData = [productSchema, breadcrumbSchema];
             return;
           }
 
-          const API_URL = 'https://etreasure-1.onrender.com';
+          const API_URL = 'http://localhost:8080';
           const productResponse = await fetch(`${API_URL}/api/products/${productSlug}`);
           
           if (!productResponse.ok) {

@@ -41,7 +41,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://etreasure-1.onrender.com',
+        target: 'http://localhost:8080',
         changeOrigin: true,
         secure: false,
       },
