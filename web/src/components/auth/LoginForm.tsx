@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-const API_URL = 'http://localhost:8080';
+const API_URL = 'https://etreasure-1.onrender.com';
 
 export default function LoginForm() {
   const [email, setEmail] = useState('');

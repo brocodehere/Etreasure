@@ -34,7 +34,7 @@ async function getProductsForOffer(offer) {
       try {
         // Fetch product details including variants using public endpoint
         // Use product.slug instead of product.id since PublicGet expects a slug
-        const response = await fetch(`http://localhost:8080/api/products/${product.slug}?fields=variants`);
+        const response = await fetch(`https://etreasure-1.onrender.com/api/products/${product.slug}?fields=variants`);
         
         if (response.ok) {
           const productData = await response.json();
