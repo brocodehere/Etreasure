@@ -11,6 +11,7 @@ type Product = {
   published: boolean;
   publish_at?: string | null;
   category_id?: string | null;
+  min_sku?: string | null;
 };
 
 type ProductsResponse = {
@@ -86,6 +87,7 @@ export const ProductsListPage: React.FC = () => {
           <table className="min-w-full text-sm">
             <thead>
               <tr className="bg-cream/60 text-dark">
+                <th className="text-left px-4 py-2">SKU</th>
                 <th className="text-left px-4 py-2">ID</th>
                 <th className="text-left px-4 py-2">Title</th>
                 <th className="text-left px-4 py-2">Slug</th>
@@ -96,6 +98,7 @@ export const ProductsListPage: React.FC = () => {
             <tbody>
               {data.items.map((p) => (
                 <tr key={p.uuid_id} className="border-t border-gold/20">
+                  <td className="px-4 py-2">{p.min_sku || '-'}</td>
                   <td className="px-4 py-2">{p.uuid_id}</td>
                   <td className="px-4 py-2">{p.title}</td>
                   <td className="px-4 py-2">{p.slug}</td>

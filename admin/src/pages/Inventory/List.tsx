@@ -15,8 +15,13 @@ export function InventoryListPage() {
 
   const { data, isLoading, error } = useQuery<ListResponse>({
     queryKey: ['inventory', cursor, limit],
-    queryFn: () =>
-      api.get<ListResponse>('/inventory', { params: { cursor, limit } }).then(r => r.data),
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (cursor) params.append('cursor', cursor);
+      params.append('limit', limit.toString());
+      
+      return api.get<ListResponse>(`/inventory?${params.toString()}`);
+    },
   });
 
   const queryClient = useQueryClient();

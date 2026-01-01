@@ -87,6 +87,16 @@ type UpsertPayload = {
   seo_description?: string | null;
   variants: Variant[];
   images: ImageLink[];
+  // Material specifications
+  material?: string | null;
+  design?: string | null;
+  technique?: string | null;
+  texture?: string | null;
+  finish?: string | null;
+  dimensions?: string | null;
+  weight?: string | null;
+  product_use?: string | null;
+  care_instructions?: string | null;
 };
 
 type ProductResponse = {
@@ -102,6 +112,16 @@ type ProductResponse = {
     unpublish_at?: string | null;
     seo_title?: string | null;
     seo_description?: string | null;
+    // Material specifications
+    material?: string | null;
+    design?: string | null;
+    technique?: string | null;
+    texture?: string | null;
+    finish?: string | null;
+    dimensions?: string | null;
+    weight?: string | null;
+    product_use?: string | null;
+    care_instructions?: string | null;
   };
   variants: Array<{
     sku: string;
@@ -155,10 +175,20 @@ const ProductEditPageInner: React.FC = () => {
   const [subtitle, setSubtitle] = useState('');
   const [description, setDescription] = useState('');
   const [published, setPublished] = useState(false);
-  const [publishAt, setPublishAt] = useState<string | ''>('');
-  const [unpublishAt, setUnpublishAt] = useState<string | ''>('');
+  const [publishAt, setPublishAt] = useState<string>('');
+  const [unpublishAt, setUnpublishAt] = useState<string>('');
   const [seoTitle, setSeoTitle] = useState('');
   const [seoDescription, setSeoDescription] = useState('');
+  // Material specifications
+  const [material, setMaterial] = useState('');
+  const [design, setDesign] = useState('');
+  const [technique, setTechnique] = useState('');
+  const [texture, setTexture] = useState('');
+  const [finish, setFinish] = useState('');
+  const [dimensions, setDimensions] = useState('');
+  const [weight, setWeight] = useState('');
+  const [productUse, setProductUse] = useState('');
+  const [careInstructions, setCareInstructions] = useState('');
   const [variants, setVariants] = useState<Variant[]>([
     { sku: '', title: 'Default', price_cents: 0, compare_at_price_cents: undefined, currency: 'INR', stock_quantity: 0 },
   ]);
@@ -211,6 +241,16 @@ const ProductEditPageInner: React.FC = () => {
         variants,
         category_id: categoryId || null,
         images,
+        // Material specifications
+        material: material || null,
+        design: design || null,
+        technique: technique || null,
+        texture: texture || null,
+        finish: finish || null,
+        dimensions: dimensions || null,
+        weight: weight || null,
+        product_use: productUse || null,
+        care_instructions: careInstructions || null,
       };
       
             
@@ -254,6 +294,16 @@ const ProductEditPageInner: React.FC = () => {
       setUnpublishAt(p.unpublish_at || '');
       setSeoTitle(p.seo_title || '');
       setSeoDescription(p.seo_description || '');
+      // Material specifications
+      setMaterial(p.material || '');
+      setDesign(p.design || '');
+      setTechnique(p.technique || '');
+      setTexture(p.texture || '');
+      setFinish(p.finish || '');
+      setDimensions(p.dimensions || '');
+      setWeight(p.weight || '');
+      setProductUse(p.product_use || '');
+      setCareInstructions(p.care_instructions || '');
       setVariants(
         (prodData.variants || []).map((v) => ({
           sku: v.sku || '',
@@ -275,7 +325,9 @@ const ProductEditPageInner: React.FC = () => {
     }
   }, [title]);
 
-  const canSave = useMemo(() => title.trim().length > 0 && slug.trim().length > 0, [title, slug]);
+  const canSave = useMemo(() => {
+    return title.trim().length > 0 && slug.trim().length > 0;
+  }, [title, slug]);
 
   // Show success message function
   const showSuccessMessage = (message: string) => {
@@ -283,7 +335,7 @@ const ProductEditPageInner: React.FC = () => {
     setShowSuccess(true);
     setTimeout(() => {
       setShowSuccess(false);
-    }, 3000); // Hide after 3 seconds
+    }, 3000);
   };
 
   // Show error state for invalid product ID (only for existing products)
@@ -336,19 +388,19 @@ const ProductEditPageInner: React.FC = () => {
     );
   }
 
-  function handleCategoryChange(categoryUuid: string) {
+  function handleCategoryChange(categoryUuid: string): void {
     setCategoryId(categoryUuid);
   }
 
-  function addVariant() {
+  function addVariant(): void {
     setVariants((v) => [...v, { sku: '', title: '', price_cents: 0, compare_at_price_cents: undefined, currency: 'INR', stock_quantity: 0 }]);
   }
 
-  function removeVariant(ix: number) {
+  function removeVariant(ix: number): void {
     setVariants((v) => v.filter((_, i) => i !== ix));
   }
 
-  function addImage(mediaId: number) {
+  function addImage(mediaId: number): void {
     setImages((imgs) => {
       const nextOrder = imgs.length > 0 ? Math.max(...imgs.map((i) => i.sort_order)) + 1 : 0;
       if (imgs.some((i) => i.media_id === mediaId)) return imgs;
@@ -356,7 +408,7 @@ const ProductEditPageInner: React.FC = () => {
     });
   }
 
-  function removeImage(mediaId: number) {
+  function removeImage(mediaId: number): void {
     setImages((imgs) => imgs.filter((i) => i.media_id !== mediaId));
   }
 
@@ -416,6 +468,96 @@ const ProductEditPageInner: React.FC = () => {
               </div>
 
               <div className="border-t pt-4">
+                <h3 className="text-lg font-semibold mb-3">Product Specifications</h3>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Material</label>
+                      <input 
+                        value={material} 
+                        onChange={(e) => setMaterial(e.target.value)} 
+                        placeholder="e.g., Silk, Cotton, Wool"
+                        className="w-full rounded-md border border-gold/40 bg-cream/60 px-3 py-2 text-sm" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Design</label>
+                      <input 
+                        value={design} 
+                        onChange={(e) => setDesign(e.target.value)} 
+                        placeholder="e.g., Floral, Geometric, Traditional"
+                        className="w-full rounded-md border border-gold/40 bg-cream/60 px-3 py-2 text-sm" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Technique</label>
+                      <input 
+                        value={technique} 
+                        onChange={(e) => setTechnique(e.target.value)} 
+                        placeholder="e.g., Hand-woven, Block-printed, Embroidered"
+                        className="w-full rounded-md border border-gold/40 bg-cream/60 px-3 py-2 text-sm" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Texture</label>
+                      <input 
+                        value={texture} 
+                        onChange={(e) => setTexture(e.target.value)} 
+                        placeholder="e.g., Smooth, Rough, Soft"
+                        className="w-full rounded-md border border-gold/40 bg-cream/60 px-3 py-2 text-sm" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Finish</label>
+                      <input 
+                        value={finish} 
+                        onChange={(e) => setFinish(e.target.value)} 
+                        placeholder="e.g., Matte, Glossy, Satin"
+                        className="w-full rounded-md border border-gold/40 bg-cream/60 px-3 py-2 text-sm" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Dimensions</label>
+                      <input 
+                        value={dimensions} 
+                        onChange={(e) => setDimensions(e.target.value)} 
+                        placeholder="e.g., 6m x 2m, L x W x H"
+                        className="w-full rounded-md border border-gold/40 bg-cream/60 px-3 py-2 text-sm" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Weight</label>
+                      <input 
+                        value={weight} 
+                        onChange={(e) => setWeight(e.target.value)} 
+                        placeholder="e.g., 500g, 1.2kg"
+                        className="w-full rounded-md border border-gold/40 bg-cream/60 px-3 py-2 text-sm" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Product Use</label>
+                      <input 
+                        value={productUse} 
+                        onChange={(e) => setProductUse(e.target.value)} 
+                        placeholder="e.g., Home decor, Fashion, Gift"
+                        className="w-full rounded-md border border-gold/40 bg-cream/60 px-3 py-2 text-sm" 
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Care Instructions</label>
+                    <textarea 
+                      value={careInstructions} 
+                      onChange={(e) => setCareInstructions(e.target.value)} 
+                      placeholder="e.g., Dry clean only, Hand wash cold, Keep away from direct sunlight"
+                      className="w-full rounded-md border border-gold/40 bg-cream/60 px-3 py-2 text-sm" 
+                      rows={3}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t pt-4">
                 <h3 className="text-lg font-semibold mb-3">SEO Settings</h3>
                 <div className="space-y-3">
                   <div>
@@ -449,11 +591,21 @@ const ProductEditPageInner: React.FC = () => {
                 </label>
                 <div>
                   <label className="block text-sm mb-1">Publish At</label>
-                  <input type="datetime-local" value={publishAt} onChange={(e) => setPublishAt(e.target.value)} className="w-full rounded-md border border-gold/40 bg-cream/60 px-3 py-2 text-sm" />
+                  <input 
+                    type="datetime-local" 
+                    value={publishAt} 
+                    onChange={(e) => setPublishAt(e.target.value)} 
+                    className="w-full rounded-md border border-gold/40 bg-cream/60 px-3 py-2 text-sm" 
+                  />
                 </div>
                 <div>
                   <label className="block text-sm mb-1">Unpublish At</label>
-                  <input type="datetime-local" value={unpublishAt} onChange={(e) => setUnpublishAt(e.target.value)} className="w-full rounded-md border border-gold/40 bg-cream/60 px-3 py-2 text-sm" />
+                  <input 
+                    type="datetime-local" 
+                    value={unpublishAt} 
+                    onChange={(e) => setUnpublishAt(e.target.value)} 
+                    className="w-full rounded-md border border-gold/40 bg-cream/60 px-3 py-2 text-sm" 
+                  />
                 </div>
               </div>
             </div>
@@ -479,12 +631,52 @@ const ProductEditPageInner: React.FC = () => {
                   <tbody>
                     {variants.map((v, i) => (
                       <tr key={i} className="border-t border-gold/20">
-                        <td className="px-3 py-2"><input value={v.sku} onChange={(e) => setVariants((arr) => arr.map((x, ix) => ix===i? { ...x, sku: e.target.value } : x))} className="w-40 rounded-md border border-gold/40 bg-cream/60 px-2 py-1" /></td>
-                        <td className="px-3 py-2"><input value={v.title} onChange={(e) => setVariants((arr) => arr.map((x, ix) => ix===i? { ...x, title: e.target.value } : x))} className="w-40 rounded-md border border-gold/40 bg-cream/60 px-2 py-1" /></td>
-                        <td className="px-3 py-2"><input type="number" value={v.price_cents} onChange={(e) => setVariants((arr) => arr.map((x, ix) => ix===i? { ...x, price_cents: Number(e.target.value) } : x))} className="w-32 rounded-md border border-gold/40 bg-cream/60 px-2 py-1" /></td>
-                        <td className="px-3 py-2"><input type="number" value={v.compare_at_price_cents ?? ''} onChange={(e) => setVariants((arr) => arr.map((x, ix) => ix===i? { ...x, compare_at_price_cents: e.target.value === '' ? undefined : Number(e.target.value) } : x))} className="w-32 rounded-md border border-gold/40 bg-cream/60 px-2 py-1" /></td>
-                        <td className="px-3 py-2"><input type="number" value={v.stock_quantity} onChange={(e) => setVariants((arr) => arr.map((x, ix) => ix===i? { ...x, stock_quantity: Number(e.target.value) } : x))} className="w-24 rounded-md border border-gold/40 bg-cream/60 px-2 py-1" /></td>
-                        <td className="px-3 py-2"><button onClick={() => removeVariant(i)} className="text-maroon">Remove</button></td>
+                        <td className="px-3 py-2">
+                          <input 
+                            value={v.sku} 
+                            onChange={(e) => setVariants((arr) => arr.map((x, ix) => ix === i ? { ...x, sku: e.target.value } : x))} 
+                            className="w-40 rounded-md border border-gold/40 bg-cream/60 px-2 py-1" 
+                          />
+                        </td>
+                        <td className="px-3 py-2">
+                          <input 
+                            value={v.title} 
+                            onChange={(e) => setVariants((arr) => arr.map((x, ix) => ix === i ? { ...x, title: e.target.value } : x))} 
+                            className="w-40 rounded-md border border-gold/40 bg-cream/60 px-2 py-1" 
+                          />
+                        </td>
+                        <td className="px-3 py-2">
+                          <input 
+                            type="number" 
+                            value={v.price_cents} 
+                            onChange={(e) => setVariants((arr) => arr.map((x, ix) => ix === i ? { ...x, price_cents: Number(e.target.value) } : x))} 
+                            className="w-32 rounded-md border border-gold/40 bg-cream/60 px-2 py-1" 
+                          />
+                        </td>
+                        <td className="px-3 py-2">
+                          <input 
+                            type="number" 
+                            value={v.compare_at_price_cents ?? ''} 
+                            onChange={(e) => setVariants((arr) => arr.map((x, ix) => ix === i ? { ...x, compare_at_price_cents: e.target.value === '' ? undefined : Number(e.target.value) } : x))} 
+                            className="w-32 rounded-md border border-gold/40 bg-cream/60 px-2 py-1" 
+                          />
+                        </td>
+                        <td className="px-3 py-2">
+                          <input 
+                            type="number" 
+                            value={v.stock_quantity} 
+                            onChange={(e) => setVariants((arr) => arr.map((x, ix) => ix === i ? { ...x, stock_quantity: Number(e.target.value) } : x))} 
+                            className="w-24 rounded-md border border-gold/40 bg-cream/60 px-2 py-1" 
+                          />
+                        </td>
+                        <td className="px-3 py-2">
+                          <button 
+                            onClick={() => removeVariant(i)} 
+                            className="text-maroon"
+                          >
+                            Remove
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
