@@ -114,9 +114,10 @@ const displayCategories = allCategories
         <div class="flex justify-center mt-4 md:mt-6 space-x-1 md:space-x-2" id="sliderDots">
           {displayCategories.map((_, index) => (
             <button 
-              class={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full transition-all duration-300 ${index === 0 ? 'bg-maroon w-4 md:w-8' : 'bg-gray-300'}`}
+              class={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full transition-all duration-300 ${index === 0 ? 'bg-maroon' : 'bg-gray-300'}`}
               onclick={`goToSlide(${index})`}
               data-slide={index}
+              style={index === 0 ? "width: 2rem;" : ""}
             ></button>
           ))}
         </div>
@@ -201,13 +202,14 @@ const displayCategories = allCategories
         dot.classList.add('bg-maroon');
         // Responsive dot width
         if (typeof window !== 'undefined' && window.innerWidth < 768) {
-          dot.classList.add('w-4');
+          dot.style.width = '1rem'; // w-4
         } else {
-          dot.classList.add('w-8');
+          dot.style.width = '2rem'; // w-8
         }
       } else {
-        dot.classList.remove('bg-maroon', 'w-4', 'w-8');
+        dot.classList.remove('bg-maroon');
         dot.classList.add('bg-gray-300');
+        dot.style.width = ''; // Reset to default
       }
     });
   }
