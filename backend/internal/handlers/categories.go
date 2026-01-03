@@ -33,7 +33,7 @@ func (h *CategoriesHandler) formatImageURL(imagePath *string) *string {
 	}
 	// If it's a local path starting with /uploads/, convert to full URL
 	if strings.HasPrefix(path, "/uploads/") {
-		url := "http://localhost:8080" + path
+		url := "https://etreasure-1.onrender.com" + path
 		return &url
 	}
 	// If it's already a full URL, keep as is

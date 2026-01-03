@@ -118,9 +118,9 @@ func (e *EmailService) SendStockNotificationEmail(toEmail, productSlug, productT
 		imageURL := *productImage
 		// Convert R2/local path to full URL if needed
 		if strings.HasPrefix(imageURL, "product/") {
-			imageURL = fmt.Sprintf("http://localhost:8080/%s", imageURL)
+			imageURL = fmt.Sprintf("https://etreasure-1.onrender.com/%s", imageURL)
 		} else if strings.HasPrefix(imageURL, "/uploads/") {
-			imageURL = fmt.Sprintf("http://localhost:8080%s", imageURL)
+			imageURL = fmt.Sprintf("https://etreasure-1.onrender.com%s", imageURL)
 		}
 		imageHTML = fmt.Sprintf(`<img src="%s" alt="%s" style="max-width: 200px; height: auto; border-radius: 8px; margin-bottom: 15px;">`, imageURL, productTitle)
 	} else {
