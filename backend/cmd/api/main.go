@@ -53,7 +53,13 @@ func main() {
 	}
 
 	// Initialize email service
-	emailService := email.NewEmailService()
+	smtpConfig := email.SMTPConfig{
+		Host:     cfg.SMTPHost,
+		Port:     cfg.SMTPPort,
+		Email:    cfg.SMTPEmail,
+		Password: cfg.SMTPPassword,
+	}
+	emailService := email.NewEmailService(smtpConfig)
 
 	// Test SMTP connection (optional)
 	if err := emailService.TestConnection(); err != nil {
@@ -79,7 +85,7 @@ func main() {
 	if devMode {
 		r.Use(cors.New(cors.Config{
 			AllowOrigins:     []string{"http://localhost:4321", "http://127.0.0.1:4321", "http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5174", "http://127.0.0.1:5174", "https://ethnictreasures.co.in"},
-			AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+			AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 			AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "X-Requested-With"},
 			ExposeHeaders:    []string{"Content-Length", "Set-Cookie"},
 			AllowCredentials: true,
@@ -101,7 +107,7 @@ func main() {
 
 		r.Use(cors.New(cors.Config{
 			AllowOrigins:     allowedOrigins,
-			AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+			AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 			AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "X-Requested-With"},
 			ExposeHeaders:    []string{"Content-Length", "Set-Cookie"},
 			AllowCredentials: true,
@@ -116,6 +122,9 @@ func main() {
 	})
 
 	authHandler := &handlers.AuthHandler{DB: pool, Cfg: cfg, Rd: redisClient, Email: emailService}
+
+	// Stock notifications handler
+	stockNotificationsHandler := &handlers.StockNotificationsHandler{DB: pool, Rd: redisClient, Email: emailService}
 
 	// Admin auth routes
 	authGroup := r.Group("/api/admin/auth")
@@ -138,6 +147,9 @@ func main() {
 		public.GET("/me", authHandler.Me)
 	}
 
+	// Stock notifications (public)
+	r.POST("/api/stock-notifications", stockNotificationsHandler.CreateStockNotification)
+
 	// Initialize R2 client for global use
 	r2Client, err := storage.NewR2Client(cfg)
 	if err != nil {
@@ -154,7 +166,7 @@ func main() {
 		protected.GET("/me", authHandler.Me)
 
 		// Products (admin)
-		products := &handlers.ProductsHandler{DB: pool, R2Client: r2Client, ImageHelper: imageHelper}
+		products := &handlers.ProductsHandler{DB: pool, R2Client: r2Client, ImageHelper: imageHelper, StockNotifications: stockNotificationsHandler}
 		protected.GET("/products", products.List)
 		protected.POST("/products", products.Create)
 		protected.GET("/products/:id", products.Get)
@@ -288,6 +300,8 @@ func main() {
 	// Authentication endpoints
 	r.POST("/api/auth/login", authHandler.Login)
 	r.POST("/api/auth/signup", authHandler.Signup)
+	r.POST("/api/auth/send-signup-otp", authHandler.SendSignupOTP)
+	r.POST("/api/auth/verify-signup-otp", authHandler.VerifySignupOTP)
 	r.POST("/api/auth/refresh", authHandler.Refresh)
 	r.POST("/api/auth/logout", authHandler.Logout)
 	r.GET("/api/auth/me", authHandler.Me)

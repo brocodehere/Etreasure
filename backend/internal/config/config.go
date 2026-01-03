@@ -14,6 +14,11 @@ type Config struct {
 	UploadHMACSecret string
 	RazorpayKeyID    string
 	RazorpaySecret   string
+	// SMTP Configuration
+	SMTPHost     string
+	SMTPPort     string
+	SMTPEmail    string
+	SMTPPassword string
 	// Cloudflare R2 Configuration
 	R2AccountID       string
 	R2AccessKeyID     string
@@ -39,6 +44,11 @@ func Load() Config {
 		UploadHMACSecret: os.Getenv("UPLOAD_HMAC_SECRET"),
 		RazorpayKeyID:    os.Getenv("RAZORPAY_KEY_ID"),
 		RazorpaySecret:   os.Getenv("RAZORPAY_KEY_SECRET"),
+		// SMTP Configuration
+		SMTPHost:     os.Getenv("SMTP_HOST"),
+		SMTPPort:     os.Getenv("SMTP_PORT"),
+		SMTPEmail:    os.Getenv("SMTP_EMAIL"),
+		SMTPPassword: os.Getenv("SMTP_PASSWORD"),
 		// Cloudflare R2 Configuration
 		R2AccountID:       os.Getenv("R2_ACCOUNT_ID"),
 		R2AccessKeyID:     os.Getenv("R2_ACCESS_KEY_ID"),
@@ -63,6 +73,17 @@ func Load() Config {
 	}
 	if cfg.UploadHMACSecret == "" {
 		cfg.UploadHMACSecret = "dev-upload-secret"
+	}
+
+	// Set SMTP defaults
+	if cfg.SMTPHost == "" {
+		cfg.SMTPHost = "smtp.gmail.com"
+	}
+	if cfg.SMTPPort == "" {
+		cfg.SMTPPort = "587"
+	}
+	if cfg.SMTPEmail == "" || cfg.SMTPPassword == "" {
+		log.Println("WARNING: SMTP credentials not configured - email features will be disabled")
 	}
 
 	return cfg

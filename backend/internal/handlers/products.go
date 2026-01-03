@@ -15,9 +15,10 @@ import (
 )
 
 type ProductsHandler struct {
-	DB          *pgxpool.Pool
-	R2Client    *storage.R2Client
-	ImageHelper *storage.ImageURLHelper
+	DB                 *pgxpool.Pool
+	R2Client           *storage.R2Client
+	ImageHelper        *storage.ImageURLHelper
+	StockNotifications *StockNotificationsHandler
 }
 
 // Helper function to convert image path to public URL
@@ -34,7 +35,7 @@ func (h *ProductsHandler) formatImageURL(imagePath *string) *string {
 	}
 	// If it's a local path starting with /uploads/, convert to full URL
 	if strings.HasPrefix(path, "/uploads/") {
-		url := "https://etreasure-1.onrender.com" + path
+		url := "http://localhost:8080" + path
 		return &url
 	}
 	// If it's already a full URL, keep as is
@@ -246,6 +247,15 @@ func (h *ProductsHandler) Update(c *gin.Context) {
 		return
 	}
 
+	// Get current product stock before update
+	var currentStock int
+	var currentSlug string
+	err = h.DB.QueryRow(ctx, `SELECT COALESCE(SUM(stock_quantity), 0), slug FROM products p LEFT JOIN product_variants pv ON p.uuid_id = pv.product_id WHERE p.uuid_id = $1 GROUP BY p.slug`, uuidID).Scan(&currentStock, &currentSlug)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get current product data"})
+		return
+	}
+
 	_, err = h.DB.Exec(ctx, `UPDATE products SET slug=$1,title=$2,subtitle=$3,description=$4,category_id=$5,published=$6,publish_at=$7,unpublish_at=$8,material=$9,design=$10,technique=$11,texture=$12,finish=$13,dimensions=$14,weight=$15,product_use=$16,care_instructions=$17,updated_at=NOW() WHERE uuid_id=$18`,
 		req.Slug, req.Title, req.Subtitle, req.Description, req.CategoryID, req.Published, req.PublishAt, req.UnpublishAt, req.Material, req.Design, req.Technique, req.Texture, req.Finish, req.Dimensions, req.Weight, req.ProductUse, req.CareInstructions, uuidID)
 	if err != nil {
@@ -258,6 +268,7 @@ func (h *ProductsHandler) Update(c *gin.Context) {
 	}
 
 	_, _ = h.DB.Exec(ctx, `DELETE FROM product_variants WHERE product_id=$1`, uuidID)
+	var newTotalStock int
 	for _, v := range req.Variants {
 		_, err := h.DB.Exec(ctx, `INSERT INTO product_variants (product_id, sku, title, price_cents, compare_at_price_cents, currency, stock_quantity)
 			VALUES ($1,$2,$3,$4,$5,$6,$7)`, uuidID, v.SKU, v.Title, v.PriceCents, v.CompareAtPriceCents, v.Currency, v.StockQuantity)
@@ -265,10 +276,22 @@ func (h *ProductsHandler) Update(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "variant upsert failed"})
 			return
 		}
+		newTotalStock += v.StockQuantity
 	}
 	_, _ = h.DB.Exec(ctx, `DELETE FROM product_images WHERE product_id=$1`, uuidID)
 	for _, img := range req.Images {
 		_, _ = h.DB.Exec(ctx, `INSERT INTO product_images (product_id, media_id, sort_order) VALUES ($1,$2,$3)`, uuidID, img.MediaID, img.SortOrder)
+	}
+
+	// Check if stock changed from 0 to >0 and send notifications
+	if currentStock == 0 && newTotalStock > 0 && h.StockNotifications != nil {
+		// Send stock notifications asynchronously using UUID
+		go func() {
+			err := h.StockNotifications.SendStockNotifications(uuidID.String(), req.Slug)
+			if err != nil {
+				log.Printf("Failed to send stock notifications for product %s: %v", uuidID.String(), err)
+			}
+		}()
 	}
 
 	c.JSON(http.StatusOK, gin.H{"ok": true})
@@ -998,6 +1021,20 @@ func (h *ProductsHandler) UpdateVariantStock(c *gin.Context) {
 		return
 	}
 
+	// Get current stock before update
+	var currentStock int
+	var currentSlug string
+	err = h.DB.QueryRow(ctx, `
+		SELECT pv.stock_quantity, p.slug 
+		FROM product_variants pv 
+		JOIN products p ON pv.product_id = p.uuid_id 
+		WHERE pv.id = $1 AND pv.product_id = $2
+	`, variantID, productID).Scan(&currentStock, &currentSlug)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get current stock"})
+		return
+	}
+
 	// Update the stock quantity
 	_, err = h.DB.Exec(ctx, `
 		UPDATE product_variants 
@@ -1007,6 +1044,17 @@ func (h *ProductsHandler) UpdateVariantStock(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update stock"})
 		return
+	}
+
+	// Check if stock changed from 0 to >0 and send notifications
+	if currentStock == 0 && req.StockQuantity > 0 && h.StockNotifications != nil {
+		// Send stock notifications asynchronously using UUID
+		go func() {
+			err := h.StockNotifications.SendStockNotifications(productID, currentSlug)
+			if err != nil {
+				log.Printf("Failed to send stock notifications for product %s: %v", productID, err)
+			}
+		}()
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "stock updated successfully", "stock_quantity": req.StockQuantity})

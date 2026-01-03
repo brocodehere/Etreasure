@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/etreasure/backend/internal/auth"
@@ -38,6 +39,17 @@ type signupRequest struct {
 	RememberMe bool   `json:"rememberMe"`
 }
 
+type sendSignupOTPRequest struct {
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required,min=8"`
+	FullName string `json:"fullName"`
+}
+
+type verifySignupOTPRequest struct {
+	Email string `json:"email" binding:"required,email"`
+	OTP   string `json:"otp" binding:"required"`
+}
+
 type forgotPasswordRequest struct {
 	Email string `json:"email" binding:"required,email"`
 }
@@ -49,6 +61,7 @@ type verifyOTPRequest struct {
 
 type resetPasswordRequest struct {
 	Email       string `json:"email" binding:"required,email"`
+	OTP         string `json:"otp" binding:"required"`
 	NewPassword string `json:"newPassword" binding:"required,min=8"`
 }
 
@@ -320,6 +333,143 @@ func (h *AuthHandler) Me(c *gin.Context) {
 	})
 }
 
+// SendSignupOTP - sends OTP to user's email for signup verification
+func (h *AuthHandler) SendSignupOTP(c *gin.Context) {
+	var req sendSignupOTPRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
+		return
+	}
+
+	ctx := context.Background()
+	// Check if user already exists
+	var exists bool
+	err := h.DB.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)`, req.Email).Scan(&exists)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "database error"})
+		return
+	}
+	if exists {
+		c.JSON(http.StatusConflict, gin.H{"error": "user already exists"})
+		return
+	}
+
+	// Generate 6-digit OTP
+	otp := fmt.Sprintf("%06d", rand.Intn(1000000))
+
+	// Store signup data and OTP in Redis with 10-minute expiry
+	signupKey := fmt.Sprintf("signup:%s", req.Email)
+	signupData := fmt.Sprintf("%s|%s|%s", req.Email, req.Password, req.FullName)
+
+	// Store signup data
+	err = h.Rd.Set(ctx, signupKey, signupData, 10*time.Minute).Err()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to store signup data"})
+		return
+	}
+
+	// Store OTP
+	otpKey := fmt.Sprintf("signup_otp:%s", req.Email)
+	err = h.Rd.Set(ctx, otpKey, otp, 10*time.Minute).Err()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to store OTP"})
+		return
+	}
+
+	// Send OTP email
+	err = h.Email.SendSignupOTPEmail(req.Email, otp)
+	if err != nil {
+		// Log error but don't fail the request
+		fmt.Printf("Failed to send signup OTP email: %v\n", err)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "OTP sent to your email for verification"})
+}
+
+// VerifySignupOTP - verifies the OTP and creates user account
+func (h *AuthHandler) VerifySignupOTP(c *gin.Context) {
+	var req verifySignupOTPRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
+		return
+	}
+
+	ctx := context.Background()
+	otpKey := fmt.Sprintf("signup_otp:%s", req.Email)
+	signupKey := fmt.Sprintf("signup:%s", req.Email)
+
+	// Get OTP from Redis
+	storedOTP, err := h.Rd.Get(ctx, otpKey).Result()
+	if err == redis.Nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "OTP not found or expired"})
+		return
+	} else if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to verify OTP"})
+		return
+	}
+
+	// Verify OTP
+	if storedOTP != req.OTP {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid OTP"})
+		return
+	}
+
+	// Get signup data from Redis
+	signupData, err := h.Rd.Get(ctx, signupKey).Result()
+	if err == redis.Nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "signup data not found or expired"})
+		return
+	} else if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve signup data"})
+		return
+	}
+
+	// Parse signup data
+	parts := strings.Split(signupData, "|")
+	if len(parts) != 3 {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid signup data"})
+		return
+	}
+
+	email := parts[0]
+	password := parts[1]
+	fullName := parts[2]
+
+	// Hash password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to hash password"})
+		return
+	}
+
+	// Insert user
+	var userID int
+	err = h.DB.QueryRow(ctx, `
+		INSERT INTO users (email, password_hash, full_name, is_active, created_at)
+		VALUES ($1, $2, $3, TRUE, NOW())
+		RETURNING id
+	`, email, string(hashedPassword), fullName).Scan(&userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create user"})
+		return
+	}
+
+	// Default role: customer (if role exists)
+	var roles []string
+	if _, err := h.DB.Exec(ctx, `
+		INSERT INTO user_roles (user_id, role_id)
+		SELECT $1, id FROM roles WHERE name = 'customer'
+		ON CONFLICT DO NOTHING
+	`, userID); err == nil {
+		roles = append(roles, "customer")
+	}
+
+	// Clean up Redis
+	h.Rd.Del(ctx, otpKey, signupKey)
+
+	c.JSON(http.StatusCreated, gin.H{"message": "Account created successfully", "userID": userID})
+}
+
 // ForgotPassword - sends OTP to user's email if it exists in database
 func (h *AuthHandler) ForgotPassword(c *gin.Context) {
 	var req forgotPasswordRequest
@@ -337,8 +487,8 @@ func (h *AuthHandler) ForgotPassword(c *gin.Context) {
 	}
 
 	if !exists {
-		// Don't reveal that email doesn't exist for security
-		c.JSON(http.StatusOK, gin.H{"message": "If email exists, OTP will be sent"})
+		// Email doesn't exist - inform user
+		c.JSON(http.StatusNotFound, gin.H{"error": "Email not found in our system"})
 		return
 	}
 
@@ -359,7 +509,7 @@ func (h *AuthHandler) ForgotPassword(c *gin.Context) {
 		// Log error but don't fail the request
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "OTP sent to your email"})
+	c.JSON(http.StatusOK, gin.H{"message": "OTP sent to your email", "email": req.Email})
 }
 
 // VerifyOTP - verifies the OTP from Redis
@@ -403,7 +553,7 @@ func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "OTP verified successfully"})
 }
 
-// ResetPassword - resets password after OTP verification
+// ResetPassword - verifies OTP and resets password in one step
 func (h *AuthHandler) ResetPassword(c *gin.Context) {
 	var req resetPasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -413,11 +563,20 @@ func (h *AuthHandler) ResetPassword(c *gin.Context) {
 
 	ctx := context.Background()
 
-	// Check if OTP was verified
-	verifyKey := fmt.Sprintf("verified:%s", req.Email)
-	verified, err := h.Rd.Get(ctx, verifyKey).Result()
-	if err == redis.Nil || verified != "true" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "OTP not verified or verification expired"})
+	// Verify OTP first
+	redisKey := fmt.Sprintf("otp:%s", req.Email)
+	storedOTP, err := h.Rd.Get(ctx, redisKey).Result()
+	if err == redis.Nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "OTP not found or expired"})
+		return
+	} else if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to verify OTP"})
+		return
+	}
+
+	// Verify OTP matches
+	if storedOTP != req.OTP {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid OTP"})
 		return
 	}
 
@@ -437,7 +596,7 @@ func (h *AuthHandler) ResetPassword(c *gin.Context) {
 	}
 
 	// Clean up Redis
-	h.Rd.Del(ctx, verifyKey)
+	h.Rd.Del(ctx, redisKey)
 
 	c.JSON(http.StatusOK, gin.H{"message": "Password reset successfully"})
 }
