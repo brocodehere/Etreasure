@@ -1,10 +1,14 @@
 import { useState } from 'react';
 import PasswordStrengthIndicator from './PasswordStrengthIndicator';
+import OTPVerification from './OTPVerification';
 
 // Temporarily hardcoded for debugging
 const API_URL = 'https://etreasure-1.onrender.com';
 
+type SignupStep = 'form' | 'verification';
+
 export default function SignupForm() {
+  const [step, setStep] = useState<SignupStep>('form');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -31,30 +35,73 @@ export default function SignupForm() {
 
     try {
       setSubmitting(true);
-      const res = await fetch(`${API_URL}/api/auth/signup`, {
+      const res = await fetch(`${API_URL}/api/auth/send-signup-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, fullName, rememberMe }),
-        credentials: 'include',
+        body: JSON.stringify({ email, password, fullName }),
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data?.error || 'Signup failed');
+        setError(data?.error || 'Failed to send verification code');
         return;
       }
 
-      if (data.accessToken) {
-        // Store access token in sessionStorage (short-lived)
-        sessionStorage.setItem('accessToken', data.accessToken);
-      }
-
-      window.location.href = '/account/dashboard';
+      // Move to verification step
+      setStep('verification');
     } catch (err) {
-      setError('Signup failed. Please try again.');
+      setError('Failed to send verification code. Please try again.');
     } finally {
       setSubmitting(false);
     }
   };
+
+  const handleVerificationSuccess = async () => {
+    // After successful OTP verification, login user and redirect to profile
+    try {
+      const res = await fetch(`${API_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      
+      const data = await res.json();
+      
+      if (res.ok && data.accessToken) {
+        // Store tokens
+        localStorage.setItem('accessToken', data.accessToken);
+        if (data.refreshToken) {
+          localStorage.setItem('refreshToken', data.refreshToken);
+        }
+        localStorage.setItem('user', JSON.stringify(data.user));
+        
+        // Redirect to profile page
+        window.location.href = '/profile';
+      } else {
+        // If auto-login fails, redirect to login with message
+        window.location.href = '/account/login?message=Account created successfully! Please log in.';
+      }
+    } catch (err) {
+      // If auto-login fails, redirect to login with message
+      window.location.href = '/account/login?message=Account created successfully! Please log in.';
+    }
+  };
+
+  const handleBackToForm = () => {
+    setStep('form');
+    setError(null);
+  };
+
+  if (step === 'verification') {
+    return (
+      <OTPVerification
+        email={email}
+        password={password}
+        fullName={fullName}
+        onSuccess={handleVerificationSuccess}
+        onBack={handleBackToForm}
+      />
+    );
+  }
 
   return (
     <form onSubmit={onSubmit} className="max-w-md mx-auto space-y-4 bg-white p-6 rounded-xl shadow-md border border-gold/30">
@@ -140,7 +187,7 @@ export default function SignupForm() {
         disabled={submitting}
         className="w-full btn-primary rounded-lg text-center disabled:opacity-60 disabled:cursor-not-allowed"
       >
-        {submitting ? 'Creating account…' : 'Sign up'}
+        {submitting ? 'Sending verification code…' : 'Sign up'}
       </button>
       <p className="text-xs text-center text-gray-600">
         Already have an account? <a href="/account/login" className="text-maroon underline">Log in</a>

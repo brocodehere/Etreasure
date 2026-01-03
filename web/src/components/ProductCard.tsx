@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { Product } from '../lib/api';
 import { addToCart, toggleWishlist } from '../lib/api';
 import { showSuccess, showError } from '../lib/toast.js';
+import StockNotificationModal from './StockNotificationModal';
 
 interface ProductCardProps {
   product: Product;
@@ -10,6 +11,7 @@ interface ProductCardProps {
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showNotificationModal, setShowNotificationModal] = useState(false);
 
   // Check if product is in stock
   const isInStock = product.stock_quantity >= 1;
@@ -137,40 +139,51 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         </div>
         
         <button
-          onClick={handleAddToCart}
-          disabled={isLoading || !isInStock}
+          onClick={isInStock ? handleAddToCart : () => setShowNotificationModal(true)}
+          disabled={isLoading}
           className={`w-full px-4 py-3 rounded-xl font-semibold transition-all duration-300 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-maroon focus:ring-offset-2 transform hover:scale-[1.02] flex items-center justify-center space-x-2 ${
             isInStock 
               ? 'bg-gradient-to-r from-maroon to-burgundy text-white hover:from-gold hover:to-gold hover:text-maroon' 
-              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700'
           }`}
-            aria-label={`Add ${product.title} to cart`}
+            aria-label={isInStock ? `Add ${product.title} to cart` : `Get notified when ${product.title} is back in stock`}
           >
-            {isLoading ? (
-              <>
-                <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Adding...
-              </>
-            ) : isInStock ? (
-              <>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                </svg>
-                Add to Cart
-              </>
-            ) : (
-              <>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 12H4"></path>
-                </svg>
-                Out of Stock
-              </>
-            )}
+          {isLoading ? (
+            <>
+              <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              {isInStock ? 'Adding...' : 'Creating...'}
+            </>
+          ) : isInStock ? (
+            <>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+              </svg>
+              Add to Cart
+            </>
+          ) : (
+            <>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+              </svg>
+              Notify Me
+            </>
+          )}
           </button>
       </div>
+
+      {/* Stock Notification Modal */}
+      <StockNotificationModal
+        isOpen={showNotificationModal}
+        onClose={() => setShowNotificationModal(false)}
+        product={{
+          id: Number(product.id),
+          title: product.title,
+          slug: product.slug || String(product.id)
+        }}
+      />
     </div>
   );
 };
