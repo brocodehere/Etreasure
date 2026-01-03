@@ -30,6 +30,7 @@ export const OutOfStockPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updatingStock, setUpdatingStock] = useState<string | null>(null);
+  const [stockInputs, setStockInputs] = useState<Record<string, string>>({});
 
   useEffect(() => {
     fetchOutOfStockProducts();
@@ -39,7 +40,17 @@ export const OutOfStockPage: React.FC = () => {
     try {
       setLoading(true);
       const response = await api.get<{ products: OutOfStockProduct[] }>('/products/out-of-stock');
-      setProducts(response.products || []);
+      const productsData = response.products || [];
+      setProducts(productsData);
+      
+      // Initialize stock inputs with current values
+      const initialInputs: Record<string, string> = {};
+      productsData.forEach(product => {
+        product.variants.forEach(variant => {
+          initialInputs[`${product.id}-${variant.id}`] = variant.stock_quantity.toString();
+        });
+      });
+      setStockInputs(initialInputs);
     } catch (err: any) {
       setError(err.message || 'Failed to fetch out of stock products');
     } finally {
@@ -63,6 +74,14 @@ export const OutOfStockPage: React.FC = () => {
     }
   };
 
+  const handleStockInputChange = (productId: string, variantId: number, value: string) => {
+    const key = `${productId}-${variantId}`;
+    setStockInputs(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
+
   const handleStockChange = (productId: string, variantId: number, value: string) => {
     const stockValue = parseInt(value);
     if (!isNaN(stockValue) && stockValue >= 0) {
@@ -71,9 +90,10 @@ export const OutOfStockPage: React.FC = () => {
   };
 
   const handleUpdateClick = (productId: string, variantId: number) => {
-    const input = document.querySelector(`input[data-variant-id="${variantId}"]`) as HTMLInputElement;
-    if (input) {
-      handleStockChange(productId, variantId, input.value);
+    const key = `${productId}-${variantId}`;
+    const value = stockInputs[key];
+    if (value !== undefined) {
+      handleStockChange(productId, variantId, value);
     }
   };
 
@@ -204,7 +224,8 @@ export const OutOfStockPage: React.FC = () => {
                             <input
                               type="number"
                               min="0"
-                              defaultValue={variant.stock_quantity}
+                              value={stockInputs[`${product.id}-${variant.id}`] ?? variant.stock_quantity.toString()}
+                              onChange={(e) => handleStockInputChange(product.id, variant.id, e.target.value)}
                               className="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-blue-500 focus:border-blue-500"
                               disabled={updatingStock === `${product.id}-${variant.id}`}
                               onKeyDown={(e) => {
@@ -217,7 +238,6 @@ export const OutOfStockPage: React.FC = () => {
                               onClick={() => handleUpdateClick(product.id, variant.id)}
                               disabled={updatingStock === `${product.id}-${variant.id}`}
                               className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                              data-variant-id={variant.id}
                             >
                               {updatingStock === `${product.id}-${variant.id}` ? (
                                 <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
